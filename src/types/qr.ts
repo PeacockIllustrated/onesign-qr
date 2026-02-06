@@ -29,6 +29,14 @@ export interface QRMatrix {
 }
 
 /**
+ * Logo mode for QR codes
+ * - none: No logo
+ * - upload: User uploads a logo image
+ * - placeholder: Leave a blank square for manual logo placement
+ */
+export type LogoMode = 'none' | 'upload' | 'placeholder';
+
+/**
  * QR style configuration
  */
 export interface QRStyleConfig {
@@ -38,7 +46,9 @@ export interface QRStyleConfig {
   quietZone: number;
   moduleShape: ModuleShape;
   eyeShape: EyeShape;
-  logoSizeRatio?: number;
+  logoMode: LogoMode;
+  logoDataUrl?: string; // Base64 data URL for uploaded logo
+  logoSizeRatio: number; // Size of logo/placeholder relative to QR (0.15 - 0.30)
 }
 
 /**

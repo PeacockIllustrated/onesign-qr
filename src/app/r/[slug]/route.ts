@@ -75,7 +75,11 @@ async function recordScanEvent(
     'unknown';
 
   // Hash the IP (one-way, for deduplication only)
-  const ipSalt = process.env.IP_HASH_SALT || 'default-salt';
+  const ipSalt = process.env.IP_HASH_SALT;
+  if (!ipSalt) {
+    console.error('CRITICAL: IP_HASH_SALT environment variable is not set — skipping analytics');
+    return;
+  }
   const ipHash = createHash('sha256')
     .update(ip + ipSalt)
     .digest('hex')

@@ -156,8 +156,12 @@ export function validateUrl(input: string): UrlValidationResult {
 }
 
 /**
- * Validate URL with additional DNS resolution check
- * Use this for stricter validation when creating QR codes
+ * Validate URL with additional DNS resolution check.
+ * Use this for stricter validation when creating QR codes.
+ *
+ * Resolves the hostname via DNS and verifies that none of the returned
+ * IP addresses are in private ranges — this prevents SSRF via domains
+ * that resolve to internal IPs (e.g., attacker registers evil.com -> 169.254.169.254).
  */
 export async function validateUrlStrict(input: string): Promise<UrlValidationResult> {
   // First do basic validation
@@ -168,17 +172,51 @@ export async function validateUrlStrict(input: string): Promise<UrlValidationRes
 
   const url = new URL(basicResult.normalizedUrl!);
 
-  // In production, you might want to do DNS resolution here
-  // to verify the domain exists and doesn't resolve to private IPs
-  // For now, we'll rely on the basic checks
-
   // Additional check: ensure the hostname has at least one dot
   // (prevents things like http://intranet/)
-  if (!url.hostname.includes('.') && !isPrivateIp(url.hostname)) {
+  if (!url.hostname.includes('.')) {
     return {
       isValid: false,
       error: 'Single-label hostnames are not allowed',
     };
+  }
+
+  // If the hostname is already an IP literal, it was already checked by
+  // isPrivateIp inside validateUrl — skip DNS resolution
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(url.hostname) || url.hostname.startsWith('[')) {
+    return basicResult;
+  }
+
+  // DNS resolution check — resolve the hostname and verify all IPs are public
+  // Dynamic import to avoid bundling dns/promises in client-side code
+  try {
+    const { resolve4, resolve6 } = await import('dns/promises');
+    const [ipv4Result, ipv6Result] = await Promise.allSettled([
+      resolve4(url.hostname),
+      resolve6(url.hostname),
+    ]);
+
+    const allIps: string[] = [];
+    if (ipv4Result.status === 'fulfilled') allIps.push(...ipv4Result.value);
+    if (ipv6Result.status === 'fulfilled') allIps.push(...ipv6Result.value);
+
+    // Domain must resolve to at least one IP
+    if (allIps.length === 0) {
+      return { isValid: false, error: 'Domain does not resolve to any IP address' };
+    }
+
+    // Check that none of the resolved IPs are private
+    for (const ip of allIps) {
+      if (isPrivateIp(ip)) {
+        return {
+          isValid: false,
+          error: 'URL resolves to a private or reserved IP address',
+        };
+      }
+    }
+  } catch {
+    // DNS resolution failed entirely — domain may not exist
+    return { isValid: false, error: 'Failed to resolve domain' };
   }
 
   return basicResult;

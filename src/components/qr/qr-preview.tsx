@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import { QrCode, AlertTriangle } from 'lucide-react';
 import type { QRStyleConfig } from '@/types/qr';
 import { QR_DEFAULTS } from '@/lib/constants';
+import { SVG_PURIFY_CONFIG } from '@/lib/security/svg-sanitizer';
 
 interface QRPreviewProps {
   data: string;
@@ -12,8 +14,7 @@ interface QRPreviewProps {
 }
 
 /**
- * Client-side QR preview component
- * Uses the basic qrcode library for preview generation
+ * Client-side QR preview component with custom styling support
  */
 export function QRPreview({ data, style, size = 256 }: QRPreviewProps) {
   const [svgContent, setSvgContent] = useState<string | null>(null);
@@ -25,17 +26,19 @@ export function QRPreview({ data, style, size = 256 }: QRPreviewProps) {
 
     async function generatePreview() {
       try {
-        // Dynamically import qrcode to avoid SSR issues
-        const QRCode = (await import('qrcode')).default;
+        // Dynamically import to avoid SSR issues
+        const { generateStyledSVG } = await import('@/lib/qr/svg-generator');
 
-        const svg = await QRCode.toString(data, {
-          type: 'svg',
-          errorCorrectionLevel: style.errorCorrection,
-          margin: style.quietZone,
-          color: {
-            dark: style.foregroundColor,
-            light: style.backgroundColor,
-          },
+        const svg = await generateStyledSVG(data, {
+          errorCorrection: style.errorCorrection,
+          foregroundColor: style.foregroundColor,
+          backgroundColor: style.backgroundColor,
+          moduleShape: style.moduleShape,
+          eyeShape: style.eyeShape,
+          quietZone: style.quietZone,
+          logoMode: style.logoMode,
+          logoDataUrl: style.logoDataUrl,
+          logoSizeRatio: style.logoSizeRatio,
         });
 
         if (!cancelled) {
@@ -54,8 +57,13 @@ export function QRPreview({ data, style, size = 256 }: QRPreviewProps) {
           }
 
           // Logo size warning
-          if (style.logoSizeRatio && style.logoSizeRatio > QR_DEFAULTS.WARN_LOGO_RATIO) {
+          if (style.logoMode !== 'none' && style.logoSizeRatio && style.logoSizeRatio > QR_DEFAULTS.WARN_LOGO_RATIO) {
             newWarnings.push('Large logo may affect scanning');
+          }
+
+          // Logo with low error correction warning
+          if (style.logoMode !== 'none' && style.errorCorrection !== 'H') {
+            newWarnings.push('High error correction recommended with logo');
           }
 
           // Quiet zone warning
@@ -66,6 +74,7 @@ export function QRPreview({ data, style, size = 256 }: QRPreviewProps) {
           setWarnings(newWarnings);
         }
       } catch (err) {
+        console.error('QR preview error:', err);
         if (!cancelled) {
           setError('Failed to generate QR preview');
           setSvgContent(null);
@@ -108,7 +117,7 @@ export function QRPreview({ data, style, size = 256 }: QRPreviewProps) {
       <div
         className="aspect-square rounded-sm overflow-hidden border border-border"
         style={{ maxWidth: size }}
-        dangerouslySetInnerHTML={{ __html: svgContent }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svgContent, SVG_PURIFY_CONFIG) }}
       />
 
       {warnings.length > 0 && (

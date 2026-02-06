@@ -12,6 +12,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // suppressHydrationWarning is intentional — prevents warnings from
+  // browser extensions or theme scripts that modify the <html> element
+  // before React hydration. This is standard Next.js practice.
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">

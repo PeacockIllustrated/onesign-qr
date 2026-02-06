@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ExternalLink, Copy, Download, Settings, BarChart3, History } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import {
   Button,
   Card,
@@ -21,8 +20,9 @@ import {
 import { QRPreview } from './qr-preview';
 import { StylePanel } from './style-panel';
 import { ExportPanel } from './export-panel';
-import type { QRStyleConfig, ErrorCorrectionLevel } from '@/types/qr';
+import type { QRStyleConfig, ErrorCorrectionLevel, LogoMode } from '@/types/qr';
 import type { ModuleShape, EyeShape } from '@/lib/qr/shapes';
+import { QR_DEFAULTS } from '@/lib/constants';
 
 interface QRDetailClientProps {
   qr: any;
@@ -33,7 +33,6 @@ interface QRDetailClientProps {
 export function QRDetailClient({ qr, style: initialStyle, redirectUrl }: QRDetailClientProps) {
   const router = useRouter();
   const { addToast } = useToast();
-  const supabase = createClient();
 
   // State
   const [destinationUrl, setDestinationUrl] = useState(qr.destination_url);
@@ -45,6 +44,9 @@ export function QRDetailClient({ qr, style: initialStyle, redirectUrl }: QRDetai
     quietZone: initialStyle?.quiet_zone || 4,
     moduleShape: (initialStyle?.module_shape || 'square') as ModuleShape,
     eyeShape: (initialStyle?.eye_shape || 'square') as EyeShape,
+    logoMode: (initialStyle?.logo_mode || 'none') as LogoMode,
+    logoDataUrl: initialStyle?.logo_data_url || undefined,
+    logoSizeRatio: initialStyle?.logo_size_ratio || QR_DEFAULTS.DEFAULT_LOGO_RATIO,
   });
 
   const qrData = qr.mode === 'managed' && redirectUrl
@@ -59,12 +61,16 @@ export function QRDetailClient({ qr, style: initialStyle, redirectUrl }: QRDetai
   const updateDestination = async () => {
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('qr_codes')
-        .update({ destination_url: destinationUrl })
-        .eq('id', qr.id);
+      const res = await fetch(`/api/qr/${qr.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination_url: destinationUrl }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update');
+      }
 
       addToast({ title: 'Destination updated', variant: 'success' });
       router.refresh();
@@ -82,19 +88,25 @@ export function QRDetailClient({ qr, style: initialStyle, redirectUrl }: QRDetai
   const updateStyle = async () => {
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('qr_styles')
-        .update({
-          foreground_color: style.foregroundColor,
-          background_color: style.backgroundColor,
-          error_correction: style.errorCorrection,
-          quiet_zone: style.quietZone,
-          module_shape: style.moduleShape,
-          eye_shape: style.eyeShape,
-        })
-        .eq('qr_id', qr.id);
+      const res = await fetch(`/api/qr/${qr.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          style: {
+            foreground_color: style.foregroundColor,
+            background_color: style.backgroundColor,
+            error_correction: style.errorCorrection,
+            quiet_zone: style.quietZone,
+            module_shape: style.moduleShape,
+            eye_shape: style.eyeShape,
+          },
+        }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update style');
+      }
 
       addToast({ title: 'Style updated', variant: 'success' });
       router.refresh();

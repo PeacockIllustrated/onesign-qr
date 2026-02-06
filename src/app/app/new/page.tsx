@@ -47,6 +47,9 @@ export default function NewQRPage() {
     quietZone: QR_DEFAULTS.QUIET_ZONE,
     moduleShape: 'square',
     eyeShape: 'square',
+    logoMode: 'none',
+    logoDataUrl: undefined,
+    logoSizeRatio: QR_DEFAULTS.DEFAULT_LOGO_RATIO,
   });
 
   // UI state

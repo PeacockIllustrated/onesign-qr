@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { validateUrl } from '@/lib/security/url-validator';
+import { validateUrlStrict } from '@/lib/security/url-validator';
 import { checkQrCreateLimit, checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { createQRSchema } from '@/validations/qr';
+import { writeAuditLog } from '@/lib/audit';
+
+const MAX_SLUG_RETRIES = 3;
 
 /**
  * POST /api/qr - Create a new QR code
@@ -39,8 +42,8 @@ export async function POST(request: NextRequest) {
 
     const { name, mode, destination_url, slug, analytics_enabled, style } = parsed.data;
 
-    // Validate URL
-    const urlValidation = validateUrl(destination_url);
+    // Validate URL with DNS resolution (SSRF prevention)
+    const urlValidation = await validateUrlStrict(destination_url);
     if (!urlValidation.isValid) {
       return NextResponse.json(
         { error: urlValidation.error },
@@ -48,39 +51,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate slug if managed mode and not provided
+    // Generate slug and create QR code with retry logic for slug collisions
     let finalSlug = slug;
-    if (mode === 'managed' && !finalSlug) {
-      const { data: slugData, error: slugError } = await supabase
-        .rpc('generate_qr_unique_slug');
+    let qr: { id: string } | null = null;
 
-      if (slugError) {
+    for (let attempt = 0; attempt < MAX_SLUG_RETRIES; attempt++) {
+      // Generate slug if managed mode and not provided (or after collision)
+      if (mode === 'managed' && !finalSlug) {
+        const { data: slugData, error: slugError } = await supabase
+          .rpc('generate_qr_unique_slug');
+
+        if (slugError) {
+          return NextResponse.json(
+            { error: 'Failed to generate slug' },
+            { status: 500 }
+          );
+        }
+        finalSlug = slugData;
+      }
+
+      // Create QR code
+      const { data: created, error: createError } = await supabase
+        .from('qr_codes')
+        .insert({
+          owner_id: user.id,
+          name,
+          mode,
+          slug: mode === 'managed' ? finalSlug : null,
+          destination_url: urlValidation.normalizedUrl,
+          analytics_enabled: mode === 'managed' ? analytics_enabled : false,
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        // Unique violation — retry with a new slug
+        if (createError.code === '23505' && mode === 'managed') {
+          finalSlug = undefined;
+          continue;
+        }
+        console.error('Failed to create QR:', createError.message);
         return NextResponse.json(
-          { error: 'Failed to generate slug' },
+          { error: 'Failed to create QR code' },
           { status: 500 }
         );
       }
-      finalSlug = slugData;
+
+      qr = created;
+      break;
     }
 
-    // Create QR code
-    const { data: qr, error: createError } = await supabase
-      .from('qr_codes')
-      .insert({
-        owner_id: user.id,
-        name,
-        mode,
-        slug: mode === 'managed' ? finalSlug : null,
-        destination_url: urlValidation.normalizedUrl,
-        analytics_enabled: mode === 'managed' ? analytics_enabled : false,
-      })
-      .select()
-      .single();
-
-    if (createError) {
-      console.error('Failed to create QR:', createError);
+    if (!qr) {
       return NextResponse.json(
-        { error: 'Failed to create QR code' },
+        { error: 'Failed to create QR code after multiple attempts' },
         { status: 500 }
       );
     }
@@ -103,6 +126,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Write audit log (fire-and-forget)
+    writeAuditLog({
+      qrId: qr.id,
+      actorId: user.id,
+      action: 'created',
+      newValue: { name, mode, destination_url: urlValidation.normalizedUrl, slug: finalSlug },
+      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || null,
+      userAgent: request.headers.get('user-agent') || null,
+    });
+
     // Build response
     const redirectUrl = mode === 'managed'
       ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/r/${finalSlug}`
@@ -118,7 +151,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('API error:', error);
+    console.error('API error:', error instanceof Error ? error.message : 'unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -156,11 +189,12 @@ export async function GET(request: NextRequest) {
       .from('qr_codes')
       .select('*, qr_styles(*)', { count: 'exact' })
       .eq('owner_id', user.id)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error('Failed to fetch QR codes:', error);
+      console.error('Failed to fetch QR codes:', error.message);
       return NextResponse.json(
         { error: 'Failed to fetch QR codes' },
         { status: 500 }
@@ -179,7 +213,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('API error:', error);
+    console.error('API error:', error instanceof Error ? error.message : 'unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -3,15 +3,60 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { checkRedirectLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 
 export async function middleware(request: NextRequest) {
+  // -----------------------------------------------------------------------
+  // Request ID — attach a unique ID to every request for tracing / logging
+  // Uses Web Crypto API (available in Edge Runtime, unlike Node's crypto module)
+  // -----------------------------------------------------------------------
+  const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
+  // Attach request ID to every response
+  response.headers.set('x-request-id', requestId);
+
   const pathname = request.nextUrl.pathname;
 
+  // -----------------------------------------------------------------------
+  // CSRF protection for mutating API requests
+  //
+  // Validates that the Origin header matches the app's own origin for
+  // POST, PATCH, PUT, DELETE requests to /api/*. This is a lightweight,
+  // stateless CSRF check appropriate for a same-origin SPA.
+  // -----------------------------------------------------------------------
+  if (
+    pathname.startsWith('/api/') &&
+    !pathname.startsWith('/api/health') &&
+    ['POST', 'PATCH', 'PUT', 'DELETE'].includes(request.method)
+  ) {
+    const origin = request.headers.get('origin');
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+    if (origin && appUrl) {
+      try {
+        const allowedOrigin = new URL(appUrl).origin;
+        if (origin !== allowedOrigin) {
+          return NextResponse.json(
+            { error: 'CSRF validation failed' },
+            { status: 403, headers: { 'x-request-id': requestId } }
+          );
+        }
+      } catch {
+        // If NEXT_PUBLIC_APP_URL is invalid, reject the request
+        return NextResponse.json(
+          { error: 'Server configuration error' },
+          { status: 500, headers: { 'x-request-id': requestId } }
+        );
+      }
+    }
+  }
+
+  // -----------------------------------------------------------------------
   // Rate limit redirect handler
+  // -----------------------------------------------------------------------
   if (pathname.startsWith('/r/')) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
                request.headers.get('x-real-ip') ||
@@ -22,15 +67,21 @@ export async function middleware(request: NextRequest) {
     if (!rateLimit.success) {
       return new NextResponse('Too Many Requests', {
         status: 429,
-        headers: getRateLimitHeaders(rateLimit),
+        headers: {
+          ...getRateLimitHeaders(rateLimit),
+          'x-request-id': requestId,
+        },
       });
     }
 
     // Don't require auth for redirects
+    response.headers.set('x-request-id', requestId);
     return response;
   }
 
-  // Create Supabase client
+  // -----------------------------------------------------------------------
+  // Supabase session management
+  // -----------------------------------------------------------------------
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -40,7 +91,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           response = NextResponse.next({
@@ -48,6 +99,8 @@ export async function middleware(request: NextRequest) {
               headers: request.headers,
             },
           });
+          // Re-attach request ID after response recreation
+          response.headers.set('x-request-id', requestId);
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );

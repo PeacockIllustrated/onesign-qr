@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { validateUrl } from '@/lib/security/url-validator';
 import { checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
-import { updateQRSchema, updateStyleSchema } from '@/validations/qr';
+import { updateQRSchema, updateStyleSchema, isValidUUID } from '@/validations/qr';
+import { writeAuditLog, determineUpdateAction } from '@/lib/audit';
 
 /**
  * GET /api/qr/[id] - Get a specific QR code
@@ -12,6 +13,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // Validate UUID format
+  if (!isValidUUID(id)) {
+    return NextResponse.json({ error: 'Invalid QR code ID' }, { status: 400 });
+  }
+
   const supabase = await createClient();
 
   // Check authentication
@@ -35,6 +42,7 @@ export async function GET(
       .select('*, qr_styles(*)')
       .eq('id', id)
       .eq('owner_id', user.id)
+      .is('deleted_at', null)
       .single();
 
     if (error || !qr) {
@@ -46,7 +54,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('API error:', error);
+    console.error('API error:', error instanceof Error ? error.message : 'unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -62,6 +70,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // Validate UUID format
+  if (!isValidUUID(id)) {
+    return NextResponse.json({ error: 'Invalid QR code ID' }, { status: 400 });
+  }
+
   const supabase = await createClient();
 
   // Check authentication
@@ -83,9 +97,10 @@ export async function PATCH(
     // Verify ownership
     const { data: existingQr, error: fetchError } = await supabase
       .from('qr_codes')
-      .select('id, owner_id, mode')
+      .select('id, owner_id, mode, destination_url, name, is_active, analytics_enabled')
       .eq('id', id)
       .eq('owner_id', user.id)
+      .is('deleted_at', null)
       .single();
 
     if (fetchError || !existingQr) {
@@ -153,10 +168,11 @@ export async function PATCH(
       const { error: updateError } = await supabase
         .from('qr_codes')
         .update(qrUpdate)
-        .eq('id', id);
+        .eq('id', id)
+        .eq('owner_id', user.id);
 
       if (updateError) {
-        console.error('Failed to update QR:', updateError);
+        console.error('Failed to update QR:', updateError.message);
         return NextResponse.json(
           { error: 'Failed to update QR code' },
           { status: 500 }
@@ -164,7 +180,7 @@ export async function PATCH(
       }
     }
 
-    // Apply style update
+    // Apply style update (also filter by owner via qr_id relationship)
     if (Object.keys(styleUpdate).length > 0) {
       const { error: styleError } = await supabase
         .from('qr_styles')
@@ -172,13 +188,29 @@ export async function PATCH(
         .eq('qr_id', id);
 
       if (styleError) {
-        console.error('Failed to update style:', styleError);
+        console.error('Failed to update style:', styleError.message);
         return NextResponse.json(
           { error: 'Failed to update style' },
           { status: 500 }
         );
       }
     }
+
+    // Write audit log (fire-and-forget)
+    const action = determineUpdateAction(qrUpdate, styleUpdate);
+    writeAuditLog({
+      qrId: id,
+      actorId: user.id,
+      action,
+      previousValue: {
+        destination_url: existingQr.destination_url,
+        name: existingQr.name,
+        is_active: existingQr.is_active,
+      },
+      newValue: { ...qrUpdate, ...styleUpdate },
+      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || null,
+      userAgent: request.headers.get('user-agent') || null,
+    });
 
     // Fetch updated QR
     const { data: updatedQr } = await supabase
@@ -192,7 +224,7 @@ export async function PATCH(
     });
 
   } catch (error) {
-    console.error('API error:', error);
+    console.error('API error:', error instanceof Error ? error.message : 'unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -201,13 +233,22 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/qr/[id] - Delete a QR code
+ * DELETE /api/qr/[id] - Soft-delete a QR code
+ *
+ * Sets deleted_at timestamp and deactivates the QR code rather than
+ * permanently removing it. This enables data recovery and compliance.
  */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // Validate UUID format
+  if (!isValidUUID(id)) {
+    return NextResponse.json({ error: 'Invalid QR code ID' }, { status: 400 });
+  }
+
   const supabase = await createClient();
 
   // Check authentication
@@ -226,14 +267,27 @@ export async function DELETE(
   }
 
   try {
+    // Write audit log before soft-delete (fire-and-forget)
+    writeAuditLog({
+      qrId: id,
+      actorId: user.id,
+      action: 'deleted',
+      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || null,
+      userAgent: request.headers.get('user-agent') || null,
+    });
+
+    // Soft delete: set deleted_at and deactivate
     const { error } = await supabase
       .from('qr_codes')
-      .delete()
+      .update({
+        deleted_at: new Date().toISOString(),
+        is_active: false,
+      })
       .eq('id', id)
       .eq('owner_id', user.id);
 
     if (error) {
-      console.error('Failed to delete QR:', error);
+      console.error('Failed to delete QR:', error.message);
       return NextResponse.json(
         { error: 'Failed to delete QR code' },
         { status: 500 }
@@ -246,7 +300,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('API error:', error);
+    console.error('API error:', error instanceof Error ? error.message : 'unknown error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

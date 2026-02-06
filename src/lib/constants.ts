@@ -11,8 +11,11 @@ export const QR_DEFAULTS = {
   MAX_QUIET_ZONE: 10,
   DEFAULT_SIZE: 512,
   SIZES: [256, 512, 1024, 2048] as const,
-  MAX_LOGO_RATIO: 0.25,
-  WARN_LOGO_RATIO: 0.20,
+  MAX_LOGO_RATIO: 0.30,
+  MIN_LOGO_RATIO: 0.15,
+  DEFAULT_LOGO_RATIO: 0.20,
+  WARN_LOGO_RATIO: 0.25,
+  LOGO_MODE: 'none' as const,
 };
 
 // URL validation
