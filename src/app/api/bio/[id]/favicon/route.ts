@@ -96,7 +96,7 @@ export async function POST(
     }
 
     // Upload new favicon (upsert = overwrite if same path)
-    const buffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(await file.arrayBuffer());
     const { error: uploadError } = await supabase.storage
       .from('bio-avatars')
       .upload(storagePath, buffer, {
@@ -107,7 +107,7 @@ export async function POST(
     if (uploadError) {
       console.error('Favicon upload failed:', uploadError.message);
       return NextResponse.json(
-        { error: 'Failed to upload favicon' },
+        { error: `Failed to upload favicon: ${uploadError.message}` },
         { status: 500 }
       );
     }
