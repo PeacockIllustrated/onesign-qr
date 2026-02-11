@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { QrCode, LayoutDashboard, Plus, Settings, LogOut } from 'lucide-react';
+import { QrCode, LayoutDashboard, Plus, Settings, LogOut, Link2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { ToastProvider } from '@/components/ui';
@@ -37,6 +37,9 @@ export default async function AppLayout({
             </NavLink>
             <NavLink href="/app/new" icon={<Plus className="h-4 w-4" />}>
               create qr
+            </NavLink>
+            <NavLink href="/app/bio" icon={<Link2 className="h-4 w-4" />}>
+              bio page
             </NavLink>
           </nav>
 

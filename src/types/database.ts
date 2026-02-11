@@ -12,6 +12,227 @@ export type Json =
   | Json[];
 
 export interface Database {
+  public: {
+    Tables: {
+      bio_link_pages: {
+        Row: {
+          id: string;
+          owner_id: string;
+          title: string;
+          bio: string | null;
+          slug: string;
+          avatar_storage_path: string | null;
+          theme: 'minimal' | 'midnight' | 'gradient-sunset' | 'gradient-ocean' | 'neon';
+          custom_bg_color: string | null;
+          custom_text_color: string | null;
+          custom_accent_color: string | null;
+          button_style: 'filled' | 'outline' | 'shadow';
+          is_active: boolean;
+          analytics_enabled: boolean;
+          total_views: number;
+          last_viewed_at: string | null;
+          qr_code_id: string | null;
+          deleted_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id: string;
+          title: string;
+          bio?: string | null;
+          slug: string;
+          avatar_storage_path?: string | null;
+          theme?: 'minimal' | 'midnight' | 'gradient-sunset' | 'gradient-ocean' | 'neon';
+          custom_bg_color?: string | null;
+          custom_text_color?: string | null;
+          custom_accent_color?: string | null;
+          button_style?: 'filled' | 'outline' | 'shadow';
+          is_active?: boolean;
+          analytics_enabled?: boolean;
+          total_views?: number;
+          last_viewed_at?: string | null;
+          qr_code_id?: string | null;
+          deleted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          owner_id?: string;
+          title?: string;
+          bio?: string | null;
+          slug?: string;
+          avatar_storage_path?: string | null;
+          theme?: 'minimal' | 'midnight' | 'gradient-sunset' | 'gradient-ocean' | 'neon';
+          custom_bg_color?: string | null;
+          custom_text_color?: string | null;
+          custom_accent_color?: string | null;
+          button_style?: 'filled' | 'outline' | 'shadow';
+          is_active?: boolean;
+          analytics_enabled?: boolean;
+          total_views?: number;
+          last_viewed_at?: string | null;
+          qr_code_id?: string | null;
+          deleted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      bio_link_items: {
+        Row: {
+          id: string;
+          page_id: string;
+          title: string;
+          url: string;
+          icon: string | null;
+          sort_order: number;
+          is_enabled: boolean;
+          total_clicks: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          page_id: string;
+          title: string;
+          url: string;
+          icon?: string | null;
+          sort_order?: number;
+          is_enabled?: boolean;
+          total_clicks?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          page_id?: string;
+          title?: string;
+          url?: string;
+          icon?: string | null;
+          sort_order?: number;
+          is_enabled?: boolean;
+          total_clicks?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      bio_link_view_events: {
+        Row: {
+          id: string;
+          page_id: string;
+          viewed_at: string;
+          country_code: string | null;
+          region: string | null;
+          device_type: 'mobile' | 'tablet' | 'desktop' | 'unknown';
+          os_family: string | null;
+          browser_family: string | null;
+          referrer_domain: string | null;
+          ip_hash: string | null;
+        };
+        Insert: {
+          id?: string;
+          page_id: string;
+          viewed_at?: string;
+          country_code?: string | null;
+          region?: string | null;
+          device_type?: 'mobile' | 'tablet' | 'desktop' | 'unknown';
+          os_family?: string | null;
+          browser_family?: string | null;
+          referrer_domain?: string | null;
+          ip_hash?: string | null;
+        };
+        Update: {
+          id?: string;
+          page_id?: string;
+          viewed_at?: string;
+          country_code?: string | null;
+          region?: string | null;
+          device_type?: 'mobile' | 'tablet' | 'desktop' | 'unknown';
+          os_family?: string | null;
+          browser_family?: string | null;
+          referrer_domain?: string | null;
+          ip_hash?: string | null;
+        };
+      };
+      bio_link_click_events: {
+        Row: {
+          id: string;
+          item_id: string;
+          page_id: string;
+          clicked_at: string;
+          country_code: string | null;
+          device_type: 'mobile' | 'tablet' | 'desktop' | 'unknown';
+          ip_hash: string | null;
+        };
+        Insert: {
+          id?: string;
+          item_id: string;
+          page_id: string;
+          clicked_at?: string;
+          country_code?: string | null;
+          device_type?: 'mobile' | 'tablet' | 'desktop' | 'unknown';
+          ip_hash?: string | null;
+        };
+        Update: {
+          id?: string;
+          item_id?: string;
+          page_id?: string;
+          clicked_at?: string;
+          country_code?: string | null;
+          device_type?: 'mobile' | 'tablet' | 'desktop' | 'unknown';
+          ip_hash?: string | null;
+        };
+      };
+      bio_link_audit_log: {
+        Row: {
+          id: string;
+          page_id: string;
+          actor_id: string | null;
+          action: string;
+          previous_value: Json | null;
+          new_value: Json | null;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          page_id: string;
+          actor_id?: string | null;
+          action: string;
+          previous_value?: Json | null;
+          new_value?: Json | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          page_id?: string;
+          actor_id?: string | null;
+          action?: string;
+          previous_value?: Json | null;
+          new_value?: Json | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+      };
+    };
+    Views: {};
+    Functions: {
+      generate_bio_unique_slug: {
+        Args: { length?: number };
+        Returns: string;
+      };
+    };
+    Enums: {
+      bio_link_theme: 'minimal' | 'midnight' | 'gradient-sunset' | 'gradient-ocean' | 'neon';
+      bio_link_button_style: 'filled' | 'outline' | 'shadow';
+      bio_link_audit_action: 'created' | 'updated' | 'link_added' | 'link_updated' | 'link_removed' | 'link_reordered' | 'theme_changed' | 'deactivated' | 'reactivated' | 'deleted';
+    };
+  };
   qr_code: {
     Tables: {
       codes: {

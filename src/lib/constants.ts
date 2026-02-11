@@ -39,6 +39,8 @@ export const RATE_LIMITS = {
   API_GENERAL: 60,
   REDIRECT: 1000,
   URL_VALIDATE: 30,
+  BIO_CREATE: 10,
+  BIO_TRACK: 1000,
 };
 
 // Slug configuration
@@ -66,3 +68,24 @@ export const PDF_PRESETS = {
   'sticker-100mm': { width: 100, height: 100, name: '100mm Sticker' },
   'a4': { width: 210, height: 297, name: 'A4 Page' },
 } as const;
+
+// Bio-link page defaults
+export const BIO_DEFAULTS = {
+  MAX_LINKS_PER_PAGE: 10,
+  MAX_BIO_LENGTH: 300,
+  MAX_TITLE_LENGTH: 100,
+  SLUG_MIN_LENGTH: 3,
+  SLUG_MAX_LENGTH: 40,
+};
+
+// Bio-link themes
+export const BIO_THEMES = [
+  'minimal',
+  'midnight',
+  'gradient-sunset',
+  'gradient-ocean',
+  'neon',
+] as const;
+
+// Bio-link button styles
+export const BIO_BUTTON_STYLES = ['filled', 'outline', 'shadow'] as const;

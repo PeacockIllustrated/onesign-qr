@@ -104,6 +104,8 @@ const upstashLimiters = {
   api: createUpstashLimiter(RATE_LIMITS.API_GENERAL),
   redirect: createUpstashLimiter(RATE_LIMITS.REDIRECT),
   urlValidate: createUpstashLimiter(RATE_LIMITS.URL_VALIDATE),
+  bioCreate: createUpstashLimiter(RATE_LIMITS.BIO_CREATE),
+  bioTrack: createUpstashLimiter(RATE_LIMITS.BIO_TRACK),
 };
 
 // ---------------------------------------------------------------------------
@@ -190,6 +192,26 @@ export function checkApiLimitAsync(identifier: string) {
 /** Async rate limit for redirect handler — uses Upstash Redis in production */
 export function checkRedirectLimitAsync(identifier: string) {
   return checkLimit('redirect', identifier, RATE_LIMITS.REDIRECT);
+}
+
+/** Rate limit for bio page creation (10/min) — sync/in-memory */
+export function checkBioCreateLimit(identifier: string): RateLimitResult {
+  return checkMemoryRateLimit(`bio-create:${identifier}`, RATE_LIMITS.BIO_CREATE);
+}
+
+/** Rate limit for bio click tracking (1000/min) — sync/in-memory */
+export function checkBioTrackLimit(identifier: string): RateLimitResult {
+  return checkMemoryRateLimit(`bio-track:${identifier}`, RATE_LIMITS.BIO_TRACK);
+}
+
+/** Async rate limit for bio page creation — uses Upstash Redis in production */
+export function checkBioCreateLimitAsync(identifier: string) {
+  return checkLimit('bioCreate', identifier, RATE_LIMITS.BIO_CREATE);
+}
+
+/** Async rate limit for bio click tracking — uses Upstash Redis in production */
+export function checkBioTrackLimitAsync(identifier: string) {
+  return checkLimit('bioTrack', identifier, RATE_LIMITS.BIO_TRACK);
 }
 
 // ---------------------------------------------------------------------------

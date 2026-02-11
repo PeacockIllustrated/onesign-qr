@@ -38,7 +38,14 @@ export async function middleware(request: NextRequest) {
     if (origin && appUrl) {
       try {
         const allowedOrigin = new URL(appUrl).origin;
-        if (origin !== allowedOrigin) {
+        // In development, also allow localhost origins so the CSRF check
+        // doesn't reject requests when NEXT_PUBLIC_APP_URL points to a
+        // production domain.
+        const isLocalOrigin =
+          process.env.NODE_ENV === 'development' &&
+          new URL(origin).hostname === 'localhost';
+
+        if (origin !== allowedOrigin && !isLocalOrigin) {
           return NextResponse.json(
             { error: 'CSRF validation failed' },
             { status: 403, headers: { 'x-request-id': requestId } }
@@ -55,7 +62,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // -----------------------------------------------------------------------
-  // Rate limit redirect handler
+  // Rate limit redirect handler (/r/ for QR redirects)
   // -----------------------------------------------------------------------
   if (pathname.startsWith('/r/')) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
@@ -75,6 +82,31 @@ export async function middleware(request: NextRequest) {
     }
 
     // Don't require auth for redirects
+    response.headers.set('x-request-id', requestId);
+    return response;
+  }
+
+  // -----------------------------------------------------------------------
+  // Rate limit bio-link pages (/p/ for public bio pages)
+  // -----------------------------------------------------------------------
+  if (pathname.startsWith('/p/')) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+               request.headers.get('x-real-ip') ||
+               'unknown';
+
+    const rateLimit = checkRedirectLimit(ip);
+
+    if (!rateLimit.success) {
+      return new NextResponse('Too Many Requests', {
+        status: 429,
+        headers: {
+          ...getRateLimitHeaders(rateLimit),
+          'x-request-id': requestId,
+        },
+      });
+    }
+
+    // Don't require auth for public bio pages
     response.headers.set('x-request-id', requestId);
     return response;
   }
