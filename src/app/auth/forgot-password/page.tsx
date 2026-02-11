@@ -1,11 +1,10 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
-import { QrCode, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { QrCode, Mail, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { signInSchema } from '@/validations/auth';
+import { forgotPasswordSchema } from '@/validations/auth';
 import {
   Button,
   Input,
@@ -17,49 +16,24 @@ import {
   CardContent,
 } from '@/components/ui';
 
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
-  );
-}
-
-function LoginForm() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [message, setMessage] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
 
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
 
-  // Handle redirect query params (from callback or signup)
-  useEffect(() => {
-    const error = searchParams.get('error');
-    const msg = searchParams.get('message');
-
-    if (error === 'auth') {
-      setMessage({
-        type: 'error',
-        text: 'Authentication failed. Please try again.',
-      });
-    } else if (msg) {
-      setMessage({ type: 'success', text: msg });
-    }
-  }, [searchParams]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage(null);
 
     // Validate form
-    const parsed = signInSchema.safeParse({ email, password });
+    const parsed = forgotPasswordSchema.safeParse({ email });
     if (!parsed.success) {
       const firstError =
         parsed.error.issues[0]?.message || 'Invalid input';
@@ -69,25 +43,12 @@ function LoginForm() {
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: parsed.data.email,
-        password: parsed.data.password,
+      await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
       });
 
-      if (error) {
-        // Special-case: email not confirmed
-        if (error.message.toLowerCase().includes('email not confirmed')) {
-          setMessage({
-            type: 'error',
-            text: 'Please check your email and confirm your account before signing in.',
-          });
-        } else {
-          setMessage({ type: 'error', text: error.message });
-        }
-      } else {
-        router.push('/app');
-        router.refresh();
-      }
+      // Always show success to prevent user enumeration
+      setIsSubmitted(true);
     } catch {
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     } finally {
@@ -95,6 +56,44 @@ function LoginForm() {
     }
   };
 
+  // Success state — show confirmation
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <Link
+          href="/"
+          className="absolute top-4 left-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          back to home
+        </Link>
+
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-sm bg-primary text-primary-foreground">
+                <Mail className="h-6 w-6" />
+              </div>
+            </div>
+            <CardTitle>check your email</CardTitle>
+            <CardDescription>
+              If an account exists for {email}, we've sent a password reset
+              link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/auth/login" className="block">
+              <Button variant="outline" className="w-full">
+                back to sign in
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Form state
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <Link
@@ -112,13 +111,13 @@ function LoginForm() {
               <QrCode className="h-6 w-6" />
             </div>
           </div>
-          <CardTitle>welcome back</CardTitle>
+          <CardTitle>forgot password</CardTitle>
           <CardDescription>
-            Sign in with your email to continue
+            Enter your email and we'll send you a reset link
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleResetRequest} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">email</Label>
               <div className="relative">
@@ -129,31 +128,6 @@ function LoginForm() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">password</Label>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-xs text-primary hover:underline"
-                >
-                  forgot password?
-                </Link>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
                   required
                   disabled={isLoading}
@@ -174,17 +148,16 @@ function LoginForm() {
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'signing in...' : 'sign in'}
+              {isLoading ? 'sending...' : 'send reset link'}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            don't have an account?{' '}
             <Link
-              href="/auth/signup"
+              href="/auth/login"
               className="text-primary hover:underline"
             >
-              sign up
+              back to sign in
             </Link>
           </p>
         </CardContent>

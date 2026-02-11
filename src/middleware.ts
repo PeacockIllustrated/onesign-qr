@@ -38,12 +38,13 @@ export async function middleware(request: NextRequest) {
     if (origin && appUrl) {
       try {
         const allowedOrigin = new URL(appUrl).origin;
-        // In development, also allow localhost origins so the CSRF check
+        // In development, also allow local origins so the CSRF check
         // doesn't reject requests when NEXT_PUBLIC_APP_URL points to a
         // production domain.
+        const originHostname = new URL(origin).hostname;
         const isLocalOrigin =
           process.env.NODE_ENV === 'development' &&
-          new URL(origin).hostname === 'localhost';
+          (originHostname === 'localhost' || originHostname === '127.0.0.1' || originHostname.startsWith('192.168.'));
 
         if (origin !== allowedOrigin && !isLocalOrigin) {
           return NextResponse.json(
@@ -154,7 +155,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Auth routes - redirect to app if already logged in
-  if (pathname.startsWith('/auth') && user) {
+  if (pathname.startsWith('/auth') && !pathname.startsWith('/auth/reset-password') && user) {
     return NextResponse.redirect(new URL('/app', request.url));
   }
 

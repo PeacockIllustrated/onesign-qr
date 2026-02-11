@@ -283,7 +283,7 @@ export function BioLinkEditor({ pageId, links, onLinksChange }: BioLinkEditorPro
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            order: reordered.map((l, i) => ({ id: l.id, sort_order: i })),
+            items: reordered.map((l, i) => ({ id: l.id, sort_order: i })),
           }),
         });
         if (!res.ok) throw new Error('Failed to reorder links');

@@ -147,6 +147,7 @@ export interface BioThemeVars {
   '--bio-bg-gradient'?: string;
   '--bio-text': string;
   '--bio-text-secondary': string;
+  '--bio-accent': string;
   '--bio-button-bg': string;
   '--bio-button-text': string;
   '--bio-button-border': string;

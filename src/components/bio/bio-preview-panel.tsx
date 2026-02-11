@@ -75,7 +75,7 @@ export function BioPreviewPanel({
             className="mb-3 flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2"
             style={{
               borderColor: themeVars['--bio-avatar-ring'],
-              backgroundColor: themeVars['--bio-button-bg'],
+              backgroundColor: themeVars['--bio-accent'],
             }}
           >
             {avatarUrl ? (
@@ -87,7 +87,7 @@ export function BioPreviewPanel({
             ) : (
               <span
                 className="text-xl font-bold"
-                style={{ color: themeVars['--bio-button-text'] }}
+                style={{ color: themeVars['--bio-bg'] }}
               >
                 {initial}
               </span>

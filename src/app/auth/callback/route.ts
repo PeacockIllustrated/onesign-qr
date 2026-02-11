@@ -18,7 +18,7 @@ function getSafeRedirectPath(next: string | null): string {
   if (next.startsWith('//')) return DEFAULT;
 
   // Only allow known safe path prefixes
-  const ALLOWED_PREFIXES = ['/app'];
+  const ALLOWED_PREFIXES = ['/app', '/auth/reset-password'];
   if (!ALLOWED_PREFIXES.some((prefix) => next.startsWith(prefix))) return DEFAULT;
 
   // Strip control characters that could be used for header injection

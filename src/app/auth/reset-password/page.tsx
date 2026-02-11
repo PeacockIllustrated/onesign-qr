@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { QrCode, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { QrCode, Lock, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { signInSchema } from '@/validations/auth';
+import { resetPasswordSchema } from '@/validations/auth';
 import {
   Button,
   Input,
@@ -17,17 +17,9 @@ import {
   CardContent,
 } from '@/components/ui';
 
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
-  );
-}
-
-function LoginForm() {
-  const [email, setEmail] = useState('');
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: 'success' | 'error';
@@ -35,31 +27,18 @@ function LoginForm() {
   } | null>(null);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
 
-  // Handle redirect query params (from callback or signup)
-  useEffect(() => {
-    const error = searchParams.get('error');
-    const msg = searchParams.get('message');
-
-    if (error === 'auth') {
-      setMessage({
-        type: 'error',
-        text: 'Authentication failed. Please try again.',
-      });
-    } else if (msg) {
-      setMessage({ type: 'success', text: msg });
-    }
-  }, [searchParams]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage(null);
 
     // Validate form
-    const parsed = signInSchema.safeParse({ email, password });
+    const parsed = resetPasswordSchema.safeParse({
+      password,
+      confirmPassword,
+    });
     if (!parsed.success) {
       const firstError =
         parsed.error.issues[0]?.message || 'Invalid input';
@@ -69,25 +48,37 @@ function LoginForm() {
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: parsed.data.email,
+      const { error } = await supabase.auth.updateUser({
         password: parsed.data.password,
       });
 
       if (error) {
-        // Special-case: email not confirmed
-        if (error.message.toLowerCase().includes('email not confirmed')) {
+        // Handle expired or missing recovery session
+        if (
+          error.message.toLowerCase().includes('session') ||
+          error.message.toLowerCase().includes('token') ||
+          error.message.toLowerCase().includes('auth')
+        ) {
           setMessage({
             type: 'error',
-            text: 'Please check your email and confirm your account before signing in.',
+            text: 'Your reset link may have expired. Please request a new one.',
           });
         } else {
           setMessage({ type: 'error', text: error.message });
         }
-      } else {
+        return;
+      }
+
+      setMessage({
+        type: 'success',
+        text: 'Password updated successfully. Redirecting...',
+      });
+
+      // Short delay so the user sees the success message
+      setTimeout(() => {
         router.push('/app');
         router.refresh();
-      }
+      }, 1000);
     } catch {
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     } finally {
@@ -112,40 +103,15 @@ function LoginForm() {
               <QrCode className="h-6 w-6" />
             </div>
           </div>
-          <CardTitle>welcome back</CardTitle>
+          <CardTitle>set new password</CardTitle>
           <CardDescription>
-            Sign in with your email to continue
+            Enter your new password below
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handlePasswordReset} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">password</Label>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-xs text-primary hover:underline"
-                >
-                  forgot password?
-                </Link>
-              </div>
+              <Label htmlFor="password">new password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -154,6 +120,26 @@ function LoginForm() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">confirm password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pl-10"
                   required
                   disabled={isLoading}
@@ -170,23 +156,22 @@ function LoginForm() {
                 }`}
               >
                 {message.text}
+                {message.type === 'error' &&
+                  message.text.includes('expired') && (
+                    <Link
+                      href="/auth/forgot-password"
+                      className="block mt-2 text-primary hover:underline"
+                    >
+                      Request a new reset link
+                    </Link>
+                  )}
               </div>
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'signing in...' : 'sign in'}
+              {isLoading ? 'updating...' : 'update password'}
             </Button>
           </form>
-
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            don't have an account?{' '}
-            <Link
-              href="/auth/signup"
-              className="text-primary hover:underline"
-            >
-              sign up
-            </Link>
-          </p>
         </CardContent>
       </Card>
     </div>

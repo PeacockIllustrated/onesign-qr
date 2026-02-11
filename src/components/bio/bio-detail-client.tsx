@@ -26,6 +26,7 @@ import {
 } from '@/components/ui';
 import { BioThemePicker } from '@/components/bio/bio-theme-picker';
 import { BioColorCustomizer } from '@/components/bio/bio-color-customizer';
+import { BioAvatarUpload } from '@/components/bio/bio-avatar-upload';
 import { BioLinkEditor } from '@/components/bio/bio-link-editor';
 import { formatDate, formatNumber } from '@/lib/utils';
 import type {
@@ -62,6 +63,15 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
     page.custom_accent_color
   );
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Avatar state
+  const buildAvatarUrl = (path: string | null) =>
+    path
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${path}`
+      : null;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    buildAvatarUrl(page.avatar_storage_path)
+  );
 
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
 
@@ -209,6 +219,18 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
       <TabsContent value="appearance">
         <Card>
           <CardContent className="pt-6 space-y-6">
+            <div className="space-y-2">
+              <Label>profile image</Label>
+              <BioAvatarUpload
+                pageId={page.id}
+                currentAvatarUrl={avatarUrl}
+                onAvatarChange={(url) => {
+                  setAvatarUrl(url);
+                  router.refresh();
+                }}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>theme</Label>
               <BioThemePicker value={theme} onChange={setTheme} />
