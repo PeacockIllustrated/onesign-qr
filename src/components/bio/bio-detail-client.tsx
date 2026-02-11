@@ -92,6 +92,13 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
     buildAvatarUrl(page.avatar_storage_path)
   );
 
+  // Favicon state
+  const [faviconUrl, setFaviconUrl] = useState<string | null>(
+    page.favicon_storage_path
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.favicon_storage_path}`
+      : null
+  );
+
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
 
   const copyToClipboard = async (text: string) => {
@@ -292,6 +299,11 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
                 avatarUrl={avatarUrl}
                 onAvatarChange={(url) => {
                   setAvatarUrl(url);
+                  router.refresh();
+                }}
+                faviconUrl={faviconUrl}
+                onFaviconChange={(url) => {
+                  setFaviconUrl(url);
                   router.refresh();
                 }}
               />

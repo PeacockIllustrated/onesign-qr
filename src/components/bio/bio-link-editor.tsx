@@ -49,14 +49,14 @@ function LinkIconPreview({ link }: { link: BioLinkItem }) {
     );
   }
 
+  let iconElement: React.ReactNode = null;
+
   if (link.icon_type === 'emoji' || (!link.icon_type && link.icon)) {
-    return link.icon ? (
+    iconElement = link.icon ? (
       <span className="text-base leading-none">{link.icon}</span>
     ) : null;
-  }
-
-  if (link.icon_type === 'image' && link.icon_url) {
-    return (
+  } else if (link.icon_type === 'image' && link.icon_url) {
+    iconElement = (
       <img
         src={link.icon_url}
         alt=""
@@ -66,10 +66,8 @@ function LinkIconPreview({ link }: { link: BioLinkItem }) {
         }}
       />
     );
-  }
-
-  if (link.icon_type === 'favicon' && link.icon_url) {
-    return (
+  } else if (link.icon_type === 'favicon' && link.icon_url) {
+    iconElement = (
       <img
         src={link.icon_url}
         alt=""
@@ -81,7 +79,21 @@ function LinkIconPreview({ link }: { link: BioLinkItem }) {
     );
   }
 
-  return null;
+  if (!iconElement) return null;
+
+  // Wrap in background circle if icon_bg_color is set
+  if (link.icon_bg_color) {
+    return (
+      <span
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: link.icon_bg_color }}
+      >
+        {iconElement}
+      </span>
+    );
+  }
+
+  return <>{iconElement}</>;
 }
 
 // ---------------------------------------------------------------------------

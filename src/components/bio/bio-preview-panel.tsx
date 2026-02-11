@@ -19,6 +19,7 @@ interface PreviewLink {
   icon: string | null;
   icon_type?: BioLinkIconType | null;
   icon_url?: string | null;
+  icon_bg_color?: string | null;
   show_icon?: boolean;
   is_enabled: boolean;
 }
@@ -43,9 +44,11 @@ interface BioPreviewPanelProps {
 function PreviewLinkIcon({ link }: { link: PreviewLink }) {
   if (link.show_icon === false) return null;
 
+  let iconElement: React.ReactNode = null;
+
   // Favicon or image
   if ((link.icon_type === 'favicon' || link.icon_type === 'image') && link.icon_url) {
-    return (
+    iconElement = (
       <img
         src={link.icon_url}
         alt=""
@@ -55,14 +58,26 @@ function PreviewLinkIcon({ link }: { link: PreviewLink }) {
         }}
       />
     );
+  } else if (link.icon_type === 'emoji' || (!link.icon_type && link.icon)) {
+    // Emoji (explicit or legacy)
+    iconElement = link.icon ? <span className="text-xs shrink-0">{link.icon}</span> : null;
   }
 
-  // Emoji (explicit or legacy)
-  if (link.icon_type === 'emoji' || (!link.icon_type && link.icon)) {
-    return link.icon ? <span className="text-xs shrink-0">{link.icon}</span> : null;
+  if (!iconElement) return null;
+
+  // Wrap in background circle if icon_bg_color is set
+  if (link.icon_bg_color) {
+    return (
+      <span
+        className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: link.icon_bg_color }}
+      >
+        {iconElement}
+      </span>
+    );
   }
 
-  return null;
+  return <>{iconElement}</>;
 }
 
 export function BioPreviewPanel({

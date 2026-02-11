@@ -15,6 +15,7 @@ export interface LinkIconFormData {
   icon: string | null;
   icon_type: BioLinkIconType | null;
   icon_url: string | null;
+  icon_bg_color: string | null;
   show_icon: boolean;
 }
 
@@ -48,6 +49,9 @@ export function BioLinkItemForm({ link, onSave, onCancel }: BioLinkItemFormProps
     link.icon_type === 'favicon' ? (link.icon_url ?? '') : ''
   );
   const [isFetchingFavicon, setIsFetchingFavicon] = useState(false);
+
+  // Icon background state
+  const [iconBgColor, setIconBgColor] = useState(link.icon_bg_color ?? '');
 
   const titleTrimmed = title.trim();
   const urlTrimmed = url.trim();
@@ -87,6 +91,8 @@ export function BioLinkItemForm({ link, onSave, onCancel }: BioLinkItemFormProps
 
     let iconData: LinkIconFormData;
 
+    const bgColor = iconBgColor.trim() || null;
+
     switch (iconMode) {
       case 'emoji':
         iconData = {
@@ -95,6 +101,7 @@ export function BioLinkItemForm({ link, onSave, onCancel }: BioLinkItemFormProps
           icon: emoji.trim() || null,
           icon_type: emoji.trim() ? 'emoji' : null,
           icon_url: null,
+          icon_bg_color: bgColor,
           show_icon: true,
         };
         break;
@@ -105,6 +112,7 @@ export function BioLinkItemForm({ link, onSave, onCancel }: BioLinkItemFormProps
           icon: null,
           icon_type: imageUrl.trim() ? 'image' : null,
           icon_url: imageUrl.trim() || null,
+          icon_bg_color: bgColor,
           show_icon: true,
         };
         break;
@@ -115,6 +123,7 @@ export function BioLinkItemForm({ link, onSave, onCancel }: BioLinkItemFormProps
           icon: null,
           icon_type: faviconUrl ? 'favicon' : null,
           icon_url: faviconUrl || null,
+          icon_bg_color: bgColor,
           show_icon: true,
         };
         break;
@@ -125,6 +134,7 @@ export function BioLinkItemForm({ link, onSave, onCancel }: BioLinkItemFormProps
           icon: null,
           icon_type: null,
           icon_url: null,
+          icon_bg_color: null,
           show_icon: false,
         };
     }
@@ -293,6 +303,40 @@ export function BioLinkItemForm({ link, onSave, onCancel }: BioLinkItemFormProps
             )}
           </div>
         </div>
+
+        {/* Icon background color */}
+        {iconMode !== 'none' && (
+          <div className="flex items-center gap-3">
+            <Label className="shrink-0 text-xs">Background</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={iconBgColor || '#ffffff'}
+                onChange={(e) => setIconBgColor(e.target.value)}
+                className="h-7 w-7 cursor-pointer rounded border border-border bg-transparent p-0.5"
+              />
+              <Input
+                value={iconBgColor}
+                onChange={(e) => setIconBgColor(e.target.value)}
+                placeholder="#ffffff"
+                className="max-w-[100px] text-xs"
+                maxLength={7}
+              />
+              {iconBgColor && (
+                <button
+                  type="button"
+                  onClick={() => setIconBgColor('')}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              Improves legibility on dark/light backgrounds
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Actions */}

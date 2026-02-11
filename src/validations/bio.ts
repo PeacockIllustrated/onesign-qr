@@ -108,6 +108,7 @@ export const createBioLinkSchema = z.object({
     .optional(),
   icon_type: z.enum(iconTypes).nullable().optional(),
   icon_url: z.string().max(2048, 'Icon URL is too long').nullable().optional(),
+  icon_bg_color: hexColor.nullable().optional(),
   show_icon: z.boolean().default(true),
   is_enabled: z.boolean().default(true),
 });
@@ -132,6 +133,7 @@ export const updateBioLinkSchema = z.object({
     .optional(),
   icon_type: z.enum(iconTypes).nullable().optional(),
   icon_url: z.string().max(2048, 'Icon URL is too long').nullable().optional(),
+  icon_bg_color: hexColor.nullable().optional(),
   show_icon: z.boolean().optional(),
   is_enabled: z.boolean().optional(),
 });

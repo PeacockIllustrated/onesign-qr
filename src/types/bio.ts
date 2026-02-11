@@ -145,6 +145,7 @@ export interface BioLinkPage {
   border_radius: BioBorderRadius | null;
   spacing: BioSpacing | null;
   background_variant: string | null;
+  favicon_storage_path: string | null;
   is_active: boolean;
   analytics_enabled: boolean;
   total_views: number;
@@ -166,6 +167,7 @@ export interface BioLinkItem {
   icon: string | null;
   icon_type: BioLinkIconType | null;
   icon_url: string | null;
+  icon_bg_color: string | null;
   show_icon: boolean;
   sort_order: number;
   is_enabled: boolean;

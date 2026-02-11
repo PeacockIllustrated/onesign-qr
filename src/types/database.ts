@@ -32,6 +32,7 @@ export interface Database {
           border_radius: string | null;
           spacing: string | null;
           background_variant: string | null;
+          favicon_storage_path: string | null;
           is_active: boolean;
           analytics_enabled: boolean;
           total_views: number;
@@ -58,6 +59,7 @@ export interface Database {
           border_radius?: string | null;
           spacing?: string | null;
           background_variant?: string | null;
+          favicon_storage_path?: string | null;
           is_active?: boolean;
           analytics_enabled?: boolean;
           total_views?: number;
@@ -84,6 +86,7 @@ export interface Database {
           border_radius?: string | null;
           spacing?: string | null;
           background_variant?: string | null;
+          favicon_storage_path?: string | null;
           is_active?: boolean;
           analytics_enabled?: boolean;
           total_views?: number;
@@ -103,6 +106,7 @@ export interface Database {
           icon: string | null;
           icon_type: 'emoji' | 'image' | 'favicon' | null;
           icon_url: string | null;
+          icon_bg_color: string | null;
           show_icon: boolean;
           sort_order: number;
           is_enabled: boolean;
@@ -118,6 +122,7 @@ export interface Database {
           icon?: string | null;
           icon_type?: 'emoji' | 'image' | 'favicon' | null;
           icon_url?: string | null;
+          icon_bg_color?: string | null;
           show_icon?: boolean;
           sort_order?: number;
           is_enabled?: boolean;
@@ -133,6 +138,7 @@ export interface Database {
           icon?: string | null;
           icon_type?: 'emoji' | 'image' | 'favicon' | null;
           icon_url?: string | null;
+          icon_bg_color?: string | null;
           show_icon?: boolean;
           sort_order?: number;
           is_enabled?: boolean;

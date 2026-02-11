@@ -8,6 +8,7 @@ import { BioBackgroundPicker } from '@/components/bio/bio-background-picker';
 import { BioBorderRadiusPicker } from '@/components/bio/bio-radius-picker';
 import { BioSpacingPicker } from '@/components/bio/bio-spacing-picker';
 import { BioAvatarUpload } from '@/components/bio/bio-avatar-upload';
+import { BioFaviconUpload } from '@/components/bio/bio-favicon-upload';
 import type {
   BioLinkTheme,
   BioSpacing,
@@ -49,6 +50,10 @@ interface BioDesignControlsProps {
   pageId: string;
   avatarUrl: string | null;
   onAvatarChange: (url: string | null) => void;
+
+  // Favicon
+  faviconUrl: string | null;
+  onFaviconChange: (url: string | null) => void;
 }
 
 export function BioDesignControls({
@@ -73,12 +78,14 @@ export function BioDesignControls({
   pageId,
   avatarUrl,
   onAvatarChange,
+  faviconUrl,
+  onFaviconChange,
 }: BioDesignControlsProps) {
   return (
     <div className="space-y-8">
       {/* Profile Image */}
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">profile image</Label>
+        <Label className="text-sm font-semibold">Profile Image</Label>
         <BioAvatarUpload
           pageId={pageId}
           currentAvatarUrl={avatarUrl}
@@ -86,15 +93,25 @@ export function BioDesignControls({
         />
       </section>
 
+      {/* Page Favicon */}
+      <section className="space-y-3">
+        <Label className="text-sm font-semibold">Page Favicon</Label>
+        <BioFaviconUpload
+          pageId={pageId}
+          currentFaviconUrl={faviconUrl}
+          onFaviconChange={onFaviconChange}
+        />
+      </section>
+
       {/* Theme Selection */}
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">theme</Label>
+        <Label className="text-sm font-semibold">Theme</Label>
         <BioThemeGallery value={theme} onChange={onThemeChange} />
       </section>
 
       {/* Fonts */}
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">fonts</Label>
+        <Label className="text-sm font-semibold">Fonts</Label>
         <div className="grid gap-4 sm:grid-cols-2">
           <BioFontPicker
             label="Title font"
@@ -111,7 +128,7 @@ export function BioDesignControls({
 
       {/* Custom Colors */}
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">custom colors (optional)</Label>
+        <Label className="text-sm font-semibold">Custom Colors (optional)</Label>
         <BioColorCustomizer
           bgColor={customBgColor}
           textColor={customTextColor}
@@ -124,7 +141,7 @@ export function BioDesignControls({
 
       {/* Background Variant */}
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">background variant</Label>
+        <Label className="text-sm font-semibold">Background Variant</Label>
         <BioBackgroundPicker
           theme={theme}
           value={backgroundVariant}
@@ -134,7 +151,7 @@ export function BioDesignControls({
 
       {/* Button Shape */}
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">button shape</Label>
+        <Label className="text-sm font-semibold">Button Shape</Label>
         <BioBorderRadiusPicker
           value={borderRadius}
           onChange={onBorderRadiusChange}
@@ -143,7 +160,7 @@ export function BioDesignControls({
 
       {/* Spacing */}
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">spacing</Label>
+        <Label className="text-sm font-semibold">Spacing</Label>
         <BioSpacingPicker
           value={spacing}
           onChange={onSpacingChange}

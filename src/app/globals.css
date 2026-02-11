@@ -86,10 +86,6 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Lowercase headings - OneSign brand */
-  h1, h2, h3, h4, h5, h6 {
-    text-transform: lowercase;
-  }
 }
 
 @layer utilities {

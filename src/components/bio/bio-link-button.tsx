@@ -11,6 +11,7 @@ interface BioLinkButtonProps {
   icon?: string | null;
   iconType?: BioLinkIconType | null;
   iconUrl?: string | null;
+  iconBgColor?: string | null;
   showIcon?: boolean;
   themeConfig: BioThemeConfig;
   staggerIndex?: number;
@@ -28,18 +29,22 @@ function LinkIcon({
   icon,
   iconType,
   iconUrl,
+  iconBgColor,
   showIcon,
 }: {
   icon?: string | null;
   iconType?: BioLinkIconType | null;
   iconUrl?: string | null;
+  iconBgColor?: string | null;
   showIcon?: boolean;
 }) {
   if (showIcon === false) return null;
 
+  let iconElement: React.ReactNode = null;
+
   // Favicon or image — render <img>
   if ((iconType === 'favicon' || iconType === 'image') && iconUrl) {
-    return (
+    iconElement = (
       <img
         src={iconUrl}
         alt=""
@@ -50,14 +55,26 @@ function LinkIcon({
         }}
       />
     );
+  } else if (iconType === 'emoji' || (!iconType && icon)) {
+    // Emoji (explicit or legacy fallback)
+    iconElement = icon ? <span className="text-lg shrink-0">{icon}</span> : null;
   }
 
-  // Emoji (explicit or legacy fallback)
-  if (iconType === 'emoji' || (!iconType && icon)) {
-    return icon ? <span className="text-lg shrink-0">{icon}</span> : null;
+  if (!iconElement) return null;
+
+  // Wrap in background circle if iconBgColor is set
+  if (iconBgColor) {
+    return (
+      <span
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: iconBgColor }}
+      >
+        {iconElement}
+      </span>
+    );
   }
 
-  return null;
+  return <>{iconElement}</>;
 }
 
 export function BioLinkButton({
@@ -68,6 +85,7 @@ export function BioLinkButton({
   icon,
   iconType,
   iconUrl,
+  iconBgColor,
   showIcon = true,
   themeConfig,
   staggerIndex,
@@ -144,6 +162,7 @@ export function BioLinkButton({
           icon={icon}
           iconType={iconType}
           iconUrl={iconUrl}
+          iconBgColor={iconBgColor}
           showIcon={showIcon}
         />
         <span>{title}</span>

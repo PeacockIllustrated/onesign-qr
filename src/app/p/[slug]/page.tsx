@@ -97,6 +97,10 @@ export default async function BioPage({ params }: PageProps) {
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.avatar_storage_path}`
     : null;
 
+  const faviconUrl = page.favicon_storage_path
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.favicon_storage_path}`
+    : null;
+
   // Build background CSS
   const bgCSS =
     themeConfig.background.type === 'gradient' || themeConfig.background.type === 'animated'
@@ -109,6 +113,11 @@ export default async function BioPage({ params }: PageProps) {
 
   return (
     <>
+      {/* Custom favicon */}
+      {faviconUrl && (
+        <link rel="icon" href={faviconUrl} />
+      )}
+
       {/* Google Fonts — zero JS, SSR-friendly */}
       {googleFontsUrl && (
         <>
@@ -188,7 +197,7 @@ export default async function BioPage({ params }: PageProps) {
           {/* Links */}
           {links.length > 0 ? (
             <div className="w-full flex flex-col" style={{ gap: spacingConfig.gap }}>
-              {links.map((link: { id: string; title: string; url: string; icon: string | null; icon_type: string | null; icon_url: string | null; show_icon: boolean }, index: number) => (
+              {links.map((link: { id: string; title: string; url: string; icon: string | null; icon_type: string | null; icon_url: string | null; icon_bg_color: string | null; show_icon: boolean }, index: number) => (
                 <BioLinkButton
                   key={link.id}
                   itemId={link.id}
@@ -198,6 +207,7 @@ export default async function BioPage({ params }: PageProps) {
                   icon={link.icon}
                   iconType={link.icon_type as 'emoji' | 'image' | 'favicon' | null}
                   iconUrl={link.icon_url}
+                  iconBgColor={link.icon_bg_color}
                   showIcon={link.show_icon}
                   themeConfig={themeConfig}
                   staggerIndex={themeConfig.animations.linkStagger ? index : undefined}
