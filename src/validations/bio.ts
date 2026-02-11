@@ -11,7 +11,16 @@ const hexColor = z
   .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color format (use #RRGGBB)');
 
 // Bio-link themes
-const bioThemes = ['minimal', 'midnight', 'gradient-sunset', 'gradient-ocean', 'neon'] as const;
+const bioThemes = [
+  'minimal', 'midnight', 'gradient-sunset', 'gradient-ocean', 'neon',
+  'pastel-dream', 'bold', 'glass', 'retro', 'nature', 'cosmic', 'brutalist',
+] as const;
+
+// Spacing options
+const spacingOptions = ['compact', 'normal', 'spacious'] as const;
+
+// Border radius presets
+const borderRadiusOptions = ['sharp', 'rounded', 'pill', 'soft', 'chunky', 'organic'] as const;
 
 // Button styles
 const buttonStyles = ['filled', 'outline', 'shadow'] as const;
@@ -42,6 +51,11 @@ export const createBioPageSchema = z.object({
   custom_bg_color: hexColor.optional(),
   custom_text_color: hexColor.optional(),
   custom_accent_color: hexColor.optional(),
+  font_title: z.string().max(100, 'Font name too long').optional(),
+  font_body: z.string().max(100, 'Font name too long').optional(),
+  border_radius: z.enum(borderRadiusOptions).optional(),
+  spacing: z.enum(spacingOptions).optional(),
+  background_variant: z.string().max(50, 'Background variant too long').optional(),
   analytics_enabled: z.boolean().default(true),
   create_qr: z.boolean().default(false),
 });
@@ -65,9 +79,17 @@ export const updateBioPageSchema = z.object({
   custom_bg_color: hexColor.nullable().optional(),
   custom_text_color: hexColor.nullable().optional(),
   custom_accent_color: hexColor.nullable().optional(),
+  font_title: z.string().max(100, 'Font name too long').nullable().optional(),
+  font_body: z.string().max(100, 'Font name too long').nullable().optional(),
+  border_radius: z.enum(borderRadiusOptions).nullable().optional(),
+  spacing: z.enum(spacingOptions).nullable().optional(),
+  background_variant: z.string().max(50, 'Background variant too long').nullable().optional(),
   is_active: z.boolean().optional(),
   analytics_enabled: z.boolean().optional(),
 });
+
+// Icon types
+const iconTypes = ['emoji', 'image', 'favicon'] as const;
 
 // Create bio link item schema
 export const createBioLinkSchema = z.object({
@@ -84,6 +106,9 @@ export const createBioLinkSchema = z.object({
     .string()
     .max(50, 'Icon name is too long')
     .optional(),
+  icon_type: z.enum(iconTypes).nullable().optional(),
+  icon_url: z.string().max(2048, 'Icon URL is too long').nullable().optional(),
+  show_icon: z.boolean().default(true),
   is_enabled: z.boolean().default(true),
 });
 
@@ -105,6 +130,9 @@ export const updateBioLinkSchema = z.object({
     .max(50, 'Icon name is too long')
     .nullable()
     .optional(),
+  icon_type: z.enum(iconTypes).nullable().optional(),
+  icon_url: z.string().max(2048, 'Icon URL is too long').nullable().optional(),
+  show_icon: z.boolean().optional(),
   is_enabled: z.boolean().optional(),
 });
 

@@ -4,16 +4,32 @@
 
 import type { DeviceType } from './qr';
 
-// Bio-link theme options
+// Bio-link theme options (10 total)
 export type BioLinkTheme =
   | 'minimal'
   | 'midnight'
   | 'gradient-sunset'
   | 'gradient-ocean'
-  | 'neon';
+  | 'neon'
+  | 'pastel-dream'
+  | 'bold'
+  | 'glass'
+  | 'retro'
+  | 'nature'
+  | 'cosmic'
+  | 'brutalist';
 
 // Bio-link button style options
 export type BioLinkButtonStyle = 'filled' | 'outline' | 'shadow';
+
+// Bio-link icon type
+export type BioLinkIconType = 'emoji' | 'image' | 'favicon';
+
+// Bio-link spacing options
+export type BioSpacing = 'compact' | 'normal' | 'spacious';
+
+// Bio-link border radius presets
+export type BioBorderRadius = 'sharp' | 'rounded' | 'pill' | 'soft' | 'chunky' | 'organic';
 
 // Bio-link audit actions
 export type BioLinkAuditAction =
@@ -27,6 +43,87 @@ export type BioLinkAuditAction =
   | 'deactivated'
   | 'reactivated'
   | 'deleted';
+
+// ─── Theme Configuration Types ───────────────────────────────────────
+
+/** Font configuration for a theme */
+export interface BioFontConfig {
+  family: string;
+  weight: number;
+  googleFont: boolean;
+}
+
+/** Background configuration for a theme */
+export interface BioBackgroundConfig {
+  type: 'solid' | 'gradient' | 'pattern' | 'animated';
+  css: string;
+  overlayCSS?: string;
+}
+
+/** Button style configuration for a theme */
+export interface BioButtonStyleConfig {
+  variant: 'filled' | 'outline' | 'glass';
+  borderRadius: string;
+  borderWidth: string;
+  extraCSS?: React.CSSProperties;
+}
+
+/** Animation configuration for a theme */
+export interface BioAnimationConfig {
+  pageEnter: string;
+  linkStagger: boolean;
+  staggerDelay: number;
+  buttonHover: string;
+  buttonClick: string;
+  avatarEnter: string;
+}
+
+/** Background variant definition */
+export interface BioBackgroundVariant {
+  id: string;
+  name: string;
+  background: BioBackgroundConfig;
+}
+
+/**
+ * Complete theme configuration.
+ * Each theme is a full design system: colors + background + fonts + buttons + spacing + animations.
+ */
+export interface BioThemeConfig {
+  id: BioLinkTheme;
+  name: string;
+  label: string;
+  category: 'light' | 'dark';
+
+  colors: {
+    bg: string;
+    bgGradient?: string;
+    text: string;
+    textSecondary: string;
+    accent: string;
+    buttonBg: string;
+    buttonText: string;
+    buttonBorder: string;
+    buttonHover: string;
+    avatarRing: string;
+  };
+
+  background: BioBackgroundConfig;
+
+  fonts: {
+    title: BioFontConfig;
+    body: BioFontConfig;
+  };
+
+  buttonStyle: BioButtonStyleConfig;
+
+  spacing: BioSpacing;
+  borderRadius: string;
+
+  animations: BioAnimationConfig;
+
+  previewColors: [string, string, string];
+}
 
 /**
  * Bio-link page database record
@@ -43,6 +140,11 @@ export interface BioLinkPage {
   custom_text_color: string | null;
   custom_accent_color: string | null;
   button_style: BioLinkButtonStyle;
+  font_title: string | null;
+  font_body: string | null;
+  border_radius: BioBorderRadius | null;
+  spacing: BioSpacing | null;
+  background_variant: string | null;
   is_active: boolean;
   analytics_enabled: boolean;
   total_views: number;
@@ -62,6 +164,9 @@ export interface BioLinkItem {
   title: string;
   url: string;
   icon: string | null;
+  icon_type: BioLinkIconType | null;
+  icon_url: string | null;
+  show_icon: boolean;
   sort_order: number;
   is_enabled: boolean;
   total_clicks: number;
@@ -140,7 +245,7 @@ export interface BioLinkAnalyticsSummary {
 }
 
 /**
- * Theme CSS custom properties
+ * Theme CSS custom properties (legacy, used by resolveThemeVars)
  */
 export interface BioThemeVars {
   '--bio-bg': string;
@@ -156,7 +261,7 @@ export interface BioThemeVars {
 }
 
 /**
- * Theme definition
+ * Theme definition (legacy, kept for backwards compat)
  */
 export interface BioThemeDefinition {
   id: BioLinkTheme;

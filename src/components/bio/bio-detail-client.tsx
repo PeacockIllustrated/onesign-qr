@@ -17,23 +17,24 @@ import {
   CardContent,
   Input,
   Label,
-  Select,
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
   useToast,
 } from '@/components/ui';
-import { BioThemePicker } from '@/components/bio/bio-theme-picker';
-import { BioColorCustomizer } from '@/components/bio/bio-color-customizer';
-import { BioAvatarUpload } from '@/components/bio/bio-avatar-upload';
 import { BioLinkEditor } from '@/components/bio/bio-link-editor';
+import { BioEditorLayout } from '@/components/bio/bio-editor-layout';
+import { BioDesignControls } from '@/components/bio/bio-design-controls';
+import { BioPreviewPanel } from '@/components/bio/bio-preview-panel';
+import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
 import { formatDate, formatNumber } from '@/lib/utils';
 import type {
   BioLinkPage,
   BioLinkItem,
   BioLinkTheme,
-  BioLinkButtonStyle,
+  BioSpacing,
+  BioBorderRadius,
 } from '@/types/bio';
 
 interface BioDetailClientProps {
@@ -48,11 +49,10 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
   // Links state
   const [links, setLinks] = useState<BioLinkItem[]>(items);
 
-  // Appearance state
+  // Theme state
   const [theme, setTheme] = useState<BioLinkTheme>(page.theme);
-  const [buttonStyle, setButtonStyle] = useState<BioLinkButtonStyle>(
-    page.button_style
-  );
+
+  // Color overrides
   const [customBgColor, setCustomBgColor] = useState<string | null>(
     page.custom_bg_color
   );
@@ -62,6 +62,25 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
   const [customAccentColor, setCustomAccentColor] = useState<string | null>(
     page.custom_accent_color
   );
+
+  // Font overrides (default to theme's fonts)
+  const themeDefaults = THEME_CONFIGS[page.theme] ?? THEME_CONFIGS.minimal;
+  const [fontTitle, setFontTitle] = useState<string>(
+    page.font_title ?? themeDefaults.fonts.title.family
+  );
+  const [fontBody, setFontBody] = useState<string>(
+    page.font_body ?? themeDefaults.fonts.body.family
+  );
+
+  // Layout overrides
+  const [borderRadius, setBorderRadius] = useState<BioBorderRadius | null>(
+    page.border_radius
+  );
+  const [spacing, setSpacing] = useState<BioSpacing | null>(page.spacing);
+  const [backgroundVariant, setBackgroundVariant] = useState<string | null>(
+    page.background_variant
+  );
+
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Avatar state
@@ -80,18 +99,48 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
     addToast({ title: 'Copied to clipboard', variant: 'success' });
   };
 
+  // When theme changes, also update font defaults if user hasn't overridden them
+  const handleThemeChange = (newTheme: BioLinkTheme) => {
+    const newDefaults = THEME_CONFIGS[newTheme] ?? THEME_CONFIGS.minimal;
+    const oldDefaults = THEME_CONFIGS[theme] ?? THEME_CONFIGS.minimal;
+
+    setTheme(newTheme);
+
+    // If fonts match old theme defaults, update to new theme defaults
+    if (fontTitle === oldDefaults.fonts.title.family) {
+      setFontTitle(newDefaults.fonts.title.family);
+    }
+    if (fontBody === oldDefaults.fonts.body.family) {
+      setFontBody(newDefaults.fonts.body.family);
+    }
+
+    // Reset background variant when switching themes
+    setBackgroundVariant(null);
+  };
+
   const updateAppearance = async () => {
     setIsUpdating(true);
     try {
+      // Determine if fonts are custom or theme defaults
+      const currentDefaults = THEME_CONFIGS[theme] ?? THEME_CONFIGS.minimal;
+      const fontTitleOverride =
+        fontTitle !== currentDefaults.fonts.title.family ? fontTitle : null;
+      const fontBodyOverride =
+        fontBody !== currentDefaults.fonts.body.family ? fontBody : null;
+
       const res = await fetch(`/api/bio/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           theme,
-          button_style: buttonStyle,
           custom_bg_color: customBgColor,
           custom_text_color: customTextColor,
           custom_accent_color: customAccentColor,
+          font_title: fontTitleOverride,
+          font_body: fontBodyOverride,
+          border_radius: borderRadius,
+          spacing,
+          background_variant: backgroundVariant,
         }),
       });
 
@@ -215,59 +264,62 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
         </Card>
       </TabsContent>
 
-      {/* Appearance Tab */}
+      {/* Appearance Tab — Split-screen editor */}
       <TabsContent value="appearance">
-        <Card>
-          <CardContent className="pt-6 space-y-6">
-            <div className="space-y-2">
-              <Label>profile image</Label>
-              <BioAvatarUpload
+        <BioEditorLayout
+          controls={
+            <>
+              <BioDesignControls
+                theme={theme}
+                onThemeChange={handleThemeChange}
+                fontTitle={fontTitle}
+                fontBody={fontBody}
+                onFontTitleChange={setFontTitle}
+                onFontBodyChange={setFontBody}
+                customBgColor={customBgColor}
+                customTextColor={customTextColor}
+                customAccentColor={customAccentColor}
+                onBgColorChange={setCustomBgColor}
+                onTextColorChange={setCustomTextColor}
+                onAccentColorChange={setCustomAccentColor}
+                backgroundVariant={backgroundVariant}
+                onBackgroundVariantChange={setBackgroundVariant}
+                borderRadius={borderRadius}
+                onBorderRadiusChange={setBorderRadius}
+                spacing={spacing}
+                onSpacingChange={setSpacing}
                 pageId={page.id}
-                currentAvatarUrl={avatarUrl}
+                avatarUrl={avatarUrl}
                 onAvatarChange={(url) => {
                   setAvatarUrl(url);
                   router.refresh();
                 }}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>theme</Label>
-              <BioThemePicker value={theme} onChange={setTheme} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="buttonStyle">button style</Label>
-              <Select
-                id="buttonStyle"
-                value={buttonStyle}
-                onChange={(e) =>
-                  setButtonStyle(e.target.value as BioLinkButtonStyle)
-                }
-              >
-                <option value="filled">Filled</option>
-                <option value="outline">Outline</option>
-                <option value="shadow">Shadow</option>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>custom colors (optional)</Label>
-              <BioColorCustomizer
-                bgColor={customBgColor}
-                textColor={customTextColor}
-                accentColor={customAccentColor}
-                onBgChange={setCustomBgColor}
-                onTextChange={setCustomTextColor}
-                onAccentChange={setCustomAccentColor}
-              />
-            </div>
-
-            <Button onClick={updateAppearance} disabled={isUpdating}>
-              {isUpdating ? 'saving...' : 'save appearance'}
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="pt-4">
+                <Button onClick={updateAppearance} disabled={isUpdating} className="w-full sm:w-auto">
+                  {isUpdating ? 'saving...' : 'save appearance'}
+                </Button>
+              </div>
+            </>
+          }
+          preview={
+            <BioPreviewPanel
+              title={page.title}
+              bio={page.bio}
+              theme={theme}
+              customBgColor={customBgColor}
+              customTextColor={customTextColor}
+              customAccentColor={customAccentColor}
+              fontTitle={fontTitle}
+              fontBody={fontBody}
+              borderRadius={borderRadius}
+              spacing={spacing}
+              backgroundVariant={backgroundVariant}
+              avatarUrl={avatarUrl}
+              links={links}
+            />
+          }
+        />
       </TabsContent>
 
       {/* Analytics Tab */}

@@ -122,6 +122,11 @@ export async function PATCH(
     if (data.custom_bg_color !== undefined) update.custom_bg_color = data.custom_bg_color;
     if (data.custom_text_color !== undefined) update.custom_text_color = data.custom_text_color;
     if (data.custom_accent_color !== undefined) update.custom_accent_color = data.custom_accent_color;
+    if (data.font_title !== undefined) update.font_title = data.font_title;
+    if (data.font_body !== undefined) update.font_body = data.font_body;
+    if (data.border_radius !== undefined) update.border_radius = data.border_radius;
+    if (data.spacing !== undefined) update.spacing = data.spacing;
+    if (data.background_variant !== undefined) update.background_variant = data.background_variant;
     if (data.is_active !== undefined) update.is_active = data.is_active;
     if (data.analytics_enabled !== undefined) update.analytics_enabled = data.analytics_enabled;
 

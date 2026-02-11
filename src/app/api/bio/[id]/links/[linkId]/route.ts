@@ -75,6 +75,9 @@ export async function PATCH(
 
     if (data.title !== undefined) update.title = data.title;
     if (data.icon !== undefined) update.icon = data.icon;
+    if (data.icon_type !== undefined) update.icon_type = data.icon_type;
+    if (data.icon_url !== undefined) update.icon_url = data.icon_url;
+    if (data.show_icon !== undefined) update.show_icon = data.show_icon;
     if (data.is_enabled !== undefined) update.is_enabled = data.is_enabled;
 
     if (data.url !== undefined) {

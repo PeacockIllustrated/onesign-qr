@@ -1,105 +1,65 @@
-import type { BioLinkTheme, BioThemeDefinition, BioThemeVars } from '@/types/bio';
-
 /**
- * Bio-link page theme definitions.
+ * Bio-link page theme definitions — backwards-compatible bridge.
  *
- * Each theme provides CSS custom properties that are injected as inline styles
- * on the public bio page. Custom color overrides take precedence.
- *
- * `--bio-accent` is the primary brand/accent color used for outline buttons,
- * avatar rings, and other accent elements. It must always be a visible solid
- * color (never transparent) so it can safely be used as text or border color.
+ * This module delegates to theme-definitions.ts for the full theme configs
+ * and exposes the legacy BIO_THEME_DEFINITIONS, resolveThemeVars(), and
+ * getButtonStyleCSS() APIs so existing components continue to work.
  */
 
-export const BIO_THEME_DEFINITIONS: Record<BioLinkTheme, BioThemeDefinition> = {
-  minimal: {
-    id: 'minimal',
-    name: 'Minimal',
-    label: 'Clean and simple',
-    vars: {
-      '--bio-bg': '#FFFFFF',
-      '--bio-text': '#1A1A1A',
-      '--bio-text-secondary': '#6B7280',
-      '--bio-accent': '#1A1A1A',
-      '--bio-button-bg': '#1A1A1A',
-      '--bio-button-text': '#FFFFFF',
-      '--bio-button-border': 'transparent',
-      '--bio-button-hover': '#333333',
-      '--bio-avatar-ring': '#E5E7EB',
-    },
-    previewColors: ['#FFFFFF', '#1A1A1A', '#6B7280'],
-  },
-  midnight: {
-    id: 'midnight',
-    name: 'Midnight',
-    label: 'Dark and elegant',
-    vars: {
-      '--bio-bg': '#0F172A',
-      '--bio-text': '#F8FAFC',
-      '--bio-text-secondary': '#94A3B8',
-      '--bio-accent': '#818CF8',
-      '--bio-button-bg': '#1E293B',
-      '--bio-button-text': '#F8FAFC',
-      '--bio-button-border': '#475569',
-      '--bio-button-hover': '#334155',
-      '--bio-avatar-ring': '#818CF8',
-    },
-    previewColors: ['#0F172A', '#818CF8', '#334155'],
-  },
-  'gradient-sunset': {
-    id: 'gradient-sunset',
-    name: 'Sunset',
-    label: 'Warm gradient',
-    vars: {
-      '--bio-bg': '#FDF2F8',
-      '--bio-bg-gradient': 'linear-gradient(135deg, #FDF2F8 0%, #FEFCE8 50%, #FFF7ED 100%)',
-      '--bio-text': '#1F2937',
-      '--bio-text-secondary': '#6B7280',
-      '--bio-accent': '#F43F5E',
-      '--bio-button-bg': '#F43F5E',
-      '--bio-button-text': '#FFFFFF',
-      '--bio-button-border': 'transparent',
-      '--bio-button-hover': '#E11D48',
-      '--bio-avatar-ring': '#F43F5E',
-    },
-    previewColors: ['#FDF2F8', '#F43F5E', '#FEFCE8'],
-  },
-  'gradient-ocean': {
-    id: 'gradient-ocean',
-    name: 'Ocean',
-    label: 'Cool blues',
-    vars: {
-      '--bio-bg': '#EFF6FF',
-      '--bio-bg-gradient': 'linear-gradient(135deg, #EFF6FF 0%, #F0FDFA 50%, #ECFDF5 100%)',
-      '--bio-text': '#1E3A5F',
-      '--bio-text-secondary': '#64748B',
-      '--bio-accent': '#0EA5E9',
-      '--bio-button-bg': '#0EA5E9',
-      '--bio-button-text': '#FFFFFF',
-      '--bio-button-border': 'transparent',
-      '--bio-button-hover': '#0284C7',
-      '--bio-avatar-ring': '#0EA5E9',
-    },
-    previewColors: ['#EFF6FF', '#0EA5E9', '#F0FDFA'],
-  },
-  neon: {
-    id: 'neon',
-    name: 'Neon',
-    label: 'Dark with neon accents',
-    vars: {
-      '--bio-bg': '#09090B',
-      '--bio-text': '#FAFAFA',
-      '--bio-text-secondary': '#A1A1AA',
-      '--bio-accent': '#A3E635',
-      '--bio-button-bg': '#A3E635',
-      '--bio-button-text': '#09090B',
-      '--bio-button-border': '#A3E635',
-      '--bio-button-hover': '#BEF264',
-      '--bio-avatar-ring': '#A3E635',
-    },
-    previewColors: ['#09090B', '#A3E635', '#A1A1AA'],
-  },
-};
+import type { BioLinkTheme, BioThemeDefinition, BioThemeVars } from '@/types/bio';
+import { THEME_CONFIGS, themeConfigToVars } from '@/lib/bio/theme-definitions';
+
+// ─── Legacy Theme Definitions (auto-generated from THEME_CONFIGS) ────
+
+function configToDefinition(id: BioLinkTheme): BioThemeDefinition {
+  const cfg = THEME_CONFIGS[id];
+  const vars: BioThemeVars = {
+    '--bio-bg': cfg.colors.bg,
+    '--bio-text': cfg.colors.text,
+    '--bio-text-secondary': cfg.colors.textSecondary,
+    '--bio-accent': cfg.colors.accent,
+    '--bio-button-bg': cfg.colors.buttonBg,
+    '--bio-button-text': cfg.colors.buttonText,
+    '--bio-button-border': cfg.colors.buttonBorder,
+    '--bio-button-hover': cfg.colors.buttonHover,
+    '--bio-avatar-ring': cfg.colors.avatarRing,
+  };
+
+  if (cfg.colors.bgGradient) {
+    vars['--bio-bg-gradient'] = cfg.colors.bgGradient;
+  }
+
+  return {
+    id,
+    name: cfg.name,
+    label: cfg.label,
+    vars,
+    previewColors: cfg.previewColors,
+  };
+}
+
+const ALL_THEMES: BioLinkTheme[] = [
+  'minimal',
+  'midnight',
+  'gradient-sunset',
+  'gradient-ocean',
+  'neon',
+  'pastel-dream',
+  'bold',
+  'glass',
+  'retro',
+  'nature',
+  'cosmic',
+  'brutalist',
+];
+
+export const BIO_THEME_DEFINITIONS: Record<BioLinkTheme, BioThemeDefinition> =
+  Object.fromEntries(ALL_THEMES.map((id) => [id, configToDefinition(id)])) as Record<
+    BioLinkTheme,
+    BioThemeDefinition
+  >;
+
+// ─── Resolve theme vars (legacy API) ─────────────────────────────────
 
 /**
  * Resolve theme CSS variables with optional custom color overrides.
@@ -131,6 +91,8 @@ export function resolveThemeVars(
 
   return vars;
 }
+
+// ─── Button style CSS (legacy API) ───────────────────────────────────
 
 /**
  * Get CSS for button style variant.

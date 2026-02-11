@@ -1,14 +1,25 @@
 'use client';
 
 import { ExternalLink } from 'lucide-react';
-import { resolveThemeVars, getButtonStyleCSS } from '@/lib/bio/themes';
-import type { BioLinkTheme, BioLinkButtonStyle } from '@/types/bio';
+import {
+  resolveFullThemeConfig,
+  SPACING_MAP,
+} from '@/lib/bio/theme-definitions';
+import type {
+  BioLinkTheme,
+  BioLinkIconType,
+  BioSpacing,
+  BioBorderRadius,
+} from '@/types/bio';
 
 interface PreviewLink {
   id: string;
   title: string;
   url: string;
   icon: string | null;
+  icon_type?: BioLinkIconType | null;
+  icon_url?: string | null;
+  show_icon?: boolean;
   is_enabled: boolean;
 }
 
@@ -16,40 +27,110 @@ interface BioPreviewPanelProps {
   title: string;
   bio: string | null;
   theme: BioLinkTheme;
-  buttonStyle: BioLinkButtonStyle;
   customBgColor: string | null;
   customTextColor: string | null;
   customAccentColor: string | null;
+  fontTitle: string | null;
+  fontBody: string | null;
+  borderRadius: BioBorderRadius | null;
+  spacing: BioSpacing | null;
+  backgroundVariant: string | null;
   avatarUrl: string | null;
   links: PreviewLink[];
+}
+
+/** Renders an icon in the preview at mini scale */
+function PreviewLinkIcon({ link }: { link: PreviewLink }) {
+  if (link.show_icon === false) return null;
+
+  // Favicon or image
+  if ((link.icon_type === 'favicon' || link.icon_type === 'image') && link.icon_url) {
+    return (
+      <img
+        src={link.icon_url}
+        alt=""
+        className="h-3 w-3 shrink-0 rounded-sm object-cover"
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+      />
+    );
+  }
+
+  // Emoji (explicit or legacy)
+  if (link.icon_type === 'emoji' || (!link.icon_type && link.icon)) {
+    return link.icon ? <span className="text-xs shrink-0">{link.icon}</span> : null;
+  }
+
+  return null;
 }
 
 export function BioPreviewPanel({
   title,
   bio,
   theme,
-  buttonStyle,
   customBgColor,
   customTextColor,
   customAccentColor,
+  fontTitle,
+  fontBody,
+  borderRadius,
+  spacing,
+  backgroundVariant,
   avatarUrl,
   links,
 }: BioPreviewPanelProps) {
-  const themeVars = resolveThemeVars(theme, {
+  // Resolve full theme config with overrides
+  const config = resolveFullThemeConfig(theme, {
     custom_bg_color: customBgColor,
     custom_text_color: customTextColor,
     custom_accent_color: customAccentColor,
+    font_title: fontTitle,
+    font_body: fontBody,
+    border_radius: borderRadius,
+    spacing,
+    background_variant: backgroundVariant,
   });
 
-  const btnStyle = getButtonStyleCSS(buttonStyle);
   const enabledLinks = links.filter((l) => l.is_enabled);
+  const spacingConfig = SPACING_MAP[config.spacing];
 
-  // Build the background style
+  // Build background styles
   const bgStyle: React.CSSProperties = {};
-  if (themeVars['--bio-bg-gradient']) {
-    bgStyle.background = themeVars['--bio-bg-gradient'];
+  if (config.background.type === 'gradient' || config.background.type === 'animated') {
+    bgStyle.background = config.background.css;
   } else {
-    bgStyle.backgroundColor = themeVars['--bio-bg'];
+    bgStyle.backgroundColor = config.background.css;
+  }
+
+  // Build button style
+  const btnBaseStyle: React.CSSProperties = {
+    borderRadius: config.buttonStyle.borderRadius,
+    borderWidth: config.buttonStyle.borderWidth,
+    borderStyle: 'solid',
+    padding: '0.5rem 0.75rem',
+  };
+
+  if (config.buttonStyle.variant === 'outline') {
+    Object.assign(btnBaseStyle, {
+      backgroundColor: 'transparent',
+      color: config.colors.accent,
+      borderColor: config.colors.accent,
+    });
+  } else if (config.buttonStyle.variant === 'glass') {
+    Object.assign(btnBaseStyle, {
+      backgroundColor: config.colors.buttonBg,
+      color: config.colors.buttonText,
+      borderColor: config.colors.buttonBorder,
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+    });
+  } else {
+    Object.assign(btnBaseStyle, {
+      backgroundColor: config.colors.buttonBg,
+      color: config.colors.buttonText,
+      borderColor: config.colors.buttonBorder,
+    });
   }
 
   // Extract initial from title
@@ -62,20 +143,26 @@ export function BioPreviewPanel({
       {/* Phone frame */}
       <div
         className="relative aspect-[9/16] w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-border shadow-lg"
-        style={{
-          ...bgStyle,
-          ...Object.fromEntries(
-            Object.entries(themeVars).map(([k, v]) => [k, v])
-          ),
-        }}
+        style={bgStyle}
       >
-        <div className="flex h-full flex-col items-center overflow-y-auto px-4 py-8">
+        {/* Background overlay (pattern/grain) */}
+        {config.background.overlayCSS && (
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ backgroundImage: config.background.overlayCSS }}
+          />
+        )}
+
+        <div
+          className="relative flex h-full flex-col items-center overflow-y-auto px-4 py-8"
+          style={{ gap: spacingConfig.gap }}
+        >
           {/* Avatar */}
           <div
-            className="mb-3 flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2"
+            className="mb-1 flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2"
             style={{
-              borderColor: themeVars['--bio-avatar-ring'],
-              backgroundColor: themeVars['--bio-accent'],
+              borderColor: config.colors.avatarRing,
+              backgroundColor: config.colors.accent,
             }}
           >
             {avatarUrl ? (
@@ -87,7 +174,10 @@ export function BioPreviewPanel({
             ) : (
               <span
                 className="text-xl font-bold"
-                style={{ color: themeVars['--bio-bg'] }}
+                style={{
+                  color: config.colors.bg,
+                  fontFamily: `'${config.fonts.title.family}', sans-serif`,
+                }}
               >
                 {initial}
               </span>
@@ -96,8 +186,12 @@ export function BioPreviewPanel({
 
           {/* Title */}
           <h2
-            className="mb-1 text-center text-sm font-bold leading-tight"
-            style={{ color: themeVars['--bio-text'] }}
+            className="mb-0 text-center text-sm font-bold leading-tight"
+            style={{
+              color: config.colors.text,
+              fontFamily: `'${config.fonts.title.family}', sans-serif`,
+              fontWeight: config.fonts.title.weight,
+            }}
           >
             {title || 'Your Name'}
           </h2>
@@ -105,19 +199,22 @@ export function BioPreviewPanel({
           {/* Bio */}
           {bio && (
             <p
-              className="mb-4 max-w-full text-center text-[10px] leading-snug"
-              style={{ color: themeVars['--bio-text-secondary'] }}
+              className="mb-2 max-w-full text-center text-[10px] leading-snug"
+              style={{
+                color: config.colors.textSecondary,
+                fontFamily: `'${config.fonts.body.family}', sans-serif`,
+              }}
             >
               {bio}
             </p>
           )}
 
           {/* Links */}
-          <div className="mt-2 flex w-full flex-col gap-2">
+          <div className="mt-1 flex w-full flex-col" style={{ gap: spacingConfig.gap }}>
             {enabledLinks.length === 0 && (
               <p
                 className="text-center text-[10px]"
-                style={{ color: themeVars['--bio-text-secondary'] }}
+                style={{ color: config.colors.textSecondary }}
               >
                 No links yet
               </p>
@@ -125,17 +222,27 @@ export function BioPreviewPanel({
             {enabledLinks.map((link) => (
               <div
                 key={link.id}
-                className="flex w-full items-center justify-center gap-1 rounded-lg px-3 py-2 text-center text-[10px] font-medium transition-opacity"
-                style={btnStyle}
+                className="flex w-full items-center justify-center gap-1 text-center text-[10px] font-medium transition-opacity"
+                style={btnBaseStyle}
               >
-                {link.icon && <span className="text-xs">{link.icon}</span>}
-                <span className="truncate">{link.title}</span>
+                <PreviewLinkIcon link={link} />
+                <span
+                  className="truncate"
+                  style={{ fontFamily: `'${config.fonts.body.family}', sans-serif` }}
+                >
+                  {link.title}
+                </span>
                 <ExternalLink className="h-2 w-2 shrink-0 opacity-50" />
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Theme name label */}
+      <p className="mt-2 text-[10px] text-muted-foreground">
+        {config.name} theme
+      </p>
     </div>
   );
 }

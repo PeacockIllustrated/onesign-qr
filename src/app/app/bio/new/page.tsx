@@ -8,18 +8,17 @@ import {
   Button,
   Input,
   Label,
-  Select,
   Card,
   CardHeader,
   CardTitle,
   CardContent,
   useToast,
 } from '@/components/ui';
-import { BioThemePicker } from '@/components/bio/bio-theme-picker';
+import { BioThemeGallery } from '@/components/bio/bio-theme-gallery';
 import { BioColorCustomizer } from '@/components/bio/bio-color-customizer';
 import { BioPreviewPanel } from '@/components/bio/bio-preview-panel';
 import { BIO_DEFAULTS } from '@/lib/constants';
-import type { BioLinkTheme, BioLinkButtonStyle } from '@/types/bio';
+import type { BioLinkTheme } from '@/types/bio';
 
 export default function NewBioPage() {
   const router = useRouter();
@@ -30,7 +29,6 @@ export default function NewBioPage() {
   const [bio, setBio] = useState('');
   const [slug, setSlug] = useState('');
   const [theme, setTheme] = useState<BioLinkTheme>('minimal');
-  const [buttonStyle, setButtonStyle] = useState<BioLinkButtonStyle>('filled');
   const [customBgColor, setCustomBgColor] = useState<string | null>(null);
   const [customTextColor, setCustomTextColor] = useState<string | null>(null);
   const [customAccentColor, setCustomAccentColor] = useState<string | null>(null);
@@ -61,7 +59,6 @@ export default function NewBioPage() {
           bio: bio.trim() || undefined,
           slug: slug || undefined,
           theme,
-          button_style: buttonStyle,
           custom_bg_color: customBgColor || undefined,
           custom_text_color: customTextColor || undefined,
           custom_accent_color: customAccentColor || undefined,
@@ -202,22 +199,7 @@ export default function NewBioPage() {
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label>theme</Label>
-                  <BioThemePicker value={theme} onChange={setTheme} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="buttonStyle">button style</Label>
-                  <Select
-                    id="buttonStyle"
-                    value={buttonStyle}
-                    onChange={(e) =>
-                      setButtonStyle(e.target.value as BioLinkButtonStyle)
-                    }
-                  >
-                    <option value="filled">Filled</option>
-                    <option value="outline">Outline</option>
-                    <option value="shadow">Shadow</option>
-                  </Select>
+                  <BioThemeGallery value={theme} onChange={setTheme} />
                 </div>
 
                 <div className="space-y-2">
@@ -286,10 +268,14 @@ export default function NewBioPage() {
                   title={title || 'Your Name'}
                   bio={bio || null}
                   theme={theme}
-                  buttonStyle={buttonStyle}
                   customBgColor={customBgColor}
                   customTextColor={customTextColor}
                   customAccentColor={customAccentColor}
+                  fontTitle={null}
+                  fontBody={null}
+                  borderRadius={null}
+                  spacing={null}
+                  backgroundVariant={null}
                   avatarUrl={null}
                   links={[]}
                 />

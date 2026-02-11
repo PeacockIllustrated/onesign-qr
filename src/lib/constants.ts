@@ -85,6 +85,13 @@ export const BIO_THEMES = [
   'gradient-sunset',
   'gradient-ocean',
   'neon',
+  'pastel-dream',
+  'bold',
+  'glass',
+  'retro',
+  'nature',
+  'cosmic',
+  'brutalist',
 ] as const;
 
 // Bio-link button styles

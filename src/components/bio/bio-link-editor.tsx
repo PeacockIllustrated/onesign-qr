@@ -24,15 +24,65 @@ import {
   Pencil,
   Trash2,
   Plus,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BioLinkItemForm } from '@/components/bio/bio-link-item-form';
+import { BioLinkItemForm, type LinkIconFormData } from '@/components/bio/bio-link-item-form';
 import { cn } from '@/lib/utils';
 import { truncate } from '@/lib/utils';
 import { BIO_DEFAULTS } from '@/lib/constants';
 import type { BioLinkItem } from '@/types/bio';
+
+// ---------------------------------------------------------------------------
+// Icon preview helper — renders the right icon based on type
+// ---------------------------------------------------------------------------
+
+function LinkIconPreview({ link }: { link: BioLinkItem }) {
+  if (!link.show_icon) {
+    return (
+      <span className="text-muted-foreground/40">
+        <EyeOff className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+
+  if (link.icon_type === 'emoji' || (!link.icon_type && link.icon)) {
+    return link.icon ? (
+      <span className="text-base leading-none">{link.icon}</span>
+    ) : null;
+  }
+
+  if (link.icon_type === 'image' && link.icon_url) {
+    return (
+      <img
+        src={link.icon_url}
+        alt=""
+        className="h-5 w-5 rounded object-cover"
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+      />
+    );
+  }
+
+  if (link.icon_type === 'favicon' && link.icon_url) {
+    return (
+      <img
+        src={link.icon_url}
+        alt=""
+        className="h-5 w-5 rounded"
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+      />
+    );
+  }
+
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -56,9 +106,10 @@ interface SortableRowProps {
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
   onToggle: (link: BioLinkItem) => void;
+  onToggleIcon: (link: BioLinkItem) => void;
   onEdit: (id: string) => void;
   onDelete: (link: BioLinkItem) => void;
-  onSaveEdit: (link: BioLinkItem, data: { title: string; url: string; icon: string | null }) => void;
+  onSaveEdit: (link: BioLinkItem, data: LinkIconFormData) => void;
   onCancelEdit: () => void;
 }
 
@@ -70,6 +121,7 @@ function SortableRow({
   onMoveUp,
   onMoveDown,
   onToggle,
+  onToggleIcon,
   onEdit,
   onDelete,
   onSaveEdit,
@@ -142,10 +194,14 @@ function SortableRow({
         </button>
       </div>
 
+      {/* Icon preview */}
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center">
+        <LinkIconPreview link={link} />
+      </div>
+
       {/* Link info */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">
-          {link.icon && <span className="mr-1">{link.icon}</span>}
           {link.title}
         </p>
         <p className="truncate text-xs text-muted-foreground">
@@ -153,7 +209,24 @@ function SortableRow({
         </p>
       </div>
 
-      {/* Toggle switch */}
+      {/* Icon visibility toggle */}
+      <button
+        type="button"
+        title={link.show_icon ? 'Hide icon' : 'Show icon'}
+        onClick={() => onToggleIcon(link)}
+        className={cn(
+          'shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-foreground',
+          !link.show_icon && 'opacity-40'
+        )}
+      >
+        {link.show_icon ? (
+          <Eye className="h-3.5 w-3.5" />
+        ) : (
+          <EyeOff className="h-3.5 w-3.5" />
+        )}
+      </button>
+
+      {/* Toggle switch (enabled/disabled) */}
       <button
         type="button"
         role="switch"
@@ -338,8 +411,15 @@ export function BioLinkEditor({ pageId, links, onLinksChange }: BioLinkEditorPro
     [updateLink]
   );
 
+  const handleToggleIcon = useCallback(
+    (link: BioLinkItem) => {
+      updateLink(link, { show_icon: !link.show_icon });
+    },
+    [updateLink]
+  );
+
   const handleSaveEdit = useCallback(
-    (link: BioLinkItem, data: { title: string; url: string; icon: string | null }) => {
+    (link: BioLinkItem, data: LinkIconFormData) => {
       updateLink(link, data);
       setEditingId(null);
     },
@@ -424,6 +504,7 @@ export function BioLinkEditor({ pageId, links, onLinksChange }: BioLinkEditorPro
                   onMoveUp={handleMoveUp}
                   onMoveDown={handleMoveDown}
                   onToggle={handleToggle}
+                  onToggleIcon={handleToggleIcon}
                   onEdit={setEditingId}
                   onDelete={deleteLink}
                   onSaveEdit={handleSaveEdit}

@@ -1,11 +1,15 @@
 import { notFound } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolveThemeVars } from '@/lib/bio/themes';
+import {
+  resolveFullThemeConfig,
+  buildGoogleFontsUrl,
+  SPACING_MAP,
+} from '@/lib/bio/theme-definitions';
 import { BioLinkButton } from '@/components/bio/bio-link-button';
-import { extractEventContext } from '@/lib/analytics/event-helpers';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
-import type { BioLinkTheme, BioLinkButtonStyle } from '@/types/bio';
+import type { BioLinkTheme, BioBorderRadius, BioSpacing } from '@/types/bio';
+import './bio-animations.css';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -74,101 +78,155 @@ export default async function BioPage({ params }: PageProps) {
     recordViewEvent(supabase, page.id).catch(() => {});
   }
 
-  // Resolve theme
-  const themeVars = resolveThemeVars(page.theme as BioLinkTheme, {
+  // Resolve full theme config with all overrides
+  const themeConfig = resolveFullThemeConfig(page.theme as BioLinkTheme, {
     custom_bg_color: page.custom_bg_color,
     custom_text_color: page.custom_text_color,
     custom_accent_color: page.custom_accent_color,
+    font_title: page.font_title,
+    font_body: page.font_body,
+    border_radius: page.border_radius as BioBorderRadius | null,
+    spacing: page.spacing as BioSpacing | null,
+    background_variant: page.background_variant,
   });
+
+  const googleFontsUrl = buildGoogleFontsUrl(themeConfig);
+  const spacingConfig = SPACING_MAP[themeConfig.spacing];
 
   const avatarUrl = page.avatar_storage_path
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.avatar_storage_path}`
     : null;
 
+  // Build background CSS
+  const bgCSS =
+    themeConfig.background.type === 'gradient' || themeConfig.background.type === 'animated'
+      ? themeConfig.background.css
+      : undefined;
+  const bgColor =
+    themeConfig.background.type === 'solid' || themeConfig.background.type === 'pattern'
+      ? themeConfig.background.css
+      : undefined;
+
   return (
-    <div
-      className="min-h-screen flex flex-col items-center"
-      style={{
-        ...themeVars as React.CSSProperties,
-        background: themeVars['--bio-bg-gradient'] || themeVars['--bio-bg'],
-      }}
-    >
-      <div className="w-full max-w-md mx-auto px-6 py-12 flex flex-col items-center gap-6">
-        {/* Avatar */}
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={page.title}
-            className="w-24 h-24 rounded-full object-cover"
-            style={{ border: '3px solid var(--bio-avatar-ring)' }}
-          />
-        ) : (
+    <>
+      {/* Google Fonts — zero JS, SSR-friendly */}
+      {googleFontsUrl && (
+        <>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link rel="stylesheet" href={googleFontsUrl} />
+        </>
+      )}
+
+      <div
+        className={`min-h-screen flex flex-col items-center ${themeConfig.animations.pageEnter}`}
+        style={{
+          background: bgCSS,
+          backgroundColor: bgColor,
+          color: themeConfig.colors.text,
+          fontFamily: `'${themeConfig.fonts.body.family}', sans-serif`,
+        }}
+      >
+        {/* Background overlay (pattern/grain/stars) */}
+        {themeConfig.background.overlayCSS && (
           <div
-            className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold"
-            style={{
-              backgroundColor: 'var(--bio-avatar-ring)',
-              color: 'var(--bio-bg)',
-              border: '3px solid var(--bio-avatar-ring)',
-            }}
-          >
-            {page.title.charAt(0).toUpperCase()}
-          </div>
+            className={`pointer-events-none fixed inset-0 ${
+              themeConfig.background.type === 'animated' ? 'bio-bg-cosmic-shimmer' : ''
+            }`}
+            style={{ backgroundImage: themeConfig.background.overlayCSS }}
+          />
         )}
 
-        {/* Title & Bio */}
-        <div className="text-center space-y-2">
-          <h1
-            className="text-xl font-bold"
-            style={{ color: 'var(--bio-text)' }}
-          >
-            {page.title}
-          </h1>
-          {page.bio && (
-            <p
-              className="text-sm leading-relaxed max-w-xs"
-              style={{ color: 'var(--bio-text-secondary)' }}
+        <div
+          className="relative w-full max-w-md mx-auto px-6 py-12 flex flex-col items-center"
+          style={{ gap: spacingConfig.gap }}
+        >
+          {/* Avatar */}
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={page.title}
+              className={`w-24 h-24 rounded-full object-cover ${themeConfig.animations.avatarEnter}`}
+              style={{ border: `3px solid ${themeConfig.colors.avatarRing}` }}
+            />
+          ) : (
+            <div
+              className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold ${themeConfig.animations.avatarEnter}`}
+              style={{
+                backgroundColor: themeConfig.colors.accent,
+                color: themeConfig.colors.bg,
+                border: `3px solid ${themeConfig.colors.avatarRing}`,
+                fontFamily: `'${themeConfig.fonts.title.family}', sans-serif`,
+              }}
             >
-              {page.bio}
+              {page.title.charAt(0).toUpperCase()}
+            </div>
+          )}
+
+          {/* Title & Bio */}
+          <div className="text-center space-y-2">
+            <h1
+              className="text-xl font-bold"
+              style={{
+                color: themeConfig.colors.text,
+                fontFamily: `'${themeConfig.fonts.title.family}', sans-serif`,
+                fontWeight: themeConfig.fonts.title.weight,
+              }}
+            >
+              {page.title}
+            </h1>
+            {page.bio && (
+              <p
+                className="text-sm leading-relaxed max-w-xs"
+                style={{ color: themeConfig.colors.textSecondary }}
+              >
+                {page.bio}
+              </p>
+            )}
+          </div>
+
+          {/* Links */}
+          {links.length > 0 ? (
+            <div className="w-full flex flex-col" style={{ gap: spacingConfig.gap }}>
+              {links.map((link: { id: string; title: string; url: string; icon: string | null; icon_type: string | null; icon_url: string | null; show_icon: boolean }, index: number) => (
+                <BioLinkButton
+                  key={link.id}
+                  itemId={link.id}
+                  pageId={page.id}
+                  title={link.title}
+                  url={link.url}
+                  icon={link.icon}
+                  iconType={link.icon_type as 'emoji' | 'image' | 'favicon' | null}
+                  iconUrl={link.icon_url}
+                  showIcon={link.show_icon}
+                  themeConfig={themeConfig}
+                  staggerIndex={themeConfig.animations.linkStagger ? index : undefined}
+                  staggerDelay={themeConfig.animations.staggerDelay}
+                />
+              ))}
+            </div>
+          ) : (
+            <p
+              className="text-sm"
+              style={{ color: themeConfig.colors.textSecondary }}
+            >
+              No links yet
             </p>
           )}
-        </div>
 
-        {/* Links */}
-        {links.length > 0 ? (
-          <div className="w-full flex flex-col gap-3">
-            {links.map((link: { id: string; title: string; url: string; icon: string | null }) => (
-              <BioLinkButton
-                key={link.id}
-                itemId={link.id}
-                pageId={page.id}
-                title={link.title}
-                url={link.url}
-                icon={link.icon}
-                buttonStyle={page.button_style as BioLinkButtonStyle}
-              />
-            ))}
+          {/* Footer */}
+          <div className="mt-8 pt-4">
+            <a
+              href="/"
+              className="text-xs opacity-40 hover:opacity-60 transition-opacity"
+              style={{ color: themeConfig.colors.textSecondary }}
+            >
+              Powered by OneSign
+            </a>
           </div>
-        ) : (
-          <p
-            className="text-sm"
-            style={{ color: 'var(--bio-text-secondary)' }}
-          >
-            No links yet
-          </p>
-        )}
-
-        {/* Footer */}
-        <div className="mt-8 pt-4">
-          <a
-            href="/"
-            className="text-xs opacity-40 hover:opacity-60 transition-opacity"
-            style={{ color: 'var(--bio-text-secondary)' }}
-          >
-            Powered by OneSign
-          </a>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -180,8 +238,6 @@ async function recordViewEvent(
   pageId: string,
 ) {
   try {
-    // We need request headers for geo/device info, but in a server component
-    // we can access them via next/headers
     const headersList = await headers();
     const ip =
       headersList.get('x-forwarded-for')?.split(',')[0] ||

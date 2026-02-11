@@ -72,7 +72,7 @@ export async function POST(
       );
     }
 
-    const { title, url, icon, is_enabled } = parsed.data;
+    const { title, url, icon, icon_type, icon_url, show_icon, is_enabled } = parsed.data;
 
     // Validate URL
     const urlValidation = await validateUrlStrict(url);
@@ -93,6 +93,9 @@ export async function POST(
         title,
         url: urlValidation.normalizedUrl!,
         icon: icon || null,
+        icon_type: icon_type || null,
+        icon_url: icon_url || null,
+        show_icon: show_icon ?? true,
         sort_order: nextOrder,
         is_enabled,
       })
