@@ -15,9 +15,9 @@ export function PublicTextBlock({ content, themeConfig }: PublicTextBlockProps) 
   const alignClass = content.align === 'center' ? 'text-center' : content.align === 'right' ? 'text-right' : 'text-left';
 
   return (
-    <div className="flex h-full w-full items-center">
+    <div className="flex h-full w-full items-center overflow-hidden">
       <p
-        className={`w-full text-sm leading-relaxed ${alignClass}`}
+        className={`w-full text-sm leading-relaxed break-words ${alignClass}`}
         style={{
           color: themeConfig.colors.textSecondary,
           fontFamily: `'${themeConfig.fonts.body.family}', sans-serif`,

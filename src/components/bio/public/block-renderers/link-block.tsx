@@ -139,10 +139,10 @@ export function PublicLinkBlock({
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
-      className={`flex h-full w-full items-center justify-center px-5 text-center text-sm font-medium tracking-wide ${animClasses}`}
+      className={`flex h-full w-full items-center justify-center px-3 sm:px-5 text-center text-sm font-medium tracking-wide overflow-hidden ${animClasses}`}
       style={btnStyle}
     >
-      <span className="flex w-full items-center justify-center gap-2.5">
+      <span className="flex w-full min-w-0 items-center justify-center gap-2.5">
         <LinkIcon
           icon={content.icon}
           iconType={content.icon_type}

@@ -29,11 +29,12 @@ const BLOCK_PADDING_MAP: Record<string, string> = {
  * Server component that renders the CSS Grid container for a bio page's blocks.
  *
  * Layout:
- * - 4-column grid with `minmax(60px, auto)` row sizing
+ * - Fixed 4-column grid on ALL screen sizes — preserves the exact layout the
+ *   user designed in the editor.  The parent container (max-w-md ≈ 448 px)
+ *   already constrains width, so columns scale proportionally on narrow
+ *   viewports without any breakpoint collapse.
  * - Each block is placed using gridColumn/gridRow inline styles
  * - Spacing config drives both grid gap and per-block content padding
- * - Responsive: collapses to 2 columns on screens <= 480px
- *   - Blocks wider than 2 columns become full-width on mobile
  */
 export function BioPublicGrid({ blocks, themeConfig, pageId }: BioPublicGridProps) {
   const spacingConfig = SPACING_MAP[themeConfig.spacing];
@@ -48,65 +49,47 @@ export function BioPublicGrid({ blocks, themeConfig, pageId }: BioPublicGridProp
   if (visibleBlocks.length === 0) return null;
 
   return (
-    <>
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-            @media (max-width: 480px) {
-              .bio-public-grid {
-                grid-template-columns: repeat(2, 1fr) !important;
-              }
-              .bio-public-grid > .bio-grid-block-wide {
-                grid-column: 1 / -1 !important;
-              }
-            }
-          `,
-        }}
-      />
-      <div
-        className="bio-public-grid w-full"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gridAutoRows: 'minmax(60px, auto)',
-          gap,
-        }}
-        role="list"
-      >
-        {visibleBlocks.map((block, index) => {
-          // CSS grid uses 1-based line numbers
-          const colStart = block.grid_col + 1;
-          const colEnd = colStart + block.grid_col_span;
-          const rowStart = block.grid_row + 1;
-          const rowEnd = rowStart + block.grid_row_span;
+    <div
+      className="w-full"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridAutoRows: 'minmax(60px, auto)',
+        gap,
+      }}
+      role="list"
+    >
+      {visibleBlocks.map((block, index) => {
+        // CSS grid uses 1-based line numbers
+        const colStart = block.grid_col + 1;
+        const colEnd = colStart + block.grid_col_span;
+        const rowStart = block.grid_row + 1;
+        const rowEnd = rowStart + block.grid_row_span;
 
-          // Blocks spanning more than 2 columns get the wide class for mobile
-          const isWide = block.grid_col_span > 2;
+        // Content blocks get spacing-aware padding; self-padded blocks don't
+        const needsPadding = !SELF_PADDED_BLOCKS.has(block.block_type);
 
-          // Content blocks get spacing-aware padding; self-padded blocks don't
-          const needsPadding = !SELF_PADDED_BLOCKS.has(block.block_type);
-
-          return (
-            <div
-              key={block.id}
-              className={isWide ? 'bio-grid-block-wide' : undefined}
-              style={{
-                gridColumn: `${colStart} / ${colEnd}`,
-                gridRow: `${rowStart} / ${rowEnd}`,
-                padding: needsPadding ? blockPadding : undefined,
-              }}
-              role="listitem"
-            >
-              <BioPublicBlock
-                block={block}
-                themeConfig={themeConfig}
-                staggerIndex={index}
-                pageId={pageId}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </>
+        return (
+          <div
+            key={block.id}
+            style={{
+              gridColumn: `${colStart} / ${colEnd}`,
+              gridRow: `${rowStart} / ${rowEnd}`,
+              padding: needsPadding ? blockPadding : undefined,
+              minWidth: 0,
+              overflow: 'hidden',
+            }}
+            role="listitem"
+          >
+            <BioPublicBlock
+              block={block}
+              themeConfig={themeConfig}
+              staggerIndex={index}
+              pageId={pageId}
+            />
+          </div>
+        );
+      })}
+    </div>
   );
 }

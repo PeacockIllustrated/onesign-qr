@@ -25,7 +25,7 @@ export function PublicHeadingBlock({ content, themeConfig }: PublicHeadingBlockP
     3: 'text-lg font-medium',
   };
 
-  const className = `flex h-full w-full items-center justify-center text-center ${sizeClasses[content.level] ?? sizeClasses[2]}`;
+  const className = `flex h-full w-full items-center justify-center text-center overflow-hidden break-words ${sizeClasses[content.level] ?? sizeClasses[2]}`;
 
   switch (content.level) {
     case 1:
