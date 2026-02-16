@@ -178,7 +178,7 @@ export default async function BioPage({ params }: PageProps) {
         )}
 
         <div
-          className="relative w-full max-w-md mx-auto px-6 py-12 flex flex-col items-center"
+          className="relative w-full max-w-md mx-auto px-4 sm:px-6 py-12 flex flex-col items-center"
           style={{ gap: spacingConfig.gap }}
         >
           {/* Contact Card */}

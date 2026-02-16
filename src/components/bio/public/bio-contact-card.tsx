@@ -194,7 +194,7 @@ function CenteredLayout({
       <AvatarImage
         avatarUrl={avatarUrl}
         title={title}
-        size="w-24 h-24"
+        size="w-20 h-20 sm:w-24 sm:h-24"
         themeConfig={themeConfig}
       />
 

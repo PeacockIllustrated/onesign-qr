@@ -80,13 +80,13 @@ export function PublicSocialIconsBlock({
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-opacity hover:opacity-80"
+            className="flex h-10 w-10 items-center justify-center rounded-full transition-opacity hover:opacity-80"
             style={{ background: accentBg }}
             aria-label={label}
             title={label}
           >
             <IconComponent
-              className="h-4 w-4 sm:h-5 sm:w-5"
+              className="h-5 w-5"
               style={{ color: themeConfig.colors.accent }}
             />
           </a>

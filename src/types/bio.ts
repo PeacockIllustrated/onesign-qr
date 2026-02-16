@@ -380,22 +380,34 @@ export interface BioLinkPageWithBlocks extends BioLinkPage {
 }
 
 /**
- * Bio-link analytics summary
+ * Bio-link analytics summary (full dashboard data)
  */
 export interface BioLinkAnalyticsSummary {
   total_views: number;
   views_today: number;
   views_this_week: number;
   views_this_month: number;
+  total_clicks: number;
+  unique_visitors: number;
+  period: '7d' | '30d' | '90d';
+  views_by_day: Array<{ date: string; count: number }>;
+  clicks_by_day: Array<{ date: string; count: number }>;
   links: Array<{
     id: string;
     title: string;
     total_clicks: number;
     clicks_this_week: number;
   }>;
-  views_by_day: Array<{ date: string; count: number }>;
+  blocks: Array<{
+    id: string;
+    block_type: BioBlockType;
+    label: string;
+    total_clicks: number;
+  }>;
   top_countries: Array<{ country: string; count: number }>;
-  top_devices: Array<{ device: DeviceType; count: number }>;
+  top_devices: Array<{ device: string; count: number }>;
+  top_referrers: Array<{ domain: string; count: number }>;
+  top_browsers: Array<{ browser: string; count: number }>;
 }
 
 /**

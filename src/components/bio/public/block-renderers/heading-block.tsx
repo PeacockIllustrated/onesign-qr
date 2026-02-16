@@ -20,8 +20,8 @@ export function PublicHeadingBlock({ content, themeConfig }: PublicHeadingBlockP
   };
 
   const sizeClasses: Record<number, string> = {
-    1: 'text-2xl font-bold',
-    2: 'text-xl font-semibold',
+    1: 'text-xl sm:text-2xl font-bold',
+    2: 'text-lg sm:text-xl font-semibold',
     3: 'text-lg font-medium',
   };
 

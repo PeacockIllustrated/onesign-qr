@@ -142,9 +142,9 @@ export function BioGridEditor({
         </div>
       </div>
 
-      {/* Right: edit panel (slide in) */}
+      {/* Desktop: side panel (slide in) */}
       <div
-        className={`overflow-hidden transition-all duration-200 ease-out ${
+        className={`hidden md:block overflow-hidden transition-all duration-200 ease-out ${
           selectedBlock ? 'w-80 opacity-100' : 'w-0 opacity-0'
         }`}
       >
@@ -158,6 +158,38 @@ export function BioGridEditor({
           />
         )}
       </div>
+
+      {/* Mobile: bottom sheet overlay */}
+      {selectedBlock && (
+        <div className="md:hidden fixed inset-0 z-30">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setSelectedBlockId(null)}
+            aria-hidden="true"
+          />
+          {/* Bottom sheet */}
+          <div className="absolute bottom-0 left-0 right-0 max-h-[70vh] overflow-y-auto rounded-t-lg border-t border-border bg-card shadow-lg">
+            <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card px-4 py-3 z-10">
+              <span className="text-sm font-medium">Edit Block</span>
+              <button
+                type="button"
+                onClick={() => setSelectedBlockId(null)}
+                className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-sm hover:bg-muted transition-colors"
+              >
+                Done
+              </button>
+            </div>
+            <BioBlockEditPanel
+              block={selectedBlock}
+              onUpdate={handleUpdateContent}
+              onDelete={handleDeleteBlock}
+              onToggleEnabled={handleToggleEnabled}
+              onClose={() => setSelectedBlockId(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

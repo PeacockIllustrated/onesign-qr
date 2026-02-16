@@ -6,7 +6,6 @@ import {
   ExternalLink,
   Copy,
   Eye,
-  BarChart3,
   Link2,
 } from 'lucide-react';
 import {
@@ -27,6 +26,7 @@ import { BioEditorLayout } from '@/components/bio/bio-editor-layout';
 import { BioDesignControls } from '@/components/bio/bio-design-controls';
 import { BioPreviewPanel } from '@/components/bio/bio-preview-panel';
 import { BioContentEditor } from '@/components/bio/grid/bio-content-editor';
+import { BioAnalyticsPanel } from '@/components/bio/bio-analytics-panel';
 import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
 import { formatDate, formatNumber } from '@/lib/utils';
 import type {
@@ -424,17 +424,7 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
 
       {/* Analytics Tab */}
       <TabsContent value="analytics">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12 text-muted-foreground">
-              <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="font-medium">Analytics coming soon</p>
-              <p className="text-sm mt-2">
-                Total views: {formatNumber(page.total_views)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <BioAnalyticsPanel pageId={page.id} />
       </TabsContent>
     </Tabs>
   );
