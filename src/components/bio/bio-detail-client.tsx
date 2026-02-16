@@ -23,31 +23,39 @@ import {
   TabsContent,
   useToast,
 } from '@/components/ui';
-import { BioLinkEditor } from '@/components/bio/bio-link-editor';
 import { BioEditorLayout } from '@/components/bio/bio-editor-layout';
 import { BioDesignControls } from '@/components/bio/bio-design-controls';
 import { BioPreviewPanel } from '@/components/bio/bio-preview-panel';
+import { BioContentEditor } from '@/components/bio/grid/bio-content-editor';
 import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
 import { formatDate, formatNumber } from '@/lib/utils';
 import type {
   BioLinkPage,
   BioLinkItem,
+  BioBlock,
   BioLinkTheme,
+  BioLayoutMode,
   BioSpacing,
   BioBorderRadius,
+  BioCardLayout,
 } from '@/types/bio';
 
 interface BioDetailClientProps {
   page: BioLinkPage;
   items: BioLinkItem[];
+  blocks?: BioBlock[];
 }
 
-export function BioDetailClient({ page, items }: BioDetailClientProps) {
+export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: BioDetailClientProps) {
   const router = useRouter();
   const { addToast } = useToast();
 
   // Links state
   const [links, setLinks] = useState<BioLinkItem[]>(items);
+
+  // Blocks state (grid mode)
+  const [blocks, setBlocks] = useState<BioBlock[]>(initialBlocks);
+  const layoutMode: BioLayoutMode = page.layout_mode ?? (initialBlocks.length > 0 ? 'grid' : 'list');
 
   // Theme state
   const [theme, setTheme] = useState<BioLinkTheme>(page.theme);
@@ -99,6 +107,47 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
       : null
   );
 
+  // Card layout & contact info state
+  const [cardLayout, setCardLayout] = useState<BioCardLayout | null>(
+    page.card_layout
+  );
+  const [coverUrl, setCoverUrl] = useState<string | null>(
+    page.cover_storage_path
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.cover_storage_path}`
+      : null
+  );
+  const [coverAspectRatio, setCoverAspectRatio] = useState<string | null>(
+    page.cover_aspect_ratio
+  );
+  const [coverPositionY, setCoverPositionY] = useState<number | null>(
+    page.cover_position_y
+  );
+  const [subtitle, setSubtitle] = useState<string>(page.subtitle ?? '');
+  const [company, setCompany] = useState<string>(page.company ?? '');
+  const [jobTitle, setJobTitle] = useState<string>(page.job_title ?? '');
+  const [location, setLocation] = useState<string>(page.location ?? '');
+  const [contactEmail, setContactEmail] = useState<string>(
+    page.contact_email ?? ''
+  );
+  const [contactPhone, setContactPhone] = useState<string>(
+    page.contact_phone ?? ''
+  );
+  const [contactWebsite, setContactWebsite] = useState<string>(
+    page.contact_website ?? ''
+  );
+
+  const handleContactFieldChange = (field: string, value: string) => {
+    switch (field) {
+      case 'subtitle': setSubtitle(value); break;
+      case 'company': setCompany(value); break;
+      case 'jobTitle': setJobTitle(value); break;
+      case 'location': setLocation(value); break;
+      case 'contactEmail': setContactEmail(value); break;
+      case 'contactPhone': setContactPhone(value); break;
+      case 'contactWebsite': setContactWebsite(value); break;
+    }
+  };
+
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
 
   const copyToClipboard = async (text: string) => {
@@ -148,6 +197,16 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
           border_radius: borderRadius,
           spacing,
           background_variant: backgroundVariant,
+          card_layout: cardLayout,
+          subtitle: subtitle || null,
+          company: company || null,
+          job_title: jobTitle || null,
+          location: location || null,
+          contact_email: contactEmail || null,
+          contact_phone: contactPhone || null,
+          contact_website: contactWebsite || null,
+          cover_aspect_ratio: coverAspectRatio,
+          cover_position_y: coverPositionY,
         }),
       });
 
@@ -173,7 +232,7 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
     <Tabs defaultValue="overview">
       <TabsList>
         <TabsTrigger value="overview">overview</TabsTrigger>
-        <TabsTrigger value="links">links</TabsTrigger>
+        <TabsTrigger value="content">content</TabsTrigger>
         <TabsTrigger value="appearance">appearance</TabsTrigger>
         <TabsTrigger value="analytics">analytics</TabsTrigger>
       </TabsList>
@@ -256,19 +315,16 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
         </Card>
       </TabsContent>
 
-      {/* Links Tab */}
-      <TabsContent value="links">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Link2 className="h-4 w-4" />
-              manage links
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BioLinkEditor pageId={page.id} links={links} onLinksChange={setLinks} />
-          </CardContent>
-        </Card>
+      {/* Content Tab */}
+      <TabsContent value="content" className="min-h-[500px]">
+        <BioContentEditor
+          layoutMode={layoutMode}
+          blocks={blocks}
+          links={links}
+          pageId={page.id}
+          onBlocksChange={setBlocks}
+          onLinksChange={setLinks}
+        />
       </TabsContent>
 
       {/* Appearance Tab — Split-screen editor */}
@@ -306,6 +362,25 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
                   setFaviconUrl(url);
                   router.refresh();
                 }}
+                cardLayout={cardLayout}
+                onCardLayoutChange={setCardLayout}
+                coverUrl={coverUrl}
+                onCoverChange={(url) => {
+                  setCoverUrl(url);
+                  router.refresh();
+                }}
+                coverAspectRatio={coverAspectRatio}
+                onCoverAspectRatioChange={setCoverAspectRatio}
+                coverPositionY={coverPositionY}
+                onCoverPositionYChange={setCoverPositionY}
+                subtitle={subtitle}
+                company={company}
+                jobTitle={jobTitle}
+                location={location}
+                contactEmail={contactEmail}
+                contactPhone={contactPhone}
+                contactWebsite={contactWebsite}
+                onContactFieldChange={handleContactFieldChange}
               />
               <div className="pt-4">
                 <Button onClick={updateAppearance} disabled={isUpdating} className="w-full sm:w-auto">
@@ -329,6 +404,19 @@ export function BioDetailClient({ page, items }: BioDetailClientProps) {
               backgroundVariant={backgroundVariant}
               avatarUrl={avatarUrl}
               links={links}
+              layoutMode={layoutMode}
+              blocks={blocks}
+              cardLayout={cardLayout}
+              coverUrl={coverUrl}
+              subtitle={subtitle}
+              company={company}
+              jobTitle={jobTitle}
+              location={location}
+              contactEmail={contactEmail}
+              contactPhone={contactPhone}
+              contactWebsite={contactWebsite}
+              coverAspectRatio={coverAspectRatio}
+              coverPositionY={coverPositionY}
             />
           }
         />

@@ -18,7 +18,9 @@
       "Bash(npx supabase:*)",
       "Bash(curl:*)",
       "Bash(node -e:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)"
     ]
   }
 }

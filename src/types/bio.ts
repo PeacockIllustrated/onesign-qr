@@ -4,6 +4,137 @@
 
 import type { DeviceType } from './qr';
 
+// ─── Block & Grid Types ─────────────────────────────────────────────
+
+/** Block types available in the grid canvas */
+export type BioBlockType =
+  | 'link'
+  | 'heading'
+  | 'text'
+  | 'image'
+  | 'social_icons'
+  | 'divider'
+  | 'spacer'
+  | 'spotify_embed'
+  | 'youtube_embed'
+  | 'map';
+
+/** Layout mode for bio pages */
+export type BioLayoutMode = 'list' | 'grid';
+
+/** Contact card layout variants */
+export type BioCardLayout = 'centered' | 'left-aligned' | 'split' | 'minimal' | 'cover';
+
+/** Cover image aspect ratio options */
+export type BioCoverAspectRatio = '3:1' | '16:9' | '2:1' | '4:3';
+
+/** Grid position for a block */
+export interface BioGridPosition {
+  col: number;      // 0-3
+  row: number;      // 0+
+  colSpan: number;  // 1-4
+  rowSpan: number;  // 1-4
+}
+
+// ─── Block Content Types (per block_type) ───────────────────────────
+
+export interface BioBlockContentLink {
+  title: string;
+  url: string;
+  icon?: string | null;
+  icon_type?: BioLinkIconType | null;
+  icon_url?: string | null;
+  icon_bg_color?: string | null;
+  show_icon?: boolean;
+}
+
+export interface BioBlockContentHeading {
+  text: string;
+  level: 1 | 2 | 3;
+}
+
+export interface BioBlockContentText {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  align?: 'left' | 'center' | 'right';
+}
+
+export interface BioBlockContentImage {
+  src: string;
+  alt?: string;
+  object_fit?: 'cover' | 'contain';
+  invert?: boolean;
+  link_url?: string;
+}
+
+export interface BioBlockContentSocialIcons {
+  icons: Array<{ platform: string; url: string }>;
+}
+
+export interface BioBlockContentDivider {
+  style: 'solid' | 'dashed' | 'dotted' | 'gradient';
+}
+
+export type BioBlockContentSpacer = Record<string, never>;
+
+export interface BioBlockContentSpotifyEmbed {
+  spotify_url: string;
+  embed_type: 'track' | 'album' | 'playlist' | 'artist';
+}
+
+export interface BioBlockContentYouTubeEmbed {
+  video_url: string;
+}
+
+export interface BioBlockContentMap {
+  query: string;
+  zoom?: number;
+}
+
+/** Discriminated union of all block content shapes */
+export type BioBlockContent =
+  | BioBlockContentLink
+  | BioBlockContentHeading
+  | BioBlockContentText
+  | BioBlockContentImage
+  | BioBlockContentSocialIcons
+  | BioBlockContentDivider
+  | BioBlockContentSpacer
+  | BioBlockContentSpotifyEmbed
+  | BioBlockContentYouTubeEmbed
+  | BioBlockContentMap;
+
+/** Bio block database record */
+export interface BioBlock {
+  id: string;
+  page_id: string;
+  block_type: BioBlockType;
+  grid_col: number;
+  grid_row: number;
+  grid_col_span: number;
+  grid_row_span: number;
+  content: BioBlockContent;
+  sort_order: number;
+  is_enabled: boolean;
+  total_clicks: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Bio block click event database record */
+export interface BioBlockClickEvent {
+  id: string;
+  block_id: string;
+  page_id: string;
+  clicked_at: string;
+  country_code: string | null;
+  device_type: DeviceType;
+  ip_hash: string | null;
+}
+
+// ─── Original Types ─────────────────────────────────────────────────
+
 // Bio-link theme options (10 total)
 export type BioLinkTheme =
   | 'minimal'
@@ -146,6 +277,19 @@ export interface BioLinkPage {
   spacing: BioSpacing | null;
   background_variant: string | null;
   favicon_storage_path: string | null;
+  card_layout: BioCardLayout | null;
+  subtitle: string | null;
+  company: string | null;
+  job_title: string | null;
+  location: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  contact_website: string | null;
+  cover_storage_path: string | null;
+  cover_aspect_ratio: BioCoverAspectRatio | null;
+  cover_position_y: number | null;
+  layout_mode: BioLayoutMode;
+  grid_config: { columns?: number; gap?: string } | null;
   is_active: boolean;
   analytics_enabled: boolean;
   total_views: number;
@@ -225,6 +369,14 @@ export interface BioLinkAuditLog {
  */
 export interface BioLinkPageWithItems extends BioLinkPage {
   items: BioLinkItem[];
+}
+
+/**
+ * Bio-link page with blocks (grid mode)
+ */
+export interface BioLinkPageWithBlocks extends BioLinkPage {
+  blocks: BioBlock[];
+  items: BioLinkItem[]; // Kept for backward compat
 }
 
 /**

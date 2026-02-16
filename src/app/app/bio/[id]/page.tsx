@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui';
 import { BioDetailClient } from '@/components/bio/bio-detail-client';
-import type { BioLinkPage, BioLinkItem } from '@/types/bio';
+import type { BioLinkPage, BioLinkItem, BioBlock } from '@/types/bio';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -29,6 +29,25 @@ export default async function BioDetailPage({ params }: PageProps) {
   }
 
   const bioPage = page as BioLinkPage & { bio_link_items: BioLinkItem[] };
+
+  // Fetch blocks for grid mode (gracefully handle missing table)
+  let blocks: BioBlock[] = [];
+  if (bioPage.layout_mode === 'grid') {
+    try {
+      const { data: blockData, error: blockError } = await supabase
+        .from('bio_blocks')
+        .select('*')
+        .eq('page_id', id)
+        .order('grid_row', { ascending: true })
+        .order('grid_col', { ascending: true });
+
+      if (!blockError) {
+        blocks = (blockData as BioBlock[]) || [];
+      }
+    } catch {
+      // bio_blocks table may not exist yet (migration pending)
+    }
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -58,6 +77,7 @@ export default async function BioDetailPage({ params }: PageProps) {
       <BioDetailClient
         page={bioPage}
         items={bioPage.bio_link_items || []}
+        blocks={blocks}
       />
     </div>
   );

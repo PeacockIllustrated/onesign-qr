@@ -129,6 +129,16 @@ export async function PATCH(
     if (data.background_variant !== undefined) update.background_variant = data.background_variant;
     if (data.is_active !== undefined) update.is_active = data.is_active;
     if (data.analytics_enabled !== undefined) update.analytics_enabled = data.analytics_enabled;
+    if (data.card_layout !== undefined) update.card_layout = data.card_layout;
+    if (data.subtitle !== undefined) update.subtitle = data.subtitle;
+    if (data.company !== undefined) update.company = data.company;
+    if (data.job_title !== undefined) update.job_title = data.job_title;
+    if (data.location !== undefined) update.location = data.location;
+    if (data.contact_email !== undefined) update.contact_email = data.contact_email;
+    if (data.contact_phone !== undefined) update.contact_phone = data.contact_phone;
+    if (data.contact_website !== undefined) update.contact_website = data.contact_website;
+    if (data.cover_aspect_ratio !== undefined) update.cover_aspect_ratio = data.cover_aspect_ratio;
+    if (data.cover_position_y !== undefined) update.cover_position_y = data.cover_position_y;
 
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

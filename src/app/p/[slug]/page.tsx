@@ -6,10 +6,15 @@ import {
   SPACING_MAP,
 } from '@/lib/bio/theme-definitions';
 import { BioLinkButton } from '@/components/bio/bio-link-button';
+import { BioPublicGrid } from '@/components/bio/public/bio-public-grid';
+import { BioContactCard } from '@/components/bio/public/bio-contact-card';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
-import type { BioLinkTheme, BioBorderRadius, BioSpacing } from '@/types/bio';
+import type { BioLinkTheme, BioBlock, BioLayoutMode, BioBorderRadius, BioSpacing, BioCardLayout } from '@/types/bio';
 import './bio-animations.css';
+
+/** Ensure this page is never statically cached — content changes must appear immediately */
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -73,6 +78,28 @@ export default async function BioPage({ params }: PageProps) {
     .filter((item: { is_enabled: boolean }) => item.is_enabled)
     .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order);
 
+  const layoutMode: BioLayoutMode = (page.layout_mode as BioLayoutMode) || 'grid';
+
+  // Fetch blocks for grid mode (gracefully handle missing table)
+  let blocks: BioBlock[] = [];
+  if (layoutMode === 'grid') {
+    try {
+      const { data: blockData, error: blockError } = await supabase
+        .from('bio_blocks')
+        .select('*')
+        .eq('page_id', page.id)
+        .eq('is_enabled', true)
+        .order('grid_row', { ascending: true })
+        .order('grid_col', { ascending: true });
+
+      if (!blockError) {
+        blocks = (blockData as BioBlock[]) || [];
+      }
+    } catch {
+      // bio_blocks table may not exist yet (migration pending)
+    }
+  }
+
   // Record view event async (non-blocking)
   if (page.analytics_enabled) {
     recordViewEvent(supabase, page.id).catch(() => {});
@@ -99,6 +126,10 @@ export default async function BioPage({ params }: PageProps) {
 
   const faviconUrl = page.favicon_storage_path
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.favicon_storage_path}`
+    : null;
+
+  const coverUrl = page.cover_storage_path
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.cover_storage_path}`
     : null;
 
   // Build background CSS
@@ -150,52 +181,33 @@ export default async function BioPage({ params }: PageProps) {
           className="relative w-full max-w-md mx-auto px-6 py-12 flex flex-col items-center"
           style={{ gap: spacingConfig.gap }}
         >
-          {/* Avatar */}
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={page.title}
-              className={`w-24 h-24 rounded-full object-cover ${themeConfig.animations.avatarEnter}`}
-              style={{ border: `3px solid ${themeConfig.colors.avatarRing}` }}
+          {/* Contact Card */}
+          <BioContactCard
+            title={page.title}
+            bio={page.bio}
+            subtitle={page.subtitle}
+            company={page.company}
+            jobTitle={page.job_title}
+            location={page.location}
+            contactEmail={page.contact_email}
+            contactPhone={page.contact_phone}
+            contactWebsite={page.contact_website}
+            cardLayout={(page.card_layout as BioCardLayout) || 'centered'}
+            avatarUrl={avatarUrl}
+            coverUrl={coverUrl}
+            coverAspectRatio={page.cover_aspect_ratio}
+            coverPositionY={page.cover_position_y}
+            themeConfig={themeConfig}
+          />
+
+          {/* Content: Grid or legacy links */}
+          {layoutMode === 'grid' && blocks.length > 0 ? (
+            <BioPublicGrid
+              blocks={blocks}
+              themeConfig={themeConfig}
+              pageId={page.id}
             />
-          ) : (
-            <div
-              className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold ${themeConfig.animations.avatarEnter}`}
-              style={{
-                backgroundColor: themeConfig.colors.accent,
-                color: themeConfig.colors.bg,
-                border: `3px solid ${themeConfig.colors.avatarRing}`,
-                fontFamily: `'${themeConfig.fonts.title.family}', sans-serif`,
-              }}
-            >
-              {page.title.charAt(0).toUpperCase()}
-            </div>
-          )}
-
-          {/* Title & Bio */}
-          <div className="text-center space-y-2">
-            <h1
-              className="text-xl font-bold"
-              style={{
-                color: themeConfig.colors.text,
-                fontFamily: `'${themeConfig.fonts.title.family}', sans-serif`,
-                fontWeight: themeConfig.fonts.title.weight,
-              }}
-            >
-              {page.title}
-            </h1>
-            {page.bio && (
-              <p
-                className="text-sm leading-relaxed max-w-xs"
-                style={{ color: themeConfig.colors.textSecondary }}
-              >
-                {page.bio}
-              </p>
-            )}
-          </div>
-
-          {/* Links */}
-          {links.length > 0 ? (
+          ) : links.length > 0 ? (
             <div className="w-full flex flex-col" style={{ gap: spacingConfig.gap }}>
               {links.map((link: { id: string; title: string; url: string; icon: string | null; icon_type: string | null; icon_url: string | null; icon_bg_color: string | null; show_icon: boolean }, index: number) => (
                 <BioLinkButton
@@ -220,7 +232,7 @@ export default async function BioPage({ params }: PageProps) {
               className="text-sm"
               style={{ color: themeConfig.colors.textSecondary }}
             >
-              No links yet
+              No content yet
             </p>
           )}
 

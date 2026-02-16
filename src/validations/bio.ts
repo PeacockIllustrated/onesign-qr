@@ -25,6 +25,12 @@ const borderRadiusOptions = ['sharp', 'rounded', 'pill', 'soft', 'chunky', 'orga
 // Button styles
 const buttonStyles = ['filled', 'outline', 'shadow'] as const;
 
+// Contact card layouts
+const cardLayoutOptions = ['centered', 'left-aligned', 'split', 'minimal', 'cover'] as const;
+
+// Cover image aspect ratios
+const coverAspectRatioOptions = ['3:1', '16:9', '2:1', '4:3'] as const;
+
 // Slug validation for bio pages
 const bioSlug = z
   .string()
@@ -58,6 +64,16 @@ export const createBioPageSchema = z.object({
   background_variant: z.string().max(50, 'Background variant too long').optional(),
   analytics_enabled: z.boolean().default(true),
   create_qr: z.boolean().default(false),
+  card_layout: z.enum(cardLayoutOptions).optional(),
+  subtitle: z.string().max(150, 'Subtitle must be at most 150 characters').transform((s) => s.trim()).optional(),
+  company: z.string().max(100, 'Company must be at most 100 characters').transform((s) => s.trim()).optional(),
+  job_title: z.string().max(100, 'Job title must be at most 100 characters').transform((s) => s.trim()).optional(),
+  location: z.string().max(100, 'Location must be at most 100 characters').transform((s) => s.trim()).optional(),
+  contact_email: z.string().email('Invalid email').max(200).optional(),
+  contact_phone: z.string().max(50, 'Phone must be at most 50 characters').transform((s) => s.trim()).optional(),
+  contact_website: z.string().max(2048, 'Website URL is too long').optional(),
+  cover_aspect_ratio: z.enum(coverAspectRatioOptions).optional(),
+  cover_position_y: z.number().int().min(0).max(100).optional(),
 });
 
 // Update bio page request schema
@@ -86,6 +102,16 @@ export const updateBioPageSchema = z.object({
   background_variant: z.string().max(50, 'Background variant too long').nullable().optional(),
   is_active: z.boolean().optional(),
   analytics_enabled: z.boolean().optional(),
+  card_layout: z.enum(cardLayoutOptions).nullable().optional(),
+  subtitle: z.string().max(150, 'Subtitle must be at most 150 characters').transform((s) => s.trim()).nullable().optional(),
+  company: z.string().max(100, 'Company must be at most 100 characters').transform((s) => s.trim()).nullable().optional(),
+  job_title: z.string().max(100, 'Job title must be at most 100 characters').transform((s) => s.trim()).nullable().optional(),
+  location: z.string().max(100, 'Location must be at most 100 characters').transform((s) => s.trim()).nullable().optional(),
+  contact_email: z.string().email('Invalid email').max(200).nullable().optional(),
+  contact_phone: z.string().max(50, 'Phone must be at most 50 characters').transform((s) => s.trim()).nullable().optional(),
+  contact_website: z.string().max(2048, 'Website URL is too long').nullable().optional(),
+  cover_aspect_ratio: z.enum(coverAspectRatioOptions).nullable().optional(),
+  cover_position_y: z.number().int().min(0).max(100).nullable().optional(),
 });
 
 // Icon types
@@ -157,6 +183,129 @@ export const trackClickSchema = z.object({
   page_id: z.string().uuid('Invalid page ID'),
 });
 
+// ─── Block Schemas ──────────────────────────────────────────────────
+
+// Block types
+const blockTypes = [
+  'link', 'heading', 'text', 'image', 'social_icons',
+  'divider', 'spacer', 'spotify_embed', 'youtube_embed', 'map',
+] as const;
+
+// Content schemas per block type
+// Note: fields use min(0) to allow empty defaults on creation — users fill content via the edit panel
+const linkContentSchema = z.object({
+  title: z.string().max(100),
+  url: z.string().max(2048),
+  icon: z.string().max(50).nullable().optional(),
+  icon_type: z.enum(iconTypes).nullable().optional(),
+  icon_url: z.string().max(2048).nullable().optional(),
+  icon_bg_color: hexColor.nullable().optional(),
+  show_icon: z.boolean().optional(),
+});
+
+const headingContentSchema = z.object({
+  text: z.string().max(200),
+  level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+});
+
+const textContentSchema = z.object({
+  text: z.string().max(500),
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  align: z.enum(['left', 'center', 'right']).optional(),
+});
+
+const imageContentSchema = z.object({
+  src: z.string().max(2048),
+  alt: z.string().max(200).optional(),
+  object_fit: z.enum(['cover', 'contain']).optional(),
+  invert: z.boolean().optional(),
+  link_url: z.string().max(2048).optional(),
+});
+
+const socialIconsContentSchema = z.object({
+  icons: z.array(z.object({
+    platform: z.string().max(50),
+    url: z.string().max(2048),
+  })).max(20),
+});
+
+const dividerContentSchema = z.object({
+  style: z.enum(['solid', 'dashed', 'dotted', 'gradient']),
+});
+
+const spacerContentSchema = z.object({});
+
+const spotifyEmbedContentSchema = z.object({
+  spotify_url: z.string().max(2048),
+  embed_type: z.enum(['track', 'album', 'playlist', 'artist']),
+});
+
+const youtubeEmbedContentSchema = z.object({
+  video_url: z.string().max(2048),
+});
+
+const mapContentSchema = z.object({
+  query: z.string().max(500),
+  zoom: z.number().int().min(1).max(20).optional(),
+});
+
+/** Map of block_type to its content validation schema */
+export const blockContentSchemas: Record<string, z.ZodType> = {
+  link: linkContentSchema,
+  heading: headingContentSchema,
+  text: textContentSchema,
+  image: imageContentSchema,
+  social_icons: socialIconsContentSchema,
+  divider: dividerContentSchema,
+  spacer: spacerContentSchema,
+  spotify_embed: spotifyEmbedContentSchema,
+  youtube_embed: youtubeEmbedContentSchema,
+  map: mapContentSchema,
+};
+
+// Create block schema
+export const createBioBlockSchema = z.object({
+  block_type: z.enum(blockTypes),
+  grid_col: z.number().int().min(0).max(3),
+  grid_row: z.number().int().min(0),
+  grid_col_span: z.number().int().min(1).max(4),
+  grid_row_span: z.number().int().min(1).max(4),
+  content: z.record(z.string(), z.unknown()),
+  is_enabled: z.boolean().default(true),
+}).refine(
+  (data) => data.grid_col + data.grid_col_span <= 4,
+  { message: 'Block exceeds grid width (col + colSpan must be <= 4)' }
+);
+
+// Update block schema
+export const updateBioBlockSchema_block = z.object({
+  grid_col: z.number().int().min(0).max(3).optional(),
+  grid_row: z.number().int().min(0).optional(),
+  grid_col_span: z.number().int().min(1).max(4).optional(),
+  grid_row_span: z.number().int().min(1).max(4).optional(),
+  content: z.record(z.string(), z.unknown()).optional(),
+  is_enabled: z.boolean().optional(),
+});
+
+// Batch update blocks schema (for grid drag/resize)
+export const batchUpdateBlocksSchema = z.object({
+  blocks: z.array(z.object({
+    id: z.string().uuid('Invalid block ID'),
+    grid_col: z.number().int().min(0).max(3).optional(),
+    grid_row: z.number().int().min(0).optional(),
+    grid_col_span: z.number().int().min(1).max(4).optional(),
+    grid_row_span: z.number().int().min(1).max(4).optional(),
+    sort_order: z.number().int().min(0).optional(),
+  })).min(1).max(50),
+});
+
+// Track block click schema
+export const trackBlockClickSchema = z.object({
+  block_id: z.string().uuid('Invalid block ID'),
+  page_id: z.string().uuid('Invalid page ID'),
+});
+
 // Types inferred from schemas
 export type CreateBioPageInput = z.infer<typeof createBioPageSchema>;
 export type UpdateBioPageInput = z.infer<typeof updateBioPageSchema>;
@@ -164,3 +313,6 @@ export type CreateBioLinkInput = z.infer<typeof createBioLinkSchema>;
 export type UpdateBioLinkInput = z.infer<typeof updateBioLinkSchema>;
 export type ReorderLinksInput = z.infer<typeof reorderLinksSchema>;
 export type TrackClickInput = z.infer<typeof trackClickSchema>;
+export type CreateBioBlockInput = z.infer<typeof createBioBlockSchema>;
+export type BatchUpdateBlocksInput = z.infer<typeof batchUpdateBlocksSchema>;
+export type TrackBlockClickInput = z.infer<typeof trackBlockClickSchema>;

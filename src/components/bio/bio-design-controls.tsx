@@ -9,10 +9,14 @@ import { BioBorderRadiusPicker } from '@/components/bio/bio-radius-picker';
 import { BioSpacingPicker } from '@/components/bio/bio-spacing-picker';
 import { BioAvatarUpload } from '@/components/bio/bio-avatar-upload';
 import { BioFaviconUpload } from '@/components/bio/bio-favicon-upload';
+import { BioCardLayoutPicker } from '@/components/bio/bio-card-layout-picker';
+import { BioContactFields } from '@/components/bio/bio-contact-fields';
+import { BioCoverUpload } from '@/components/bio/bio-cover-upload';
 import type {
   BioLinkTheme,
   BioSpacing,
   BioBorderRadius,
+  BioCardLayout,
 } from '@/types/bio';
 
 interface BioDesignControlsProps {
@@ -54,6 +58,28 @@ interface BioDesignControlsProps {
   // Favicon
   faviconUrl: string | null;
   onFaviconChange: (url: string | null) => void;
+
+  // Card layout
+  cardLayout: BioCardLayout | null;
+  onCardLayoutChange: (layout: BioCardLayout) => void;
+
+  // Cover image
+  coverUrl: string | null;
+  onCoverChange: (url: string | null) => void;
+  coverAspectRatio: string | null;
+  onCoverAspectRatioChange: (ar: string) => void;
+  coverPositionY: number | null;
+  onCoverPositionYChange: (y: number) => void;
+
+  // Contact info
+  subtitle: string;
+  company: string;
+  jobTitle: string;
+  location: string;
+  contactEmail: string;
+  contactPhone: string;
+  contactWebsite: string;
+  onContactFieldChange: (field: string, value: string) => void;
 }
 
 export function BioDesignControls({
@@ -80,7 +106,25 @@ export function BioDesignControls({
   onAvatarChange,
   faviconUrl,
   onFaviconChange,
+  cardLayout,
+  onCardLayoutChange,
+  coverUrl,
+  onCoverChange,
+  coverAspectRatio,
+  onCoverAspectRatioChange,
+  coverPositionY,
+  onCoverPositionYChange,
+  subtitle,
+  company,
+  jobTitle,
+  location,
+  contactEmail,
+  contactPhone,
+  contactWebsite,
+  onContactFieldChange,
 }: BioDesignControlsProps) {
+  const effectiveLayout = cardLayout ?? 'centered';
+
   return (
     <div className="space-y-8">
       {/* Profile Image */}
@@ -90,6 +134,46 @@ export function BioDesignControls({
           pageId={pageId}
           currentAvatarUrl={avatarUrl}
           onAvatarChange={onAvatarChange}
+        />
+      </section>
+
+      {/* Card Layout */}
+      <section className="space-y-3">
+        <Label className="text-sm font-semibold">Card Layout</Label>
+        <BioCardLayoutPicker
+          value={cardLayout}
+          onChange={onCardLayoutChange}
+        />
+      </section>
+
+      {/* Cover Image — only shown for split/cover layouts */}
+      {(effectiveLayout === 'split' || effectiveLayout === 'cover') && (
+        <section className="space-y-3">
+          <Label className="text-sm font-semibold">Cover Image</Label>
+          <BioCoverUpload
+            pageId={pageId}
+            currentCoverUrl={coverUrl}
+            onCoverChange={onCoverChange}
+            aspectRatio={coverAspectRatio}
+            onAspectRatioChange={onCoverAspectRatioChange}
+            positionY={coverPositionY}
+            onPositionYChange={onCoverPositionYChange}
+          />
+        </section>
+      )}
+
+      {/* Contact Information */}
+      <section className="space-y-3">
+        <Label className="text-sm font-semibold">Contact Information</Label>
+        <BioContactFields
+          subtitle={subtitle}
+          company={company}
+          jobTitle={jobTitle}
+          location={location}
+          contactEmail={contactEmail}
+          contactPhone={contactPhone}
+          contactWebsite={contactWebsite}
+          onChange={onContactFieldChange}
         />
       </section>
 
