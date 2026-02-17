@@ -52,9 +52,9 @@ export function PublicSpotifyBlock({ content, themeConfig }: PublicSpotifyBlockP
       title="Spotify embed"
       className="w-full h-full border-0"
       loading="lazy"
-      sandbox="allow-scripts allow-same-origin"
-      allow="encrypted-media"
-      style={{ borderRadius: themeConfig.borderRadius }}
+      sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-forms"
+      allow="encrypted-media; autoplay; clipboard-write"
+      style={{ borderRadius: themeConfig.borderRadius, touchAction: 'auto' }}
     />
   );
 }

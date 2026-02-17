@@ -67,9 +67,10 @@ export function PublicYouTubeBlock({ content, themeConfig }: PublicYouTubeBlockP
         title="YouTube video"
         className="absolute inset-0 h-full w-full border-0"
         loading="lazy"
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-presentation"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
-        style={{ borderRadius: themeConfig.borderRadius }}
+        style={{ borderRadius: themeConfig.borderRadius, touchAction: 'auto' }}
       />
     </div>
   );

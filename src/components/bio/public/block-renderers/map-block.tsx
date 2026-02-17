@@ -22,8 +22,9 @@ export function PublicMapBlock({ content, themeConfig }: PublicMapBlockProps) {
       title={`Map: ${content.query}`}
       className="w-full h-full border-0"
       loading="lazy"
-      sandbox="allow-scripts allow-same-origin"
-      style={{ borderRadius: themeConfig.borderRadius }}
+      sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+      allow="geolocation"
+      style={{ borderRadius: themeConfig.borderRadius, touchAction: 'auto' }}
     />
   );
 }

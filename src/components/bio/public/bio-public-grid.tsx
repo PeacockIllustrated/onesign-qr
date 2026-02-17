@@ -15,6 +15,12 @@ interface BioPublicGridProps {
 const SELF_PADDED_BLOCKS = new Set(['link', 'image', 'divider', 'spacer']);
 
 /**
+ * Embed block types that contain iframes. These need overflow: visible
+ * (not hidden) so touch events reach the iframe on mobile.
+ */
+const EMBED_BLOCKS = new Set(['spotify_embed', 'youtube_embed', 'map']);
+
+/**
  * Per-spacing inner padding for content blocks (heading, text, social, embeds).
  * These values give text/content blocks breathing room inside their grid cells
  * without affecting link buttons or images which handle their own padding.
@@ -68,6 +74,7 @@ export function BioPublicGrid({ blocks, themeConfig, pageId }: BioPublicGridProp
 
         // Content blocks get spacing-aware padding; self-padded blocks don't
         const needsPadding = !SELF_PADDED_BLOCKS.has(block.block_type);
+        const isEmbed = EMBED_BLOCKS.has(block.block_type);
 
         return (
           <div
@@ -77,7 +84,7 @@ export function BioPublicGrid({ blocks, themeConfig, pageId }: BioPublicGridProp
               gridRow: `${rowStart} / ${rowEnd}`,
               padding: needsPadding ? blockPadding : undefined,
               minWidth: 0,
-              overflow: 'hidden',
+              overflow: isEmbed ? 'visible' : 'hidden',
             }}
             role="listitem"
           >
