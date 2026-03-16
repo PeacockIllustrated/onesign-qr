@@ -40,6 +40,7 @@ import { BlockRenderer } from '@/components/bio/grid/bio-block-renderers';
 import { BioLinkEditor } from '@/components/bio/bio-link-editor';
 import {
   resolveFullThemeConfig,
+  buildGoogleFontsUrl,
   SPACING_MAP,
   THEME_CONFIGS,
 } from '@/lib/bio/theme-definitions';
@@ -154,6 +155,36 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
     background_variant: backgroundVariant,
   });
   const spacingConfig = SPACING_MAP[themeConfig.spacing];
+  const googleFontsUrl = buildGoogleFontsUrl(themeConfig);
+
+  // ─── Load Google Fonts for the active theme ───────────────────────
+  useEffect(() => {
+    if (!googleFontsUrl) return;
+    const id = 'bio-editor-google-fonts';
+    let link = document.getElementById(id) as HTMLLinkElement | null;
+    if (link) {
+      // Update existing link if URL changed
+      if (link.href !== googleFontsUrl) link.href = googleFontsUrl;
+      return;
+    }
+    // Inject preconnect + stylesheet
+    const preconnect1 = document.createElement('link');
+    preconnect1.rel = 'preconnect';
+    preconnect1.href = 'https://fonts.googleapis.com';
+    document.head.appendChild(preconnect1);
+
+    const preconnect2 = document.createElement('link');
+    preconnect2.rel = 'preconnect';
+    preconnect2.href = 'https://fonts.gstatic.com';
+    preconnect2.crossOrigin = 'anonymous';
+    document.head.appendChild(preconnect2);
+
+    link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = googleFontsUrl;
+    document.head.appendChild(link);
+  }, [googleFontsUrl]);
 
   // ─── Handlers ──────────────────────────────────────────────────────
 

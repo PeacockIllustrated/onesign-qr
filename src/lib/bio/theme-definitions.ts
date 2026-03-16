@@ -708,19 +708,30 @@ export function resolveFullThemeConfig(
  * Returns null if no Google Fonts are needed.
  */
 export function buildGoogleFontsUrl(config: BioThemeConfig): string | null {
-  const families = new Set<string>();
+  const families = new Map<string, Set<number>>();
 
   if (config.fonts.title.googleFont) {
-    families.add(`${config.fonts.title.family}:wght@${config.fonts.title.weight}`);
+    const set = families.get(config.fonts.title.family) ?? new Set<number>();
+    set.add(config.fonts.title.weight);
+    families.set(config.fonts.title.family, set);
   }
   if (config.fonts.body.googleFont) {
-    families.add(`${config.fonts.body.family}:wght@${config.fonts.body.weight}`);
+    const set = families.get(config.fonts.body.family) ?? new Set<number>();
+    // Body fonts need a range of weights for bold, semibold, etc.
+    set.add(400);
+    set.add(500);
+    set.add(config.fonts.body.weight);
+    set.add(700);
+    families.set(config.fonts.body.family, set);
   }
 
   if (families.size === 0) return null;
 
   const params = Array.from(families)
-    .map((f) => `family=${encodeURIComponent(f)}`)
+    .map(([family, weights]) => {
+      const sorted = Array.from(weights).sort((a, b) => a - b).join(';');
+      return `family=${encodeURIComponent(`${family}:wght@${sorted}`)}`;
+    })
     .join('&');
 
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;
