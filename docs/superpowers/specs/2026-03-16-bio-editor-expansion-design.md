@@ -22,7 +22,7 @@
 
 ## 1. New Block Types
 
-Four new block types added to the `block_type` enum: `contact_form`, `gallery`, `countdown`, `payment_link`.
+Four new block types added to the `bio_block_type` enum: `contact_form`, `gallery`, `countdown`, `payment_link`.
 
 ### 1.1 Contact Form Block
 
@@ -37,7 +37,7 @@ A native form embedded directly in the bio page. Submissions stored in a new `bi
 | `success_message` | string | No | "Thanks! I'll be in touch." |
 | `notify_email` | boolean | No | `true` |
 
-Available fields: `name` (always required), `email` (always required), `message` (always required), `phone` (optional), `subject` (optional).
+Available fields: `name` (always required), `email` (always required), `message` (always required), `phone` (optional), `subject` (optional). Field names are constrained to the enum `z.enum(['name', 'email', 'message', 'phone', 'subject'])`.
 
 **Public page behavior:**
 - Renders inline within the grid block
@@ -79,7 +79,7 @@ Each `ImageItem`:
 - `caption` (string, nullable) — optional text below image
 - `link_url` (string, nullable) — if set, clicking opens this URL
 
-**Upload:** 2-12 images per gallery block. Stored in `bio-covers` bucket under `gallery/{page_id}/{image_id}`. Same 2MB limit, JPEG/PNG/WebP only.
+**Upload:** 2-12 images per gallery block. Stored in a new `bio-gallery` storage bucket under `{user_id}/{page_id}/{image_id}`. Same 2MB limit, JPEG/PNG/WebP only. The bucket must be created in the migration with RLS policies: public read, owner write scoped via `auth.uid()::text = (storage.foldername(name))[1]` (matching existing storage conventions).
 
 **Click behavior:**
 - If `link_url` is set: opens link in new tab
@@ -143,7 +143,7 @@ A styled button/card linking to external payment platforms. Does NOT process pay
 | `display_text` | string | No | Platform default (e.g., "Buy me a coffee") |
 | `suggested_amounts` | string[] | No | `[]` |
 
-Supported platforms: `paypal`, `venmo`, `cashapp`, `stripe`, `buymeacoffee`, `ko-fi`, `custom`.
+Supported platforms: `paypal`, `venmo`, `cashapp`, `stripe`, `buymeacoffee`, `ko-fi`, `custom`. `suggested_amounts` is limited to max 5 items, each max 20 characters.
 
 **Rendering:**
 - Card/button hybrid: platform icon left, text center, subtle arrow right
@@ -171,7 +171,7 @@ Templates are pre-built page configurations applied during bio page creation or 
 ### 2.1 Implementation
 
 - **Stored as static TypeScript objects** in `src/lib/bio/templates.ts` — not in the database
-- Each template defines: `name`, `description`, `category`, `thumbnail`, `theme`, `card_layout`, `font_title`, `font_body`, `border_radius`, `spacing`, and a `blocks` array with grid positions and content
+- Each template defines: `name`, `description`, `category`, `thumbnail`, `theme`, `card_layout`, `font_title`, `font_body`, `border_radius`, `spacing`, and a `blocks` array with grid positions and content. Font values use theme defaults unless specified — implementer selects Google Fonts that complement each template's theme.
 - **On selection:** System creates the bio page with template settings and inserts the template's blocks as real `bio_blocks` rows — fully editable from that point
 - **Apply to existing page:** Replaces current blocks (with confirmation warning). Page-level settings (avatar, cover, custom colors) are preserved.
 
@@ -234,6 +234,8 @@ Toggle bar at the top of the preview pane with three device icons (monitor/table
 
 Lightweight style overrides stored in an optional `style_overrides` object within the block's existing `content` JSONB column. No schema migration needed.
 
+**Zod integration:** Add a shared `styleOverridesSchema` (optional object with all fields optional) that all block content schemas extend. This avoids `.passthrough()` and provides validation for the overrides themselves. The schema is added to a base content schema that each block type's Zod schema extends via `.merge()` or `.and()`.
+
 **Available overrides:**
 
 | Property | Type | Default |
@@ -255,7 +257,7 @@ Lightweight style overrides stored in an optional `style_overrides` object withi
 **JSONB example:**
 ```json
 {
-  "level": "h1",
+  "level": 1,
   "text": "Welcome",
   "alignment": "center",
   "style_overrides": {
@@ -344,6 +346,9 @@ CREATE TABLE bio_form_submissions (
   submitted_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Note: No updated_at column. This table is append-only except for is_read toggling.
+-- PATCH operations only touch is_read; no trigger needed.
+
 CREATE INDEX idx_form_submissions_page_time ON bio_form_submissions(page_id, submitted_at DESC);
 CREATE INDEX idx_form_submissions_block ON bio_form_submissions(block_id);
 ```
@@ -352,23 +357,36 @@ CREATE INDEX idx_form_submissions_block ON bio_form_submissions(block_id);
 - Owner can SELECT submissions where `page_id` belongs to them
 - Owner can UPDATE `is_read` on their own submissions
 - Owner can DELETE their own submissions
-- Public can INSERT (rate limited at API level)
+- **Public INSERT:** The form submission API route uses the Supabase service-role (admin) client to bypass RLS for inserts, matching the existing pattern in `/api/bio/track` which also uses the admin client for public event tracking. Server-side validation (field constraints, rate limiting) provides the security layer.
 - No public SELECT
+
+**Note on cascade:** `bio_form_submissions` references `bio_blocks(id)` with `ON DELETE CASCADE`. If an owner deletes a contact form block, all its submissions are permanently deleted. This is intentional — submissions are tied to the block that collected them.
 
 ### 5.2 Enum Addition
 
-Add to `block_type` enum:
+Add to `bio_block_type` enum (the actual enum name in the database):
 ```sql
-ALTER TYPE block_type ADD VALUE 'contact_form';
-ALTER TYPE block_type ADD VALUE 'gallery';
-ALTER TYPE block_type ADD VALUE 'countdown';
-ALTER TYPE block_type ADD VALUE 'payment_link';
+ALTER TYPE bio_block_type ADD VALUE 'contact_form';
+ALTER TYPE bio_block_type ADD VALUE 'gallery';
+ALTER TYPE bio_block_type ADD VALUE 'countdown';
+ALTER TYPE bio_block_type ADD VALUE 'payment_link';
 ```
 
-### 5.3 No Other Schema Changes
+### 5.3 New Storage Bucket: `bio-gallery`
 
-- `style_overrides` lives inside the existing `content` JSONB column on `bio_blocks` — no migration needed
-- Gallery images use the existing `bio-covers` storage bucket under `gallery/{page_id}/{image_id}`
+Create a new `bio-gallery` storage bucket in the migration for gallery images. Storage path convention: `{user_id}/{page_id}/{image_id}.{ext}` — matching the existing `auth.uid()::text = (storage.foldername(name))[1]` RLS pattern used by `bio-avatars` and `qr-logos`. Public read access for serving images on public bio pages, owner-only write/delete.
+
+### 5.4 TypeScript & Zod Updates Required
+
+The following files must be updated alongside the migration:
+
+- **`src/types/bio.ts`**: Add `'contact_form' | 'gallery' | 'countdown' | 'payment_link'` to the `BioBlockType` union. Add content interfaces for each new block type to the `BioBlockContent` discriminated union.
+- **`src/validations/bio.ts`**: Add Zod schemas — `contactFormContentSchema`, `galleryContentSchema`, `countdownContentSchema`, `paymentLinkContentSchema`. Add a shared `styleOverridesSchema` that all block content schemas extend. Extend the `blockTypes` array with the four new type names.
+- **`src/lib/constants.ts`**: Add `BIO_FORM_SUBMIT` to `RATE_LIMITS` with value 5 and a 3,600,000ms (1-hour) window, since existing limiters use 60-second windows.
+
+### 5.5 Other Notes
+
+- `style_overrides` lives inside the existing `content` JSONB column on `bio_blocks` — no column migration needed
 - Templates are static TypeScript — no database storage
 
 ---
@@ -379,7 +397,7 @@ ALTER TYPE block_type ADD VALUE 'payment_link';
 
 | Route | Method | Auth | Rate Limit | Purpose |
 |-------|--------|------|-----------|---------|
-| `/api/bio/[id]/form` | POST | Public | 5/hr per IP per page | Submit contact form |
+| `/api/bio/[id]/form` | POST | Public | 5/hr per IP per page (BIO_FORM_SUBMIT, 3600s window) | Submit contact form |
 | `/api/bio/[id]/submissions` | GET | Owner | 60/min | List form submissions (paginated) |
 | `/api/bio/[id]/submissions/[subId]` | PATCH | Owner | 60/min | Mark read/unread |
 | `/api/bio/[id]/submissions/[subId]` | DELETE | Owner | 60/min | Delete submission |
@@ -392,7 +410,7 @@ ALTER TYPE block_type ADD VALUE 'payment_link';
 3. Server validates fields against the block's configured `fields` array
 4. Rate limit check (5/hr per IP per page via ip_hash)
 5. Insert into `bio_form_submissions`
-6. If `notify_email` is true, send notification email to owner's `contact_email`
+6. If `notify_email` is true, send notification email to owner's `contact_email`. If `contact_email` is null, fall back to the authenticated user's email from `auth.users`. If neither is available, skip notification silently.
 7. Return 201 with success
 
 ### 6.3 Gallery Upload Flow
@@ -400,7 +418,7 @@ ALTER TYPE block_type ADD VALUE 'payment_link';
 1. Owner selects images in editor
 2. Client POSTs multipart form data to `/api/bio/[id]/gallery`
 3. Server validates: max 12 images, 2MB each, JPEG/PNG/WebP
-4. Upload each to `bio-covers` bucket at `gallery/{page_id}/{uuid}.{ext}`
+4. Upload each to `bio-gallery` bucket at `{user_id}/{page_id}/{uuid}.{ext}`
 5. Return array of storage paths
 6. Client updates block content JSONB with new image entries via existing block PATCH
 
@@ -418,7 +436,7 @@ ALTER TYPE block_type ADD VALUE 'payment_link';
 
 ### Explicitly Out of Scope
 - Payment processing (blocks link out, we don't handle money)
-- Full email delivery system (simple transactional email only — Supabase or Resend)
+- Full email delivery system (form notifications use Resend for transactional email — requires `RESEND_API_KEY` env var. If not configured, notifications are silently skipped.)
 - Template marketplace or user-created templates
 - Collaboration / team features
 - Mobile app
@@ -435,12 +453,13 @@ Suggested implementation sequence based on dependencies and complexity:
 
 | Phase | Feature | Complexity | Dependencies |
 |-------|---------|-----------|-------------|
-| 1 | Countdown timer block | Low | None |
-| 2 | Payment link block | Low | Platform icon assets |
+| 0 | Database migration (enum additions, new table, storage bucket) | Low | None — must run before all other phases |
+| 1 | Countdown timer block | Low | Phase 0 |
+| 2 | Payment link block | Low | Phase 0, platform icon assets |
 | 3 | Per-block styling | Low | None (JSONB only) |
 | 4 | Preview modes | Low | None (frontend only) |
-| 5 | Image gallery block | Medium | Gallery upload route |
-| 6 | Contact form block | Medium | New table, API routes, email |
+| 5 | Image gallery block | Medium | Phase 0, gallery upload route |
+| 6 | Contact form block | Medium | Phase 0, API routes, Resend setup |
 | 7 | Starter templates | Medium | All blocks must exist first |
 
 Templates come last because they reference all new block types.
