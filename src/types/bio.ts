@@ -17,7 +17,11 @@ export type BioBlockType =
   | 'spacer'
   | 'spotify_embed'
   | 'youtube_embed'
-  | 'map';
+  | 'map'
+  | 'contact_form'
+  | 'gallery'
+  | 'countdown'
+  | 'payment_link';
 
 /** Layout mode for bio pages */
 export type BioLayoutMode = 'list' | 'grid';
@@ -46,11 +50,13 @@ export interface BioBlockContentLink {
   icon_url?: string | null;
   icon_bg_color?: string | null;
   show_icon?: boolean;
+  style_overrides?: BioStyleOverrides;
 }
 
 export interface BioBlockContentHeading {
   text: string;
   level: 1 | 2 | 3;
+  style_overrides?: BioStyleOverrides;
 }
 
 export interface BioBlockContentText {
@@ -58,6 +64,7 @@ export interface BioBlockContentText {
   bold?: boolean;
   italic?: boolean;
   align?: 'left' | 'center' | 'right';
+  style_overrides?: BioStyleOverrides;
 }
 
 export interface BioBlockContentImage {
@@ -66,30 +73,82 @@ export interface BioBlockContentImage {
   object_fit?: 'cover' | 'contain';
   invert?: boolean;
   link_url?: string;
+  style_overrides?: BioStyleOverrides;
 }
 
 export interface BioBlockContentSocialIcons {
   icons: Array<{ platform: string; url: string }>;
+  style_overrides?: BioStyleOverrides;
 }
 
 export interface BioBlockContentDivider {
   style: 'solid' | 'dashed' | 'dotted' | 'gradient';
+  style_overrides?: BioStyleOverrides;
 }
 
-export type BioBlockContentSpacer = Record<string, never>;
+export interface BioBlockContentSpacer {
+  style_overrides?: BioStyleOverrides;
+}
 
 export interface BioBlockContentSpotifyEmbed {
   spotify_url: string;
   embed_type: 'track' | 'album' | 'playlist' | 'artist';
+  style_overrides?: BioStyleOverrides;
 }
 
 export interface BioBlockContentYouTubeEmbed {
   video_url: string;
+  style_overrides?: BioStyleOverrides;
 }
 
 export interface BioBlockContentMap {
   query: string;
   zoom?: number;
+  style_overrides?: BioStyleOverrides;
+}
+
+export interface BioBlockContentCountdown {
+  target_datetime: string;
+  label?: string;
+  expired_message?: string;
+  style?: 'compact' | 'large';
+  style_overrides?: BioStyleOverrides;
+}
+
+export interface BioBlockContentPaymentLink {
+  platform: 'paypal' | 'venmo' | 'cashapp' | 'stripe' | 'buymeacoffee' | 'ko-fi' | 'custom';
+  url: string;
+  display_text?: string;
+  suggested_amounts?: string[];
+  style_overrides?: BioStyleOverrides;
+}
+
+export interface BioBlockContentGallery {
+  display_mode: 'grid' | 'carousel';
+  columns?: 2 | 3;
+  images: Array<{
+    storage_path: string;
+    caption?: string | null;
+    link_url?: string | null;
+  }>;
+  style_overrides?: BioStyleOverrides;
+}
+
+export interface BioBlockContentContactForm {
+  form_title?: string;
+  fields: Array<'name' | 'email' | 'message' | 'phone' | 'subject'>;
+  success_message?: string;
+  notify_email?: boolean;
+  style_overrides?: BioStyleOverrides;
+}
+
+/** Per-block style overrides — stored in content JSONB */
+export interface BioStyleOverrides {
+  bg_color?: string;
+  border_radius?: 'sharp' | 'rounded' | 'pill' | 'soft' | 'chunky' | 'organic';
+  border?: string;
+  padding?: 'sm' | 'md' | 'lg';
+  shadow?: 'none' | 'sm' | 'md' | 'lg';
 }
 
 /** Discriminated union of all block content shapes */
@@ -103,7 +162,11 @@ export type BioBlockContent =
   | BioBlockContentSpacer
   | BioBlockContentSpotifyEmbed
   | BioBlockContentYouTubeEmbed
-  | BioBlockContentMap;
+  | BioBlockContentMap
+  | BioBlockContentCountdown
+  | BioBlockContentPaymentLink
+  | BioBlockContentGallery
+  | BioBlockContentContactForm;
 
 /** Bio block database record */
 export interface BioBlock {
@@ -131,6 +194,21 @@ export interface BioBlockClickEvent {
   country_code: string | null;
   device_type: DeviceType;
   ip_hash: string | null;
+}
+
+/** Bio contact form submission database record */
+export interface BioFormSubmission {
+  id: string;
+  page_id: string;
+  block_id: string;
+  name: string;
+  email: string;
+  message: string;
+  phone: string | null;
+  subject: string | null;
+  ip_hash: string;
+  is_read: boolean;
+  submitted_at: string;
 }
 
 // ─── Original Types ─────────────────────────────────────────────────

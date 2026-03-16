@@ -189,7 +189,18 @@ export const trackClickSchema = z.object({
 const blockTypes = [
   'link', 'heading', 'text', 'image', 'social_icons',
   'divider', 'spacer', 'spotify_embed', 'youtube_embed', 'map',
+  'contact_form', 'gallery', 'countdown', 'payment_link',
 ] as const;
+
+// ─── Style Overrides (shared across all block types) ─────────────
+
+const styleOverridesSchema = z.object({
+  bg_color: hexColor.optional(),
+  border_radius: z.enum(borderRadiusOptions).optional(),
+  border: z.string().max(100).optional(),
+  padding: z.enum(['sm', 'md', 'lg']).optional(),
+  shadow: z.enum(['none', 'sm', 'md', 'lg']).optional(),
+}).optional();
 
 // Content schemas per block type
 // Note: fields use min(0) to allow empty defaults on creation — users fill content via the edit panel
@@ -201,11 +212,13 @@ const linkContentSchema = z.object({
   icon_url: z.string().max(2048).nullable().optional(),
   icon_bg_color: hexColor.nullable().optional(),
   show_icon: z.boolean().optional(),
+  style_overrides: styleOverridesSchema,
 });
 
 const headingContentSchema = z.object({
   text: z.string().max(200),
   level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  style_overrides: styleOverridesSchema,
 });
 
 const textContentSchema = z.object({
@@ -213,6 +226,7 @@ const textContentSchema = z.object({
   bold: z.boolean().optional(),
   italic: z.boolean().optional(),
   align: z.enum(['left', 'center', 'right']).optional(),
+  style_overrides: styleOverridesSchema,
 });
 
 const imageContentSchema = z.object({
@@ -221,6 +235,7 @@ const imageContentSchema = z.object({
   object_fit: z.enum(['cover', 'contain']).optional(),
   invert: z.boolean().optional(),
   link_url: z.string().max(2048).optional(),
+  style_overrides: styleOverridesSchema,
 });
 
 const socialIconsContentSchema = z.object({
@@ -228,26 +243,76 @@ const socialIconsContentSchema = z.object({
     platform: z.string().max(50),
     url: z.string().max(2048),
   })).max(20),
+  style_overrides: styleOverridesSchema,
 });
 
 const dividerContentSchema = z.object({
   style: z.enum(['solid', 'dashed', 'dotted', 'gradient']),
+  style_overrides: styleOverridesSchema,
 });
 
-const spacerContentSchema = z.object({});
+const spacerContentSchema = z.object({
+  style_overrides: styleOverridesSchema,
+});
 
 const spotifyEmbedContentSchema = z.object({
   spotify_url: z.string().max(2048),
   embed_type: z.enum(['track', 'album', 'playlist', 'artist']),
+  style_overrides: styleOverridesSchema,
 });
 
 const youtubeEmbedContentSchema = z.object({
   video_url: z.string().max(2048),
+  style_overrides: styleOverridesSchema,
 });
 
 const mapContentSchema = z.object({
   query: z.string().max(500),
   zoom: z.number().int().min(1).max(20).optional(),
+  style_overrides: styleOverridesSchema,
+});
+
+// ─── New Block Content Schemas ───────────────────────────────────
+
+const countdownContentSchema = z.object({
+  target_datetime: z.string().min(1, 'Target date is required'),
+  label: z.string().max(100).optional(),
+  expired_message: z.string().max(200).optional(),
+  style: z.enum(['compact', 'large']).optional(),
+  style_overrides: styleOverridesSchema,
+});
+
+const paymentLinkPlatforms = ['paypal', 'venmo', 'cashapp', 'stripe', 'buymeacoffee', 'ko-fi', 'custom'] as const;
+
+const paymentLinkContentSchema = z.object({
+  platform: z.enum(paymentLinkPlatforms),
+  url: z.string().min(1).max(2048),
+  display_text: z.string().max(100).optional(),
+  suggested_amounts: z.array(z.string().max(20)).max(5).optional(),
+  style_overrides: styleOverridesSchema,
+});
+
+const galleryImageSchema = z.object({
+  storage_path: z.string().min(1).max(2048),
+  caption: z.string().max(200).nullable().optional(),
+  link_url: z.string().max(2048).nullable().optional(),
+});
+
+const galleryContentSchema = z.object({
+  display_mode: z.enum(['grid', 'carousel']),
+  columns: z.union([z.literal(2), z.literal(3)]).optional(),
+  images: z.array(galleryImageSchema).max(12),
+  style_overrides: styleOverridesSchema,
+});
+
+const contactFormFields = ['name', 'email', 'message', 'phone', 'subject'] as const;
+
+const contactFormContentSchema = z.object({
+  form_title: z.string().max(100).optional(),
+  fields: z.array(z.enum(contactFormFields)).min(1),
+  success_message: z.string().max(300).optional(),
+  notify_email: z.boolean().optional(),
+  style_overrides: styleOverridesSchema,
 });
 
 /** Map of block_type to its content validation schema */
@@ -262,6 +327,10 @@ export const blockContentSchemas: Record<string, z.ZodType> = {
   spotify_embed: spotifyEmbedContentSchema,
   youtube_embed: youtubeEmbedContentSchema,
   map: mapContentSchema,
+  contact_form: contactFormContentSchema,
+  gallery: galleryContentSchema,
+  countdown: countdownContentSchema,
+  payment_link: paymentLinkContentSchema,
 };
 
 // Create block schema
