@@ -7,4 +7,5 @@ export { Select, type SelectProps } from './select';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
 export { ToastProvider, useToast, type Toast } from './toast';
 export { Skeleton } from './skeleton';
+export { BottomSheet } from './bottom-sheet';
 export { OneSignIcon, OneSignWordmark } from './onesign-logo';

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Link2, ExternalLink, Eye, Palette, Loader2, Trash2 } from 'lucide-react';
+import { Plus, Link2, ExternalLink, Eye, Palette, Loader2 } from 'lucide-react';
 import { Button, Card, CardContent, Badge, useToast } from '@/components/ui';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { BIO_THEME_DEFINITIONS } from '@/lib/bio/themes';
@@ -45,7 +45,6 @@ export default function BioPage() {
         throw new Error(data.error || 'Failed to update');
       }
 
-      // Optimistic update: deactivate all, then activate the target
       setPages((prev) =>
         prev.map((p) => ({
           ...p,
@@ -76,17 +75,17 @@ export default function BioPage() {
 
   return (
     <div className="p-4 md:p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      {/* Header — stacks on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold">your bio pages</h1>
-          <p className="text-muted-foreground">
-            Manage your bio pages &mdash; only one can be live at a time
+          <h1 className="text-xl sm:text-2xl font-bold">your bio pages</h1>
+          <p className="text-sm text-muted-foreground">
+            Only one can be live at a time
           </p>
         </div>
         {canCreate && (
-          <Link href="/app/bio/new">
-            <Button>
+          <Link href="/app/bio/new" className="shrink-0">
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               new page
             </Button>
@@ -98,7 +97,7 @@ export default function BioPage() {
       {pages.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {pages.map((page) => (
             <BioPageCard
               key={page.id}
@@ -108,7 +107,6 @@ export default function BioPage() {
             />
           ))}
 
-          {/* Page count hint */}
           <p className="text-xs text-muted-foreground text-right">
             {pages.length} / {BIO_DEFAULTS.MAX_PAGES_PER_USER} pages
           </p>
@@ -120,18 +118,17 @@ export default function BioPage() {
 
 function EmptyState() {
   return (
-    <Card className="p-12">
+    <Card className="p-8 sm:p-12">
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-sm bg-muted mb-4">
-          <Link2 className="h-8 w-8 text-muted-foreground" />
+        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-sm bg-muted mb-4">
+          <Link2 className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" />
         </div>
         <h2 className="text-lg font-semibold mb-2">no bio pages yet</h2>
-        <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-          Create your first link-in-bio page to share all your important links in one
-          place.
+        <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+          Create your first link-in-bio page to share all your important links in one place.
         </p>
         <Link href="/app/bio/new">
-          <Button>
+          <Button className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             create your bio page
           </Button>
@@ -155,42 +152,42 @@ function BioPageCard({
   const isToggling = togglingId === page.id;
 
   return (
-    <Card className="hover:border-foreground/20 transition-colors">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          {/* Left side - Info */}
-          <div className="space-y-3 flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="text-lg font-semibold truncate">{page.title}</h3>
+    <Card className="hover:border-foreground/20 transition-colors active:scale-[0.995]">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          {/* Info */}
+          <div className="space-y-2.5 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-semibold truncate">{page.title}</h3>
               <Badge variant={page.is_active ? 'success' : 'secondary'}>
                 {page.is_active ? 'live' : 'draft'}
               </Badge>
             </div>
 
-            <div className="space-y-1.5 text-sm text-muted-foreground">
-              <p className="flex items-center gap-1.5 font-mono text-xs">
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p className="flex items-center gap-1.5 font-mono text-xs truncate">
                 <Link2 className="h-3.5 w-3.5 shrink-0" />
                 /p/{page.slug}
               </p>
 
-              <p className="flex items-center gap-1.5">
-                <Palette className="h-3.5 w-3.5 shrink-0" />
-                {themeDefinition?.name || page.theme} theme
-              </p>
-
-              <p className="flex items-center gap-1.5">
-                <Eye className="h-3.5 w-3.5 shrink-0" />
-                {formatNumber(page.total_views)} views
-              </p>
-
-              <p className="text-xs">
-                Created {formatDate(page.created_at)}
-              </p>
+              <div className="flex items-center gap-3 flex-wrap text-xs">
+                <span className="flex items-center gap-1">
+                  <Palette className="h-3 w-3" />
+                  {themeDefinition?.name || page.theme}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Eye className="h-3 w-3" />
+                  {formatNumber(page.total_views)}
+                </span>
+                <span className="hidden sm:inline">
+                  {formatDate(page.created_at)}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Right side - Toggle */}
-          <div className="shrink-0 pt-1">
+          {/* Toggle — 44px touch target */}
+          <div className="shrink-0">
             <button
               type="button"
               role="switch"
@@ -199,7 +196,7 @@ function BioPageCard({
               disabled={isToggling}
               onClick={() => onToggle(page.id, !page.is_active)}
               className={`
-                relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                relative inline-flex h-7 w-12 items-center rounded-full transition-colors
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
                 disabled:opacity-50 disabled:cursor-not-allowed
                 ${page.is_active ? 'bg-green-600' : 'bg-muted'}
@@ -207,7 +204,7 @@ function BioPageCard({
             >
               <span
                 className={`
-                  inline-block h-4 w-4 rounded-full bg-white transition-transform shadow-sm
+                  inline-block h-5 w-5 rounded-full bg-white transition-transform shadow-sm
                   ${page.is_active ? 'translate-x-6' : 'translate-x-1'}
                 `}
               />
@@ -215,16 +212,16 @@ function BioPageCard({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 mt-6 pt-4 border-t">
-          <Link href={`/app/bio/${page.id}`}>
-            <Button variant="outline" size="sm">
+        {/* Actions — full-width on mobile */}
+        <div className="flex gap-2 mt-4 pt-3 border-t">
+          <Link href={`/app/bio/${page.id}`} className="flex-1 sm:flex-none">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               edit page
             </Button>
           </Link>
           {page.is_active && (
-            <a href={pageUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm">
+            <a href={pageUrl} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-none">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                 view live
               </Button>
