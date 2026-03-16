@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { cn } from '@/lib/utils';
+import { PreviewModeToggle, PREVIEW_WIDTHS } from '@/components/bio/preview-mode-toggle';
+import type { PreviewMode } from '@/components/bio/preview-mode-toggle';
 
 interface BioEditorLayoutProps {
   controls: React.ReactNode;
@@ -12,6 +13,7 @@ interface BioEditorLayoutProps {
 
 export function BioEditorLayout({ controls, preview }: BioEditorLayoutProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
 
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-[1fr_340px] lg:gap-6">
@@ -29,8 +31,14 @@ export function BioEditorLayout({ controls, preview }: BioEditorLayoutProps) {
         </Button>
 
         {previewOpen && (
-          <div className="mt-4 flex justify-center">
-            {preview}
+          <div className="mt-4 flex flex-col items-center gap-3">
+            <PreviewModeToggle mode={previewMode} onChange={setPreviewMode} />
+            <div
+              className="mx-auto transition-all duration-200"
+              style={{ maxWidth: PREVIEW_WIDTHS[previewMode] }}
+            >
+              {preview}
+            </div>
           </div>
         )}
       </div>
@@ -43,7 +51,15 @@ export function BioEditorLayout({ controls, preview }: BioEditorLayoutProps) {
       {/* Preview panel (right, sticky on desktop) */}
       <div className="hidden lg:block">
         <div className="sticky top-6">
-          {preview}
+          <div className="mb-3 flex justify-center">
+            <PreviewModeToggle mode={previewMode} onChange={setPreviewMode} />
+          </div>
+          <div
+            className="mx-auto transition-all duration-200"
+            style={{ maxWidth: PREVIEW_WIDTHS[previewMode] }}
+          >
+            {preview}
+          </div>
         </div>
       </div>
     </div>
