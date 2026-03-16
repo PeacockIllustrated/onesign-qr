@@ -11,6 +11,10 @@ import {
   Music,
   Youtube,
   MapPin,
+  Timer,
+  DollarSign,
+  Images,
+  FileText,
 } from 'lucide-react';
 import type { BioBlockType } from '@/types/bio';
 
@@ -35,6 +39,10 @@ const BLOCK_TYPES: {
   { type: 'spotify_embed', icon: Music, label: 'Spotify' },
   { type: 'youtube_embed', icon: Youtube, label: 'YouTube' },
   { type: 'map', icon: MapPin, label: 'Map' },
+  { type: 'countdown', icon: Timer, label: 'Countdown' },
+  { type: 'payment_link', icon: DollarSign, label: 'Payment' },
+  { type: 'gallery', icon: Images, label: 'Gallery' },
+  { type: 'contact_form', icon: FileText, label: 'Contact' },
 ];
 
 export function BioBlockToolbar({

@@ -10,6 +10,10 @@ import type {
   BioBlockContentSpotifyEmbed,
   BioBlockContentYouTubeEmbed,
   BioBlockContentMap,
+  BioBlockContentCountdown,
+  BioBlockContentPaymentLink,
+  BioBlockContentGallery,
+  BioBlockContentContactForm,
 } from '@/types/bio';
 
 import { PublicLinkBlock } from './block-renderers/link-block';
@@ -120,6 +124,12 @@ export function BioPublicBlock({
           themeConfig={themeConfig}
         />
       );
+
+    case 'countdown':
+    case 'payment_link':
+    case 'gallery':
+    case 'contact_form':
+      return null;
 
     default:
       return null;

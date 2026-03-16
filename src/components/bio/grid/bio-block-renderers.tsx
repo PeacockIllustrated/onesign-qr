@@ -33,6 +33,10 @@ import type {
   BioBlockContentSpotifyEmbed,
   BioBlockContentYouTubeEmbed,
   BioBlockContentMap,
+  BioBlockContentCountdown,
+  BioBlockContentPaymentLink,
+  BioBlockContentGallery,
+  BioBlockContentContactForm,
 } from '@/types/bio';
 import { SOCIAL_PLATFORMS } from '@/lib/constants';
 
@@ -114,6 +118,15 @@ export function BlockRenderer({ block, compact }: BlockRendererProps) {
           content={block.content as BioBlockContentMap}
           compact={compact}
         />
+      );
+    case 'countdown':
+    case 'payment_link':
+    case 'gallery':
+    case 'contact_form':
+      return (
+        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+          {block.block_type.replace('_', ' ')} — coming soon
+        </div>
       );
     default:
       return (

@@ -14,6 +14,10 @@ import type {
   BioBlockContentSpotifyEmbed,
   BioBlockContentYouTubeEmbed,
   BioBlockContentMap,
+  BioBlockContentCountdown,
+  BioBlockContentPaymentLink,
+  BioBlockContentGallery,
+  BioBlockContentContactForm,
 } from '@/types/bio';
 import { LinkForm } from './forms/link-form';
 import { HeadingForm } from './forms/heading-form';
@@ -44,6 +48,10 @@ const BLOCK_TYPE_LABELS: Record<BioBlockType, string> = {
   spotify_embed: 'Spotify Embed',
   youtube_embed: 'YouTube Embed',
   map: 'Map',
+  countdown: 'Countdown Timer',
+  payment_link: 'Payment Link',
+  gallery: 'Image Gallery',
+  contact_form: 'Contact Form',
 };
 
 export function BioBlockEditPanel({
@@ -162,6 +170,11 @@ function BlockFormSwitch({
       return <YouTubeForm content={block.content as BioBlockContentYouTubeEmbed} onChange={onUpdate} />;
     case 'map':
       return <MapForm content={block.content as BioBlockContentMap} onChange={onUpdate} />;
+    case 'countdown':
+    case 'payment_link':
+    case 'gallery':
+    case 'contact_form':
+      return <p className="text-xs text-muted-foreground">Editor coming soon for this block type.</p>;
     default:
       return <p className="text-xs text-muted-foreground">No editor available for this block type.</p>;
   }
