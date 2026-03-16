@@ -6,6 +6,7 @@ import { formatDate, formatNumber } from '@/lib/utils';
 import { QRDeleteButton } from '@/components/qr/qr-delete-button';
 import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
 import type { BioLinkTheme } from '@/types/bio';
+import { generateBasicSVG, getQRContent } from '@/lib/qr/generator';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -142,7 +143,7 @@ export default async function DashboardPage() {
       {!qrCodes || qrCodes.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {qrCodes.map((qr) => (
             <QRCard key={qr.id} qr={qr} />
           ))}
@@ -264,54 +265,66 @@ function BioPageCard({ page }: { page: any }) {
   );
 }
 
-function QRCard({ qr }: { qr: any }) {
-  const redirectUrl = qr.mode === 'managed'
-    ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/r/${qr.slug}`
-    : null;
+async function QRCard({ qr }: { qr: any }) {
+  // Generate actual QR code SVG
+  const qrContent = getQRContent(qr.mode, qr.destination_url, qr.slug);
+  const style = qr.qr_styles?.[0];
+  let svgDataUrl: string | null = null;
+
+  try {
+    const svg = await generateBasicSVG(qrContent, {
+      errorCorrection: style?.error_correction ?? 'M',
+      margin: 2,
+      foreground: style?.foreground_color ?? '#000000',
+      background: style?.background_color ?? '#FFFFFF',
+    });
+    const base64 = Buffer.from(svg).toString('base64');
+    svgDataUrl = `data:image/svg+xml;base64,${base64}`;
+  } catch {
+    // Fall back to placeholder if generation fails
+  }
 
   return (
     <Link href={`/app/qr/${qr.id}`}>
       <Card className="hover:border-foreground/20 hover:shadow-sm transition-all cursor-pointer rounded-xl group">
-        <CardContent className="p-5">
-          {/* Preview placeholder */}
-          <div className="aspect-square bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-            <OneSignIcon size={48} className="opacity-20" />
-          </div>
-
-          {/* Info */}
-          <div className="space-y-2.5">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium truncate">{qr.name}</h3>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Badge variant={qr.is_active ? 'success' : 'secondary'} className="rounded-md">
-                  {qr.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-                <QRDeleteButton qrId={qr.id} qrName={qr.name} />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline" className="rounded-md">
-                {qr.mode}
-              </Badge>
-              {qr.analytics_enabled && (
-                <span className="flex items-center gap-1">
-                  <BarChart3 className="h-3 w-3" />
-                  {formatNumber(qr.total_scans)} scans
-                </span>
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
+            {/* QR Code thumbnail */}
+            <div className="w-16 h-16 shrink-0 rounded-lg overflow-hidden border border-border bg-white flex items-center justify-center">
+              {svgDataUrl ? (
+                <img src={svgDataUrl} alt={qr.name} className="w-full h-full" />
+              ) : (
+                <OneSignIcon size={24} className="opacity-20" />
               )}
             </div>
 
-            {redirectUrl && (
-              <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                <ExternalLink className="h-3 w-3 shrink-0" />
-                {redirectUrl}
-              </p>
-            )}
+            {/* Info */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-sm truncate">{qr.name}</h3>
+                <Badge variant={qr.is_active ? 'success' : 'secondary'} className="rounded-md text-[10px] px-1.5 py-0 shrink-0">
+                  {qr.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
 
-            <p className="text-xs text-muted-foreground">
-              Created {formatDate(qr.created_at)}
-            </p>
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                <Badge variant="outline" className="rounded-md text-[10px] px-1.5 py-0">
+                  {qr.mode}
+                </Badge>
+                {qr.analytics_enabled && (
+                  <span className="flex items-center gap-1">
+                    <BarChart3 className="h-3 w-3" />
+                    {formatNumber(qr.total_scans)}
+                  </span>
+                )}
+                <span>{formatDate(qr.created_at)}</span>
+              </div>
+            </div>
+
+            {/* Delete button */}
+            <div className="shrink-0">
+              <QRDeleteButton qrId={qr.id} qrName={qr.name} />
+            </div>
           </div>
         </CardContent>
       </Card>
