@@ -386,6 +386,7 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
             onBlockTap={openBlockEditor}
             onHeaderTap={() => setActiveSheet('style')}
             onMoveBlock={moveBlock}
+            onResizeBlock={resizeBlock}
             onSavePositions={savePositions}
             onLayoutModeChange={setMobileLayoutMode}
             contactCard={
