@@ -1,6 +1,7 @@
 import type {
   BioBlock,
   BioThemeConfig,
+  BioStyleOverrides,
   BioBlockContentLink,
   BioBlockContentHeading,
   BioBlockContentText,
@@ -46,6 +47,32 @@ export function BioPublicBlock({
   staggerIndex,
   pageId,
 }: BioPublicBlockProps) {
+  // Extract per-block style overrides and build a CSS style object
+  const styleOverrides = (block.content as { style_overrides?: BioStyleOverrides }).style_overrides;
+
+  const overrideStyle: React.CSSProperties = {};
+  if (styleOverrides?.bg_color) overrideStyle.backgroundColor = styleOverrides.bg_color;
+  if (styleOverrides?.border) overrideStyle.border = styleOverrides.border;
+  if (styleOverrides?.border_radius) {
+    const radiusMap: Record<string, string> = {
+      sharp: '0px', rounded: '8px', pill: '9999px', soft: '12px', chunky: '16px', organic: '20px',
+    };
+    overrideStyle.borderRadius = radiusMap[styleOverrides.border_radius];
+  }
+  if (styleOverrides?.padding) {
+    const paddingMap: Record<string, string> = { sm: '8px', md: '16px', lg: '24px' };
+    overrideStyle.padding = paddingMap[styleOverrides.padding];
+  }
+  if (styleOverrides?.shadow) {
+    const shadowMap: Record<string, string> = {
+      none: 'none', sm: '0 1px 2px rgba(0,0,0,0.05)', md: '0 4px 6px rgba(0,0,0,0.1)', lg: '0 10px 15px rgba(0,0,0,0.1)',
+    };
+    overrideStyle.boxShadow = shadowMap[styleOverrides.shadow];
+  }
+
+  const hasOverrides = Object.keys(overrideStyle).length > 0;
+
+  const rendered = (() => {
   switch (block.block_type) {
     case 'link':
       return (
@@ -153,4 +180,11 @@ export function BioPublicBlock({
     default:
       return null;
   }
+  })();
+
+  if (hasOverrides && rendered) {
+    return <div style={overrideStyle}>{rendered}</div>;
+  }
+
+  return rendered;
 }
