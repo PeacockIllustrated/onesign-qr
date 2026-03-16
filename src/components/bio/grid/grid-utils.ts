@@ -160,6 +160,14 @@ export function getDefaultContent(blockType: BioBlockType): Record<string, unkno
       return { video_url: '' };
     case 'map':
       return { query: '', zoom: 14 };
+    case 'countdown':
+      return { target_datetime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), label: 'Countdown', style: 'large' };
+    case 'payment_link':
+      return { platform: 'paypal', url: 'https://', display_text: 'Support Me' };
+    case 'gallery':
+      return { display_mode: 'grid', columns: 3, images: [] };
+    case 'contact_form':
+      return { fields: ['name', 'email', 'message'], form_title: 'Get in Touch' };
     default:
       return {};
   }
@@ -189,6 +197,14 @@ export function getDefaultSize(blockType: BioBlockType): { colSpan: number; rowS
     case 'youtube_embed':
       return { colSpan: 4, rowSpan: 2 };
     case 'map':
+      return { colSpan: 4, rowSpan: 2 };
+    case 'countdown':
+      return { colSpan: 4, rowSpan: 1 };
+    case 'payment_link':
+      return { colSpan: 4, rowSpan: 1 };
+    case 'gallery':
+      return { colSpan: 4, rowSpan: 2 };
+    case 'contact_form':
       return { colSpan: 4, rowSpan: 2 };
     default:
       return { colSpan: 4, rowSpan: 1 };
