@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Gilroy', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-gilroy)', 'system-ui', 'sans-serif'],
       },
       colors: {
         // Monochrome base

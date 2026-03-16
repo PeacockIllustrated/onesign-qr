@@ -184,11 +184,33 @@ function BioPageCard({ page }: { page: any }) {
       className="rounded-xl overflow-hidden hover:border-foreground/20 transition-colors"
       style={{ borderLeftWidth: 4, borderLeftColor: themeConfig.colors.accent }}
     >
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+      {/* Theme banner — mobile only */}
+      <div
+        className="flex sm:hidden items-center gap-2.5 px-4 py-2 border-b border-border/50"
+        style={{ background: themeConfig.background.css }}
+      >
+        <div
+          className="w-5 h-1.5 rounded-full shrink-0"
+          style={{ backgroundColor: themeConfig.colors.buttonBg, opacity: 0.9 }}
+        />
+        <span className="text-xs font-medium" style={{ color: themeConfig.colors.text }}>
+          {themeConfig.name}
+        </span>
+        {themeConfig.previewColors.map((color, i) => (
+          <span
+            key={i}
+            className="inline-block h-2 w-2 rounded-full border border-white/30"
+            style={{ backgroundColor: color }}
+          />
+        ))}
+      </div>
+
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+            {/* Theme swatch — desktop only */}
             <div
-              className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0"
+              className="hidden sm:flex h-12 w-12 rounded-xl items-center justify-center shrink-0"
               style={{ background: themeConfig.background.css }}
             >
               <div
@@ -203,8 +225,9 @@ function BioPageCard({ page }: { page: any }) {
                   {page.is_active ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
-              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1.5">
+              <div className="flex items-center gap-3 mt-1 text-muted-foreground flex-wrap">
+                {/* Theme dots — desktop only */}
+                <span className="hidden sm:flex items-center gap-1.5">
                   {themeConfig.previewColors.map((color, i) => (
                     <span
                       key={i}
@@ -214,7 +237,7 @@ function BioPageCard({ page }: { page: any }) {
                   ))}
                   <span className="text-xs">{themeConfig.name}</span>
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 text-xs">
                   <Eye className="h-3.5 w-3.5" />
                   {formatNumber(page.total_views)} views
                 </span>
@@ -222,14 +245,14 @@ function BioPageCard({ page }: { page: any }) {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
             <Link href={`/app/bio/${page.id}`}>
-              <Button variant="outline" size="sm" className="rounded-lg">
+              <Button variant="outline" size="sm" className="rounded-lg w-full sm:w-auto">
                 Edit
               </Button>
             </Link>
             <a href={pageUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="rounded-lg">
+              <Button variant="outline" size="sm" className="rounded-lg w-full sm:w-auto">
                 <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                 View
               </Button>

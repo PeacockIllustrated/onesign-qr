@@ -160,9 +160,30 @@ function BioPageCard({
       className="overflow-hidden hover:border-foreground/20 transition-colors active:scale-[0.995]"
       style={{ borderLeftWidth: 4, borderLeftColor: accent }}
     >
+      {/* Theme banner — visible on mobile, tinted with theme background */}
+      <div
+        className="flex sm:hidden items-center gap-2.5 px-4 py-2.5 border-b border-border/50"
+        style={{ background: themeConfig.background.css }}
+      >
+        <div
+          className="w-5 h-1.5 rounded-full shrink-0"
+          style={{ backgroundColor: themeConfig.colors.buttonBg, opacity: 0.9 }}
+        />
+        <span className="text-xs font-medium" style={{ color: themeConfig.colors.text }}>
+          {themeDefinition?.name || page.theme}
+        </span>
+        {previewColors.map((color, i) => (
+          <span
+            key={i}
+            className="inline-block h-2 w-2 rounded-full border border-white/30"
+            style={{ backgroundColor: color }}
+          />
+        ))}
+      </div>
+
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
-          {/* Theme preview swatch */}
+          {/* Theme preview swatch — desktop only */}
           <div
             className="hidden sm:flex shrink-0 w-10 h-10 rounded-lg items-center justify-center overflow-hidden"
             style={{ background: themeConfig.background.css }}
@@ -174,7 +195,7 @@ function BioPageCard({
           </div>
 
           {/* Info */}
-          <div className="space-y-2.5 flex-1 min-w-0">
+          <div className="space-y-2 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base sm:text-lg font-medium truncate">{page.title}</h3>
               <Badge variant={page.is_active ? 'success' : 'secondary'}>
@@ -182,35 +203,33 @@ function BioPageCard({
               </Badge>
             </div>
 
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <p className="flex items-center gap-1.5 font-mono text-xs truncate">
-                <Link2 className="h-3.5 w-3.5 shrink-0" />
+            <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5 font-mono">
+                <Link2 className="h-3 w-3 shrink-0" />
                 /p/{page.slug}
-              </p>
-
-              <div className="flex items-center gap-3 flex-wrap text-xs">
-                <span className="flex items-center gap-1.5">
-                  {previewColors.map((color, i) => (
-                    <span
-                      key={i}
-                      className="inline-block h-2.5 w-2.5 rounded-full border border-border/50"
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                  <span>{themeDefinition?.name || page.theme}</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <Eye className="h-3 w-3" />
-                  {formatNumber(page.total_views)}
-                </span>
-                <span className="hidden sm:inline">
-                  {formatDate(page.created_at)}
-                </span>
-              </div>
+              </span>
+              {/* Theme dots — desktop only (mobile has banner) */}
+              <span className="hidden sm:flex items-center gap-1.5">
+                {previewColors.map((color, i) => (
+                  <span
+                    key={i}
+                    className="inline-block h-2.5 w-2.5 rounded-full border border-border/50"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+                <span>{themeDefinition?.name || page.theme}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {formatNumber(page.total_views)}
+              </span>
+              <span className="hidden sm:inline">
+                {formatDate(page.created_at)}
+              </span>
             </div>
           </div>
 
-          {/* Toggle — 44px touch target */}
+          {/* Toggle */}
           <div className="shrink-0">
             <button
               type="button"
@@ -236,8 +255,8 @@ function BioPageCard({
           </div>
         </div>
 
-        {/* Actions — full-width on mobile */}
-        <div className="flex gap-2 mt-4 pt-3 border-t">
+        {/* Actions */}
+        <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
           <Link href={`/app/bio/${page.id}`} className="flex-1 sm:flex-none">
             <Button variant="outline" size="sm" className="w-full sm:w-auto">
               edit page
