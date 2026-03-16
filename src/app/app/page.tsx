@@ -18,13 +18,14 @@ export default async function DashboardPage() {
     .eq('owner_id', user!.id)
     .order('created_at', { ascending: false });
 
-  // Fetch bio page
-  const { data: bioPage } = await supabase
+  // Fetch bio pages
+  const { data: bioPages } = await supabase
     .from('bio_link_pages')
     .select('*')
     .eq('owner_id', user!.id)
     .is('deleted_at', null)
-    .single();
+    .order('is_active', { ascending: false })
+    .order('created_at', { ascending: false });
 
   const totalScans = qrCodes?.reduce((sum, qr) => sum + (qr.total_scans || 0), 0) ?? 0;
   const activeCount = qrCodes?.filter(qr => qr.is_active).length ?? 0;
@@ -94,7 +95,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Bio Views</p>
-                <p className="text-2xl font-semibold mt-1">{formatNumber(bioPage?.total_views ?? 0)}</p>
+                <p className="text-2xl font-semibold mt-1">{formatNumber(bioPages?.reduce((sum, p) => sum + (p.total_views || 0), 0) ?? 0)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                 <Eye className="h-5 w-5 text-muted-foreground" />
@@ -104,21 +105,24 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Bio Page Section */}
+      {/* Bio Pages Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium tracking-tight">Bio Page</h2>
-          {!bioPage && (
-            <Link href="/app/bio/new">
-              <Button variant="outline" size="sm" className="rounded-lg">
-                <Plus className="h-4 w-4 mr-1.5" />
-                Create Bio Page
-              </Button>
-            </Link>
-          )}
+          <h2 className="text-lg font-medium tracking-tight">Bio Pages</h2>
+          <Link href="/app/bio">
+            <Button variant="outline" size="sm" className="rounded-lg">
+              {bioPages && bioPages.length > 0 ? 'Manage' : (
+                <><Plus className="h-4 w-4 mr-1.5" />Create Bio Page</>
+              )}
+            </Button>
+          </Link>
         </div>
-        {bioPage ? (
-          <BioPageCard page={bioPage} />
+        {bioPages && bioPages.length > 0 ? (
+          <div className="space-y-3">
+            {bioPages.map((page) => (
+              <BioPageCard key={page.id} page={page} />
+            ))}
+          </div>
         ) : (
           <Card className="rounded-xl">
             <CardContent className="p-8 text-center">

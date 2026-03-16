@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Plus, Link2, Menu, X } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/sign-out-button';
-import { OneSignIcon } from '@/components/ui';
+import { OneSignIcon, OneSignWordmark } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -29,9 +29,9 @@ export function AppSidebar({ userEmail, children }: AppSidebarProps) {
     <>
       {/* Logo */}
       <div className="h-16 flex items-center px-5 border-b border-border">
-        <Link href="/app" className="flex items-center gap-2.5" onClick={closeSidebar}>
-          <OneSignIcon size={26} />
-          <span className="font-semibold text-[15px] tracking-tight">OneSign</span>
+        <Link href="/app" className="flex items-center" onClick={closeSidebar}>
+          <OneSignWordmark variant="black" height={22} className="dark:hidden" />
+          <OneSignWordmark variant="white" height={22} className="hidden dark:block" />
         </Link>
       </div>
 
@@ -82,9 +82,9 @@ export function AppSidebar({ userEmail, children }: AppSidebarProps) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <Link href="/app" className="flex items-center gap-2 ml-3">
-          <OneSignIcon size={22} />
-          <span className="font-semibold text-sm tracking-tight">OneSign</span>
+        <Link href="/app" className="flex items-center ml-3">
+          <OneSignWordmark variant="black" height={18} className="dark:hidden" />
+          <OneSignWordmark variant="white" height={18} className="hidden dark:block" />
         </Link>
       </div>
 
