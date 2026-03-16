@@ -157,6 +157,41 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
   const spacingConfig = SPACING_MAP[themeConfig.spacing];
   const googleFontsUrl = buildGoogleFontsUrl(themeConfig);
 
+  // ─── Load Google Fonts for the active theme ───────────────────────
+  useEffect(() => {
+    if (!googleFontsUrl) return;
+
+    // Preconnect hints (only add once)
+    if (!document.querySelector('link[rel="preconnect"][href*="fonts.googleapis"]')) {
+      const pc1 = document.createElement('link');
+      pc1.rel = 'preconnect';
+      pc1.href = 'https://fonts.googleapis.com';
+      document.head.appendChild(pc1);
+
+      const pc2 = document.createElement('link');
+      pc2.rel = 'preconnect';
+      pc2.href = 'https://fonts.gstatic.com';
+      pc2.crossOrigin = 'anonymous';
+      document.head.appendChild(pc2);
+    }
+
+    // Stylesheet — use a data attribute for reliable lookup (avoids
+    // browser href-normalisation issues that broke the old comparison)
+    const id = 'bio-editor-fonts';
+    let link = document.querySelector(`link[data-id="${id}"]`) as HTMLLinkElement | null;
+    if (link) {
+      if (link.getAttribute('href') !== googleFontsUrl) {
+        link.href = googleFontsUrl;
+      }
+    } else {
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.dataset.id = id;
+      link.href = googleFontsUrl;
+      document.head.appendChild(link);
+    }
+  }, [googleFontsUrl]);
+
   // ─── Handlers ──────────────────────────────────────────────────────
 
   const copyToClipboard = async (text: string) => {
@@ -320,15 +355,6 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
 
   return (
     <div className="min-h-[100dvh] flex flex-col">
-      {/* ─── Google Fonts for active theme ─── */}
-      {googleFontsUrl && (
-        <>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link rel="stylesheet" href={googleFontsUrl} />
-        </>
-      )}
-
       {/* ─── Compact top bar ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-sm px-3 py-2">
         <div className="flex items-center gap-2">
