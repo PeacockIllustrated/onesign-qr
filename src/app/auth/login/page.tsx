@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { QrCode, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { signInSchema } from '@/validations/auth';
 import {
@@ -15,6 +15,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  OneSignIcon,
 } from '@/components/ui';
 
 export default function LoginPage() {
@@ -108,11 +109,9 @@ function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-sm bg-primary text-primary-foreground">
-              <QrCode className="h-6 w-6" />
-            </div>
+            <OneSignIcon size={40} />
           </div>
-          <CardTitle>welcome back</CardTitle>
+          <CardTitle>Welcome back</CardTitle>
           <CardDescription>
             Sign in with your email to continue
           </CardDescription>
@@ -163,7 +162,7 @@ function LoginForm() {
 
             {message && (
               <div
-                className={`p-3 rounded-sm text-sm ${
+                className={`p-3 rounded-lg text-sm ${
                   message.type === 'success'
                     ? 'bg-green-50 text-green-800 border border-green-200'
                     : 'bg-red-50 text-red-800 border border-red-200'
