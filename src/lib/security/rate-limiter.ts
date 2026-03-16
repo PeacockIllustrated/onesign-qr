@@ -106,6 +106,7 @@ const upstashLimiters = {
   urlValidate: createUpstashLimiter(RATE_LIMITS.URL_VALIDATE),
   bioCreate: createUpstashLimiter(RATE_LIMITS.BIO_CREATE),
   bioTrack: createUpstashLimiter(RATE_LIMITS.BIO_TRACK),
+  bioFormSubmit: createUpstashLimiter(RATE_LIMITS.BIO_FORM_SUBMIT, 3_600_000),
 };
 
 // ---------------------------------------------------------------------------
@@ -212,6 +213,16 @@ export function checkBioCreateLimitAsync(identifier: string) {
 /** Async rate limit for bio click tracking — uses Upstash Redis in production */
 export function checkBioTrackLimitAsync(identifier: string) {
   return checkLimit('bioTrack', identifier, RATE_LIMITS.BIO_TRACK);
+}
+
+/** Rate limit for bio form submissions (5/hr) — sync/in-memory */
+export function checkBioFormSubmitLimit(identifier: string): RateLimitResult {
+  return checkMemoryRateLimit(`bio-form-submit:${identifier}`, RATE_LIMITS.BIO_FORM_SUBMIT, 3_600_000);
+}
+
+/** Async rate limit for bio form submissions — uses Upstash Redis in production */
+export function checkBioFormSubmitLimitAsync(identifier: string) {
+  return checkLimit('bioFormSubmit', identifier, RATE_LIMITS.BIO_FORM_SUBMIT);
 }
 
 // ---------------------------------------------------------------------------

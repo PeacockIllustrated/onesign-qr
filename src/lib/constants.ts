@@ -41,6 +41,7 @@ export const RATE_LIMITS = {
   URL_VALIDATE: 30,
   BIO_CREATE: 10,
   BIO_TRACK: 1000,
+  BIO_FORM_SUBMIT: 5,
 };
 
 // Slug configuration
@@ -80,6 +81,7 @@ export const BIO_DEFAULTS = {
   GRID_COLUMNS: 4,
   GRID_ROW_HEIGHT: 80,
   GRID_GAP: 8,
+  MAX_GALLERY_IMAGES: 12,
 };
 
 // Social platform definitions for social_icons blocks
