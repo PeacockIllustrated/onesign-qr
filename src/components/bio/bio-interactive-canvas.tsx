@@ -811,7 +811,7 @@ export function BioInteractiveCanvas({
                         layoutMode ? 'cursor-grab active:cursor-grabbing' : editMode ? 'cursor-pointer' : ''
                       }`}
                     >
-                      <BlockRenderer block={block} />
+                      <BlockRenderer block={block} themeConfig={themeConfig} />
                     </div>
                   </div>
                 );
@@ -827,15 +827,17 @@ export function BioInteractiveCanvas({
                 .map((link) => (
                   <div
                     key={link.id}
-                    className="flex w-full items-center justify-center gap-2 text-center text-sm font-medium px-4 py-3 transition-colors"
+                    className="flex w-full items-center justify-center gap-2 text-center text-sm font-medium tracking-wide px-4 py-3"
                     style={{
                       borderRadius: themeConfig.buttonStyle.borderRadius,
                       borderWidth: themeConfig.buttonStyle.borderWidth,
                       borderStyle: 'solid',
-                      backgroundColor: themeConfig.colors.buttonBg,
-                      color: themeConfig.colors.buttonText,
-                      borderColor: themeConfig.colors.buttonBorder,
                       fontFamily: `'${themeConfig.fonts.body.family}', sans-serif`,
+                      ...(themeConfig.buttonStyle.extraCSS || {}),
+                      ...(themeConfig.buttonStyle.variant === 'outline'
+                        ? { backgroundColor: 'transparent', color: themeConfig.colors.accent, borderColor: themeConfig.colors.accent }
+                        : { backgroundColor: themeConfig.colors.buttonBg, color: themeConfig.colors.buttonText, borderColor: themeConfig.colors.buttonBorder }
+                      ),
                     }}
                   >
                     {link.title}
@@ -882,7 +884,7 @@ export function BioInteractiveCanvas({
               }}
             >
               <div className="h-full w-full overflow-hidden rounded-lg bg-card">
-                <BlockRenderer block={draggedBlock} />
+                <BlockRenderer block={draggedBlock} themeConfig={themeConfig} />
               </div>
             </div>
           )}

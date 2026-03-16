@@ -27,6 +27,61 @@ function loadFontCSS(family: string) {
 
 const CATEGORIES: FontCategory[] = ['sans', 'serif', 'display', 'handwriting', 'mono'];
 
+/**
+ * Individual font row that uses IntersectionObserver to load its font
+ * CSS when scrolled into view, so each label renders in its own typeface.
+ */
+function FontRow({
+  font,
+  isSelected,
+  onSelect,
+}: {
+  font: FontEntry;
+  isSelected: boolean;
+  onSelect: (family: string) => void;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // If already loaded, skip observer
+    if (loadedFonts.has(font.family)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadFontCSS(font.family);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '100px' }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [font.family]);
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={() => onSelect(font.family)}
+      className={cn(
+        'flex w-full items-center px-3 py-1.5 text-sm transition-colors',
+        isSelected
+          ? 'bg-primary/10 text-primary'
+          : 'hover:bg-muted/50'
+      )}
+    >
+      <span style={{ fontFamily: `'${font.family}', sans-serif` }}>
+        {font.label}
+      </span>
+    </button>
+  );
+}
+
 export function BioFontPicker({ label, value, onChange }: BioFontPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -137,22 +192,12 @@ export function BioFontPicker({ label, value, onChange }: BioFontPickerProps) {
                       </span>
                     </div>
                     {fonts.map((font) => (
-                      <button
+                      <FontRow
                         key={font.family}
-                        type="button"
-                        onClick={() => handleSelect(font.family)}
-                        onMouseEnter={() => loadFontCSS(font.family)}
-                        className={cn(
-                          'flex w-full items-center px-3 py-1.5 text-sm transition-colors',
-                          value === font.family
-                            ? 'bg-primary/10 text-primary'
-                            : 'hover:bg-muted/50'
-                        )}
-                      >
-                        <span style={{ fontFamily: `'${font.family}', sans-serif` }}>
-                          {font.label}
-                        </span>
-                      </button>
+                        font={font}
+                        isSelected={value === font.family}
+                        onSelect={handleSelect}
+                      />
                     ))}
                   </div>
                 );

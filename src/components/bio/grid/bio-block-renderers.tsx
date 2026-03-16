@@ -41,6 +41,7 @@ import type {
   BioBlockContentPaymentLink,
   BioBlockContentGallery,
   BioBlockContentContactForm,
+  BioThemeConfig,
 } from '@/types/bio';
 import { SOCIAL_PLATFORMS } from '@/lib/constants';
 
@@ -49,15 +50,17 @@ import { SOCIAL_PLATFORMS } from '@/lib/constants';
 interface BlockRendererProps {
   block: BioBlock;
   compact?: boolean;
+  themeConfig?: BioThemeConfig;
 }
 
-export function BlockRenderer({ block, compact }: BlockRendererProps) {
+export function BlockRenderer({ block, compact, themeConfig }: BlockRendererProps) {
   switch (block.block_type) {
     case 'link':
       return (
         <LinkBlockRenderer
           content={block.content as BioBlockContentLink}
           compact={compact}
+          themeConfig={themeConfig}
         />
       );
     case 'heading':
@@ -65,6 +68,7 @@ export function BlockRenderer({ block, compact }: BlockRendererProps) {
         <HeadingBlockRenderer
           content={block.content as BioBlockContentHeading}
           compact={compact}
+          themeConfig={themeConfig}
         />
       );
     case 'text':
@@ -72,6 +76,7 @@ export function BlockRenderer({ block, compact }: BlockRendererProps) {
         <TextBlockRenderer
           content={block.content as BioBlockContentText}
           compact={compact}
+          themeConfig={themeConfig}
         />
       );
     case 'image':
@@ -165,10 +170,67 @@ export function BlockRenderer({ block, compact }: BlockRendererProps) {
 function LinkBlockRenderer({
   content,
   compact,
+  themeConfig,
 }: {
   content: BioBlockContentLink;
   compact?: boolean;
+  themeConfig?: BioThemeConfig;
 }) {
+  // When theme is available, render styled like the public page
+  if (themeConfig) {
+    const { buttonStyle, colors, fonts } = themeConfig;
+
+    const btnStyle: React.CSSProperties = {
+      borderRadius: buttonStyle.borderRadius,
+      borderWidth: buttonStyle.borderWidth,
+      borderStyle: 'solid',
+      fontFamily: `'${fonts.body.family}', sans-serif`,
+      ...(buttonStyle.extraCSS || {}),
+    };
+
+    if (buttonStyle.variant === 'outline') {
+      Object.assign(btnStyle, {
+        backgroundColor: 'transparent',
+        color: colors.accent,
+        borderColor: colors.accent,
+      });
+    } else if (buttonStyle.variant === 'glass') {
+      Object.assign(btnStyle, {
+        backgroundColor: colors.buttonBg,
+        color: colors.buttonText,
+        borderColor: colors.buttonBorder,
+      });
+    } else {
+      Object.assign(btnStyle, {
+        backgroundColor: colors.buttonBg,
+        color: colors.buttonText,
+        borderColor: colors.buttonBorder,
+      });
+    }
+
+    return (
+      <div
+        className="flex h-full w-full items-center justify-center px-3 text-center text-sm font-medium tracking-wide overflow-hidden"
+        style={btnStyle}
+      >
+        <span className="flex w-full min-w-0 items-center justify-center gap-2.5">
+          {content.show_icon !== false && content.icon && (
+            <span className="shrink-0">
+              {(content.icon_type === 'image' || content.icon_type === 'favicon') && content.icon_url ? (
+                <img src={content.icon_url} alt="" className="h-5 w-5 shrink-0 rounded object-cover" />
+              ) : (
+                <span className="text-lg">{content.icon}</span>
+              )}
+            </span>
+          )}
+          <span className="truncate">{content.title || 'Untitled link'}</span>
+          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-40" />
+        </span>
+      </div>
+    );
+  }
+
+  // Fallback (no theme) — compact/sidebar view
   return (
     <div
       className={`flex w-full items-center gap-3 rounded-sm bg-secondary ${
@@ -207,9 +269,11 @@ function LinkBlockRenderer({
 function HeadingBlockRenderer({
   content,
   compact,
+  themeConfig,
 }: {
   content: BioBlockContentHeading;
   compact?: boolean;
+  themeConfig?: BioThemeConfig;
 }) {
   const text = content.text || 'Heading';
 
@@ -220,7 +284,7 @@ function HeadingBlockRenderer({
       3: 'text-xs font-medium',
     };
     return (
-      <div className={`w-full text-center text-foreground ${sizeMap[content.level] ?? sizeMap[2]}`}>
+      <div className={`w-full text-center ${sizeMap[content.level] ?? sizeMap[2]}`} style={themeConfig ? { color: themeConfig.colors.text, fontFamily: `'${themeConfig.fonts.title.family}', sans-serif` } : undefined}>
         {text}
       </div>
     );
@@ -233,7 +297,7 @@ function HeadingBlockRenderer({
   };
 
   return (
-    <div className={`w-full text-center text-foreground ${sizeMap[content.level] ?? sizeMap[2]}`}>
+    <div className={`w-full text-center ${sizeMap[content.level] ?? sizeMap[2]}`} style={themeConfig ? { color: themeConfig.colors.text, fontFamily: `'${themeConfig.fonts.title.family}', sans-serif` } : undefined}>
       {text}
     </div>
   );
@@ -244,18 +308,22 @@ function HeadingBlockRenderer({
 function TextBlockRenderer({
   content,
   compact,
+  themeConfig,
 }: {
   content: BioBlockContentText;
   compact?: boolean;
+  themeConfig?: BioThemeConfig;
 }) {
   const alignClass = content.align === 'center' ? 'text-center' : content.align === 'right' ? 'text-right' : 'text-left';
 
   return (
     <p
-      className={`w-full text-muted-foreground leading-relaxed ${
+      className={`w-full leading-relaxed ${
         compact ? 'text-xs' : 'text-sm'
       } ${alignClass}`}
       style={{
+        color: themeConfig ? themeConfig.colors.textSecondary : undefined,
+        fontFamily: themeConfig ? `'${themeConfig.fonts.body.family}', sans-serif` : undefined,
         fontWeight: content.bold ? 700 : undefined,
         fontStyle: content.italic ? 'italic' : undefined,
       }}
