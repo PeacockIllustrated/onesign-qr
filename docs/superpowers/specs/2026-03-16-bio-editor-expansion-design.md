@@ -329,6 +329,15 @@ All new blocks work within the existing 4-column grid system:
 
 ## 5. Data Model Changes
 
+**Naming conventions** (must follow existing project prefixes to avoid cross-project collisions):
+- Tables: `bio_` prefix, snake_case (e.g., `bio_form_submissions`)
+- Enums: `bio_` prefix, snake_case (e.g., `bio_block_type`)
+- Storage buckets: `bio-` prefix, kebab-case (e.g., `bio-gallery`)
+- Storage policies: `bio_{bucket}_` prefix (e.g., `bio_gallery_select_public`)
+- RLS policies: `bio_{table}_` prefix (e.g., `bio_form_submissions_select_own`)
+- Indexes: `idx_bio_` prefix (e.g., `idx_bio_form_submissions_page_time`)
+- Triggers: `trigger_bio_` prefix (matching existing `trigger_bio_*` pattern)
+
 ### 5.1 New Table: `bio_form_submissions`
 
 ```sql
@@ -349,14 +358,14 @@ CREATE TABLE bio_form_submissions (
 -- Note: No updated_at column. This table is append-only except for is_read toggling.
 -- PATCH operations only touch is_read; no trigger needed.
 
-CREATE INDEX idx_form_submissions_page_time ON bio_form_submissions(page_id, submitted_at DESC);
-CREATE INDEX idx_form_submissions_block ON bio_form_submissions(block_id);
+CREATE INDEX idx_bio_form_submissions_page_time ON bio_form_submissions(page_id, submitted_at DESC);
+CREATE INDEX idx_bio_form_submissions_block ON bio_form_submissions(block_id);
 ```
 
-**RLS policies:**
-- Owner can SELECT submissions where `page_id` belongs to them
-- Owner can UPDATE `is_read` on their own submissions
-- Owner can DELETE their own submissions
+**RLS policies** (following `bio_` naming convention):
+- `bio_form_submissions_select_own` — Owner can SELECT submissions where `page_id` belongs to them
+- `bio_form_submissions_update_own` — Owner can UPDATE `is_read` on their own submissions
+- `bio_form_submissions_delete_own` — Owner can DELETE their own submissions
 - **Public INSERT:** The form submission API route uses the Supabase service-role (admin) client to bypass RLS for inserts, matching the existing pattern in `/api/bio/track` which also uses the admin client for public event tracking. Server-side validation (field constraints, rate limiting) provides the security layer.
 - No public SELECT
 
@@ -375,6 +384,12 @@ ALTER TYPE bio_block_type ADD VALUE 'payment_link';
 ### 5.3 New Storage Bucket: `bio-gallery`
 
 Create a new `bio-gallery` storage bucket in the migration for gallery images. Storage path convention: `{user_id}/{page_id}/{image_id}.{ext}` — matching the existing `auth.uid()::text = (storage.foldername(name))[1]` RLS pattern used by `bio-avatars` and `qr-logos`. Public read access for serving images on public bio pages, owner-only write/delete.
+
+**Storage policy names** (following `bio_` prefix convention matching `bio_avatars_*`):
+- `bio_gallery_select_public` — Public read for serving images on public pages
+- `bio_gallery_insert_own` — Owner can upload to their own `{user_id}/` folder
+- `bio_gallery_update_own` — Owner can replace images in their folder
+- `bio_gallery_delete_own` — Owner can delete images from their folder
 
 ### 5.4 TypeScript & Zod Updates Required
 
