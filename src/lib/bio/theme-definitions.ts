@@ -730,7 +730,7 @@ export function buildGoogleFontsUrl(config: BioThemeConfig): string | null {
   const params = Array.from(families)
     .map(([family, weights]) => {
       const sorted = Array.from(weights).sort((a, b) => a - b).join(';');
-      return `family=${encodeURIComponent(`${family}:wght@${sorted}`)}`;
+      return `family=${encodeURIComponent(family)}:wght@${sorted}`;
     })
     .join('&');
 

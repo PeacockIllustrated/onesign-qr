@@ -157,35 +157,6 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
   const spacingConfig = SPACING_MAP[themeConfig.spacing];
   const googleFontsUrl = buildGoogleFontsUrl(themeConfig);
 
-  // ─── Load Google Fonts for the active theme ───────────────────────
-  useEffect(() => {
-    if (!googleFontsUrl) return;
-    const id = 'bio-editor-google-fonts';
-    let link = document.getElementById(id) as HTMLLinkElement | null;
-    if (link) {
-      // Update existing link if URL changed
-      if (link.href !== googleFontsUrl) link.href = googleFontsUrl;
-      return;
-    }
-    // Inject preconnect + stylesheet
-    const preconnect1 = document.createElement('link');
-    preconnect1.rel = 'preconnect';
-    preconnect1.href = 'https://fonts.googleapis.com';
-    document.head.appendChild(preconnect1);
-
-    const preconnect2 = document.createElement('link');
-    preconnect2.rel = 'preconnect';
-    preconnect2.href = 'https://fonts.gstatic.com';
-    preconnect2.crossOrigin = 'anonymous';
-    document.head.appendChild(preconnect2);
-
-    link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = googleFontsUrl;
-    document.head.appendChild(link);
-  }, [googleFontsUrl]);
-
   // ─── Handlers ──────────────────────────────────────────────────────
 
   const copyToClipboard = async (text: string) => {
@@ -349,6 +320,15 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
 
   return (
     <div className="min-h-[100dvh] flex flex-col">
+      {/* ─── Google Fonts for active theme ─── */}
+      {googleFontsUrl && (
+        <>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link rel="stylesheet" href={googleFontsUrl} />
+        </>
+      )}
+
       {/* ─── Compact top bar ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-sm px-3 py-2">
         <div className="flex items-center gap-2">
