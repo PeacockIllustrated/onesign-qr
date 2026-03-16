@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { Plus, ExternalLink, BarChart3, Activity, Hash } from 'lucide-react';
+import { Plus, ExternalLink, BarChart3, Activity, Hash, Link2, Eye, Palette } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { Button, Card, CardContent, Badge, OneSignIcon } from '@/components/ui';
 import { formatDate, formatNumber } from '@/lib/utils';
+import { QRDeleteButton } from '@/components/qr/qr-delete-button';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,6 +15,14 @@ export default async function DashboardPage() {
     .select('*, qr_styles(*)')
     .eq('owner_id', user!.id)
     .order('created_at', { ascending: false });
+
+  // Fetch bio page
+  const { data: bioPage } = await supabase
+    .from('bio_link_pages')
+    .select('*')
+    .eq('owner_id', user!.id)
+    .is('deleted_at', null)
+    .single();
 
   const totalScans = qrCodes?.reduce((sum, qr) => sum + (qr.total_scans || 0), 0) ?? 0;
   const activeCount = qrCodes?.filter(qr => qr.is_active).length ?? 0;
@@ -38,7 +47,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <Card className="rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
@@ -78,9 +87,52 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+        <Card className="rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Bio Views</p>
+                <p className="text-2xl font-bold mt-1">{formatNumber(bioPage?.total_views ?? 0)}</p>
+              </div>
+              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                <Eye className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bio Page Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold tracking-tight">Bio Page</h2>
+          {!bioPage && (
+            <Link href="/app/bio/new">
+              <Button variant="outline" size="sm" className="rounded-lg">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Create Bio Page
+              </Button>
+            </Link>
+          )}
+        </div>
+        {bioPage ? (
+          <BioPageCard page={bioPage} />
+        ) : (
+          <Card className="rounded-xl">
+            <CardContent className="p-8 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-muted mb-3">
+                <Link2 className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">No bio page yet. Create one to share all your links in one place.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* QR Code Grid */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold tracking-tight">QR Codes</h2>
+      </div>
       {!qrCodes || qrCodes.length === 0 ? (
         <EmptyState />
       ) : (
@@ -117,6 +169,52 @@ function EmptyState() {
   );
 }
 
+function BioPageCard({ page }: { page: any }) {
+  const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
+
+  return (
+    <Card className="rounded-xl hover:border-foreground/20 transition-colors">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
+              <Link2 className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold truncate">{page.title}</h3>
+                <Badge variant={page.is_active ? 'success' : 'secondary'} className="rounded-md shrink-0">
+                  {page.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Eye className="h-3.5 w-3.5" />
+                  {formatNumber(page.total_views)} views
+                </span>
+                <span className="font-mono text-xs">/p/{page.slug}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href={`/app/bio/${page.id}`}>
+              <Button variant="outline" size="sm" className="rounded-lg">
+                Edit
+              </Button>
+            </Link>
+            <a href={pageUrl} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm" className="rounded-lg">
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                View
+              </Button>
+            </a>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function QRCard({ qr }: { qr: any }) {
   const redirectUrl = qr.mode === 'managed'
     ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/r/${qr.slug}`
@@ -135,9 +233,12 @@ function QRCard({ qr }: { qr: any }) {
           <div className="space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold truncate">{qr.name}</h3>
-              <Badge variant={qr.is_active ? 'success' : 'secondary'} className="rounded-md shrink-0">
-                {qr.is_active ? 'Active' : 'Inactive'}
-              </Badge>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Badge variant={qr.is_active ? 'success' : 'secondary'} className="rounded-md">
+                  {qr.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+                <QRDeleteButton qrId={qr.id} qrName={qr.name} />
+              </div>
             </div>
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
