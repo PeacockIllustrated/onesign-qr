@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Link2, ExternalLink, Eye, Palette, Loader2 } from 'lucide-react';
+import { Plus, Link2, ExternalLink, Eye, Loader2 } from 'lucide-react';
 import { Button, Card, CardContent, Badge, useToast } from '@/components/ui';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { BIO_THEME_DEFINITIONS } from '@/lib/bio/themes';
+import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
 import { BIO_DEFAULTS } from '@/lib/constants';
-import type { BioLinkPage } from '@/types/bio';
+import type { BioLinkPage, BioLinkTheme } from '@/types/bio';
 
 export default function BioPage() {
   const [pages, setPages] = useState<BioLinkPage[]>([]);
@@ -149,12 +150,29 @@ function BioPageCard({
 }) {
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
   const themeDefinition = BIO_THEME_DEFINITIONS[page.theme];
+  const themeConfig = THEME_CONFIGS[page.theme as BioLinkTheme] ?? THEME_CONFIGS.minimal;
   const isToggling = togglingId === page.id;
+  const accent = themeConfig.colors.accent;
+  const previewColors = themeConfig.previewColors;
 
   return (
-    <Card className="hover:border-foreground/20 transition-colors active:scale-[0.995]">
+    <Card
+      className="overflow-hidden hover:border-foreground/20 transition-colors active:scale-[0.995]"
+      style={{ borderLeftWidth: 4, borderLeftColor: accent }}
+    >
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
+          {/* Theme preview swatch */}
+          <div
+            className="hidden sm:flex shrink-0 w-10 h-10 rounded-lg items-center justify-center overflow-hidden"
+            style={{ background: themeConfig.background.css }}
+          >
+            <div
+              className="w-5 h-1.5 rounded-full"
+              style={{ backgroundColor: themeConfig.colors.buttonBg, opacity: 0.9 }}
+            />
+          </div>
+
           {/* Info */}
           <div className="space-y-2.5 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -171,9 +189,15 @@ function BioPageCard({
               </p>
 
               <div className="flex items-center gap-3 flex-wrap text-xs">
-                <span className="flex items-center gap-1">
-                  <Palette className="h-3 w-3" />
-                  {themeDefinition?.name || page.theme}
+                <span className="flex items-center gap-1.5">
+                  {previewColors.map((color, i) => (
+                    <span
+                      key={i}
+                      className="inline-block h-2.5 w-2.5 rounded-full border border-border/50"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                  <span>{themeDefinition?.name || page.theme}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <Eye className="h-3 w-3" />

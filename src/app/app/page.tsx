@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { Plus, ExternalLink, BarChart3, Activity, Hash, Link2, Eye, Palette } from 'lucide-react';
+import { Plus, ExternalLink, BarChart3, Activity, Hash, Link2, Eye } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { Button, Card, CardContent, Badge, OneSignIcon } from '@/components/ui';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { QRDeleteButton } from '@/components/qr/qr-delete-button';
+import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
+import type { BioLinkTheme } from '@/types/bio';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -171,14 +173,24 @@ function EmptyState() {
 
 function BioPageCard({ page }: { page: any }) {
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
+  const themeConfig = THEME_CONFIGS[(page.theme as BioLinkTheme) ?? 'minimal'] ?? THEME_CONFIGS.minimal;
 
   return (
-    <Card className="rounded-xl hover:border-foreground/20 transition-colors">
+    <Card
+      className="rounded-xl overflow-hidden hover:border-foreground/20 transition-colors"
+      style={{ borderLeftWidth: 4, borderLeftColor: themeConfig.colors.accent }}
+    >
       <CardContent className="p-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
-              <Link2 className="h-6 w-6 text-muted-foreground" />
+            <div
+              className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: themeConfig.background.css }}
+            >
+              <div
+                className="w-6 h-1.5 rounded-full"
+                style={{ backgroundColor: themeConfig.colors.buttonBg, opacity: 0.9 }}
+              />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -188,6 +200,16 @@ function BioPageCard({ page }: { page: any }) {
                 </Badge>
               </div>
               <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  {themeConfig.previewColors.map((color, i) => (
+                    <span
+                      key={i}
+                      className="inline-block h-2.5 w-2.5 rounded-full border border-border/50"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                  <span className="text-xs">{themeConfig.name}</span>
+                </span>
                 <span className="flex items-center gap-1">
                   <Eye className="h-3.5 w-3.5" />
                   {formatNumber(page.total_views)} views
