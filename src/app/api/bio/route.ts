@@ -10,7 +10,9 @@ const MAX_SLUG_RETRIES = 3;
 /**
  * POST /api/bio - Create a new bio-link page
  *
- * One page per user is enforced by a UNIQUE constraint on owner_id.
+ * Users may have up to MAX_PAGES_PER_USER pages. Only one can be active at a time
+ * (enforced by a partial unique index). New pages default to draft (is_active = false)
+ * unless this is the user's first page.
  */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -55,24 +57,33 @@ export async function POST(request: NextRequest) {
       create_qr,
     } = parsed.data;
 
-    // Check if user already has a bio page
-    const { data: existing, error: existingError } = await supabase
+    // Check how many non-deleted pages the user already has
+    const { count: existingCount, error: countError } = await supabase
       .from('bio_link_pages')
-      .select('id')
+      .select('id', { count: 'exact', head: true })
       .eq('owner_id', user.id)
-      .is('deleted_at', null)
-      .maybeSingle();
+      .is('deleted_at', null);
 
-    if (existing) {
+    if (countError) {
+      console.error('Failed to count existing bio pages:', countError.message);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    const pageCount = existingCount ?? 0;
+
+    if (pageCount >= BIO_DEFAULTS.MAX_PAGES_PER_USER) {
       return NextResponse.json(
-        { error: 'You already have a bio page. Each user can have one bio page.' },
+        { error: `You can have up to ${BIO_DEFAULTS.MAX_PAGES_PER_USER} bio pages.` },
         { status: 409 }
       );
     }
 
+    // First page is active by default; subsequent pages start as drafts
+    const isFirstPage = pageCount === 0;
+
     // Generate slug with retry logic
     let finalSlug = slug;
-    let page: { id: string; slug: string } | null = null;
+    let page: { id: string; slug: string; is_active: boolean } | null = null;
 
     for (let attempt = 0; attempt < MAX_SLUG_RETRIES; attempt++) {
       if (!finalSlug) {
@@ -101,8 +112,9 @@ export async function POST(request: NextRequest) {
           custom_text_color: custom_text_color || null,
           custom_accent_color: custom_accent_color || null,
           analytics_enabled,
+          is_active: isFirstPage,
         })
-        .select('id, slug')
+        .select('id, slug, is_active')
         .single();
 
       if (createError) {
@@ -110,13 +122,6 @@ export async function POST(request: NextRequest) {
         if (createError.code === '23505' && !slug) {
           finalSlug = undefined;
           continue;
-        }
-        // Unique owner_id violation — user already has a page
-        if (createError.code === '23505') {
-          return NextResponse.json(
-            { error: 'You already have a bio page.' },
-            { status: 409 }
-          );
         }
         console.error('Failed to create bio page:', createError.message, createError.code, createError.details);
         return NextResponse.json(
@@ -199,6 +204,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       id: page.id,
       slug: page.slug,
+      is_active: page.is_active,
       page_url: pageUrl,
       qr_code_id: qrCodeId,
     }, {
@@ -242,21 +248,22 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { data: page, error } = await supabase
+    const { data: pages, error } = await supabase
       .from('bio_link_pages')
       .select('*, bio_link_items(*)')
       .eq('owner_id', user.id)
       .is('deleted_at', null)
-      .order('sort_order', { referencedTable: 'bio_link_items', ascending: true })
-      .maybeSingle();
+      .order('is_active', { ascending: false })
+      .order('created_at', { ascending: false })
+      .order('sort_order', { referencedTable: 'bio_link_items', ascending: true });
 
-    if (error || !page) {
-      return NextResponse.json({ data: null }, {
+    if (error) {
+      return NextResponse.json({ data: [] }, {
         headers: getRateLimitHeaders(rateLimit),
       });
     }
 
-    return NextResponse.json({ data: page }, {
+    return NextResponse.json({ data: pages || [] }, {
       headers: getRateLimitHeaders(rateLimit),
     });
 

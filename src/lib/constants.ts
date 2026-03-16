@@ -72,6 +72,7 @@ export const PDF_PRESETS = {
 
 // Bio-link page defaults
 export const BIO_DEFAULTS = {
+  MAX_PAGES_PER_USER: 5,
   MAX_LINKS_PER_PAGE: 10,
   MAX_BLOCKS_PER_PAGE: 50,
   MAX_BIO_LENGTH: 300,

@@ -144,6 +144,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
+    // When activating a page, deactivate all other pages for this user first
+    if (update.is_active === true) {
+      await supabase
+        .from('bio_link_pages')
+        .update({ is_active: false })
+        .eq('owner_id', user.id)
+        .neq('id', id)
+        .is('deleted_at', null);
+    }
+
     const { error: updateError } = await supabase
       .from('bio_link_pages')
       .update(update)
