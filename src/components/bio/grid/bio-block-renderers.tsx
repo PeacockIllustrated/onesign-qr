@@ -23,6 +23,7 @@ import {
   Twitch,
   Timer,
   DollarSign,
+  FileText,
 } from 'lucide-react';
 import type {
   BioBlock,
@@ -145,9 +146,10 @@ export function BlockRenderer({ block, compact }: BlockRendererProps) {
       );
     case 'contact_form':
       return (
-        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-          {block.block_type.replace('_', ' ')} — coming soon
-        </div>
+        <ContactFormBlockRenderer
+          content={block.content as BioBlockContentContactForm}
+          compact={compact}
+        />
       );
     default:
       return (
@@ -697,6 +699,45 @@ function GalleryBlockRenderer({
         </span>
         <span className="block truncate text-[10px] text-muted-foreground">
           {modeLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Contact Form ─────────────────────────────────────────────────────
+
+function ContactFormBlockRenderer({
+  content,
+  compact,
+}: {
+  content: BioBlockContentContactForm;
+  compact?: boolean;
+}) {
+  if (!content.form_title && (!content.fields || content.fields.length === 0)) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border">
+        <FileText className={`text-muted-foreground ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
+        <span className="text-[10px] text-muted-foreground">Set up form</span>
+      </div>
+    );
+  }
+
+  const fieldCount = (content.fields ?? ['name', 'email', 'message']).length;
+
+  return (
+    <div className="flex h-full w-full items-center justify-center gap-2.5 rounded-sm bg-secondary px-3">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground/5">
+        <FileText
+          className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <span className={`block truncate font-medium text-foreground ${compact ? 'text-xs' : 'text-sm'}`}>
+          {content.form_title || 'Contact Form'}
+        </span>
+        <span className="block truncate text-[10px] text-muted-foreground">
+          {fieldCount} field{fieldCount !== 1 ? 's' : ''}
         </span>
       </div>
     </div>

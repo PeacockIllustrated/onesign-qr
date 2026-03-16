@@ -33,6 +33,7 @@ import { MapForm } from './forms/map-form';
 import { CountdownForm } from './forms/countdown-form';
 import { PaymentLinkForm } from './forms/payment-link-form';
 import { GalleryForm } from './forms/gallery-form';
+import { ContactFormForm } from './forms/contact-form-form';
 
 interface BioBlockEditPanelProps {
   block: BioBlock;
@@ -221,7 +222,7 @@ function BlockFormSwitch({
         />
       );
     case 'contact_form':
-      return <p className="text-xs text-muted-foreground">Editor coming soon for this block type.</p>;
+      return <ContactFormForm content={block.content as BioBlockContentContactForm} onChange={onUpdate} />;
     default:
       return <p className="text-xs text-muted-foreground">No editor available for this block type.</p>;
   }
