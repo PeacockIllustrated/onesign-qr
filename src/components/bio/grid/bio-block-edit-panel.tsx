@@ -32,6 +32,7 @@ import { YouTubeForm } from './forms/youtube-form';
 import { MapForm } from './forms/map-form';
 import { CountdownForm } from './forms/countdown-form';
 import { PaymentLinkForm } from './forms/payment-link-form';
+import { GalleryForm } from './forms/gallery-form';
 
 interface BioBlockEditPanelProps {
   block: BioBlock;
@@ -212,6 +213,13 @@ function BlockFormSwitch({
     case 'payment_link':
       return <PaymentLinkForm content={block.content as BioBlockContentPaymentLink} onChange={onUpdate} />;
     case 'gallery':
+      return (
+        <GalleryForm
+          content={block.content as BioBlockContentGallery}
+          onChange={onUpdate}
+          pageId={block.page_id}
+        />
+      );
     case 'contact_form':
       return <p className="text-xs text-muted-foreground">Editor coming soon for this block type.</p>;
     default:

@@ -29,6 +29,7 @@ import { PublicYouTubeBlock } from './block-renderers/youtube-block';
 import { PublicMapBlock } from './block-renderers/map-block';
 import { PublicCountdownBlock } from './block-renderers/countdown-block';
 import { PublicPaymentLinkBlock } from './block-renderers/payment-link-block';
+import { PublicGalleryBlock } from './block-renderers/gallery-block';
 
 interface BioPublicBlockProps {
   block: BioBlock;
@@ -174,6 +175,12 @@ export function BioPublicBlock({
       );
 
     case 'gallery':
+      return (
+        <PublicGalleryBlock
+          content={block.content as BioBlockContentGallery}
+          themeConfig={themeConfig}
+        />
+      );
     case 'contact_form':
       return null;
 

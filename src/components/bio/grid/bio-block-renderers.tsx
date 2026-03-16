@@ -5,6 +5,7 @@ import {
   Type,
   AlignLeft,
   Image,
+  Images,
   Users,
   Minus,
   Square,
@@ -136,6 +137,12 @@ export function BlockRenderer({ block, compact }: BlockRendererProps) {
         />
       );
     case 'gallery':
+      return (
+        <GalleryBlockRenderer
+          content={block.content as BioBlockContentGallery}
+          compact={compact}
+        />
+      );
     case 'contact_form':
       return (
         <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
@@ -651,6 +658,45 @@ function PaymentLinkBlockRenderer({
         </span>
         <span className="block truncate text-[10px] text-muted-foreground">
           {platformLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Gallery ─────────────────────────────────────────────────────────
+
+function GalleryBlockRenderer({
+  content,
+  compact,
+}: {
+  content: BioBlockContentGallery;
+  compact?: boolean;
+}) {
+  if (!content.images || content.images.length === 0) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border">
+        <Images className={`text-muted-foreground ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
+        <span className="text-[10px] text-muted-foreground">Add images</span>
+      </div>
+    );
+  }
+
+  const modeLabel = content.display_mode === 'carousel' ? 'Carousel' : 'Grid';
+
+  return (
+    <div className="flex h-full w-full items-center justify-center gap-2.5 rounded-sm bg-secondary px-3">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground/5">
+        <Images
+          className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <span className={`block truncate font-medium text-foreground ${compact ? 'text-xs' : 'text-sm'}`}>
+          {content.images.length} image{content.images.length !== 1 ? 's' : ''}
+        </span>
+        <span className="block truncate text-[10px] text-muted-foreground">
+          {modeLabel}
         </span>
       </div>
     </div>
