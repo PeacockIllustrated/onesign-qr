@@ -25,9 +25,9 @@ import type {
    ═══════════════════════════════════════════════════════════════════════ */
 
 const LONG_PRESS_MS = 500;
-const MOVE_CANCEL_THRESHOLD = 10;
+const MOVE_CANCEL_PX = 20; // more forgiving — prevents scroll triggering layout mode
 const STASH_ZONE_HEIGHT = 72;
-const GRID_ROW_MIN_HEIGHT = 60; // matches gridAutoRows minmax
+const GRID_ROW_MIN_HEIGHT = 60;
 
 /* ═══════════════════════════════════════════════════════════════════════
    CSS
@@ -54,14 +54,14 @@ const INJECTED_CSS = `
   position: absolute;
   bottom: 2px;
   right: 2px;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   cursor: nwse-resize;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  background: hsl(var(--foreground) / 0.8);
+  border-radius: 6px;
+  background: hsl(var(--foreground) / 0.85);
   color: hsl(var(--background));
   z-index: 12;
   touch-action: none;
@@ -77,19 +77,14 @@ type DragKind = 'move' | 'resize' | 'unstash';
 interface DragInfo {
   kind: DragKind;
   blockId: string;
-  /** Pointer position at start */
   startX: number;
   startY: number;
-  /** Current pointer position */
   currentX: number;
   currentY: number;
-  /** Offset from block top-left to pointer (for ghost positioning) */
   offsetX: number;
   offsetY: number;
-  /** Block dimensions for rendering the floating ghost */
   width: number;
   height: number;
-  /** Original grid position (for resize) */
   origCol: number;
   origRow: number;
   origColSpan: number;
@@ -127,8 +122,8 @@ interface BioInteractiveCanvasProps {
   cardLayout: BioCardLayout | null;
   onBlockTap: (blockId: string) => void;
   onHeaderTap: () => void;
-  onMoveBlock: (blockId: string, col: number, row: number) => void;
-  onResizeBlock: (blockId: string, colSpan: number, rowSpan: number) => void;
+  onMoveBlock: (blockId: string, col: number, row: number, excludeIds?: Set<string>) => void;
+  onResizeBlock: (blockId: string, colSpan: number, rowSpan: number, excludeIds?: Set<string>) => void;
   onSavePositions: () => void;
   onLayoutModeChange?: (active: boolean) => void;
   contactCard: React.ReactNode;
@@ -158,13 +153,11 @@ export function BioInteractiveCanvas({
   /* ─── State ──────────────────────────────────────────────────────── */
   const [layoutMode, setLayoutMode] = useState(false);
   const [stashedIds, setStashedIds] = useState<Set<string>>(new Set());
-
-  // Drag state lives in both ref (for event handlers) and state (for rendering)
   const [dragRender, setDragRender] = useState<DragInfo | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [overStash, setOverStash] = useState(false);
 
-  // Refs for document-level event handlers (avoids stale closures)
+  // Refs for stable access inside pointer handlers
   const dragRef = useRef<DragInfo | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const blocksRef = useRef(blocks);
@@ -197,6 +190,19 @@ export function BioInteractiveCanvas({
     onLayoutModeChange?.(layoutMode);
   }, [layoutMode, onLayoutModeChange]);
 
+  /* ─── Cancel long-press on scroll (key fix for scroll-triggers-layout) ── */
+  useEffect(() => {
+    const cancelOnScroll = () => {
+      if (longPressRef.current) {
+        clearTimeout(longPressRef.current.timer);
+        longPressRef.current = null;
+      }
+    };
+    // Use capture to catch scroll events from any ancestor
+    window.addEventListener('scroll', cancelOnScroll, { capture: true, passive: true });
+    return () => window.removeEventListener('scroll', cancelOnScroll, { capture: true } as EventListenerOptions);
+  }, []);
+
   /* ─── Cleanup ───────────────────────────────────────────────────── */
   useEffect(() => {
     return () => {
@@ -204,23 +210,18 @@ export function BioInteractiveCanvas({
     };
   }, []);
 
-  /* ─── Grid measurement helper ───────────────────────────────────── */
+  /* ─── Grid measurement ──────────────────────────────────────────── */
   const getGridMetrics = useCallback(() => {
     const el = gridRef.current;
     if (!el) return null;
     const rect = el.getBoundingClientRect();
     const gapPx = parseFloat(getComputedStyle(el).gap) || 0;
     const cellWidth = (rect.width - gapPx * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
-    // Measure actual row heights from the grid
-    const rows = el.getClientRects(); // fallback
     const rowTracks = getComputedStyle(el).gridTemplateRows.split(' ').map(parseFloat);
-    const rowHeight = rowTracks.length > 0 && rowTracks[0] > 0
-      ? rowTracks[0]
-      : GRID_ROW_MIN_HEIGHT;
+    const rowHeight = rowTracks.length > 0 && rowTracks[0] > 0 ? rowTracks[0] : GRID_ROW_MIN_HEIGHT;
     return { rect, cellWidth, rowHeight, gapPx };
   }, []);
 
-  /** Convert client coords to grid cell */
   const clientToGrid = useCallback(
     (clientX: number, clientY: number) => {
       const m = getGridMetrics();
@@ -235,27 +236,23 @@ export function BioInteractiveCanvas({
   );
 
   /* ═══════════════════════════════════════════════════════════════════
-     Document-level pointer handlers (registered via useEffect)
+     Drag overlay handlers — all pointer events during drag go through
+     a full-screen overlay, eliminating timing/capture issues
      ═══════════════════════════════════════════════════════════════════ */
 
-  const handleDocPointerMove = useCallback(
-    (e: PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag) return;
+  const handleOverlayPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
       e.preventDefault();
 
-      const x = e.clientX;
-      const y = e.clientY;
+      d.currentX = e.clientX;
+      d.currentY = e.clientY;
+      setDragRender({ ...d });
 
-      // Update ref immediately (for drop calculation)
-      drag.currentX = x;
-      drag.currentY = y;
-
-      // Render update (batched)
-      setDragRender({ ...drag });
-
-      // Check stash zone
-      const isOverStashZone = y > window.innerHeight - STASH_ZONE_HEIGHT - 60;
+      // Check stash zone (only for move drags, not resize)
+      const isOverStashZone =
+        d.kind !== 'resize' && e.clientY > window.innerHeight - STASH_ZONE_HEIGHT - 60;
       setOverStash(isOverStashZone);
 
       if (isOverStashZone || !gridRef.current) {
@@ -263,21 +260,19 @@ export function BioInteractiveCanvas({
         return;
       }
 
-      if (drag.kind === 'move' || drag.kind === 'unstash') {
-        // Calculate target grid cell
-        const block = blocksRef.current.find((b) => b.id === drag.blockId);
-        if (!block) return;
+      const block = blocksRef.current.find((b) => b.id === d.blockId);
+      if (!block) return;
+
+      if (d.kind === 'move' || d.kind === 'unstash') {
+        const { col, row } = clientToGrid(e.clientX, e.clientY);
         const colSpan = block.grid_col_span;
         const rowSpan = block.grid_row_span;
-        const { col, row } = clientToGrid(x, y);
-
-        // Clamp so block fits within grid
-        const clampedCol = Math.min(col, GRID_COLUMNS - colSpan);
+        const clampedCol = Math.min(Math.max(0, col), GRID_COLUMNS - colSpan);
         const clampedRow = Math.max(0, row);
 
-        // Check if this is a valid placement
+        // Exclude stashed blocks AND the dragged block from overlap check
         const otherBlocks = blocksRef.current.filter(
-          (b) => b.id !== drag.blockId && !stashedRef.current.has(b.id) && b.is_enabled,
+          (b) => b.id !== d.blockId && !stashedRef.current.has(b.id) && b.is_enabled,
         );
         const positions: BioGridPosition[] = otherBlocks.map((b) => ({
           col: b.grid_col,
@@ -286,19 +281,18 @@ export function BioInteractiveCanvas({
           rowSpan: b.grid_row_span,
         }));
         const candidate = { col: clampedCol, row: clampedRow, colSpan, rowSpan };
-        const valid = isValidPlacement(clampedCol, clampedRow, colSpan, rowSpan) &&
+        const valid =
+          isValidPlacement(clampedCol, clampedRow, colSpan, rowSpan) &&
           !checkOverlap(candidate, positions);
 
         setDropTarget({ col: clampedCol, row: clampedRow, colSpan, rowSpan, valid });
-      } else if (drag.kind === 'resize') {
-        // Calculate new size based on pointer distance from block origin
-        const { col: pointerCol, row: pointerRow } = clientToGrid(x, y);
-        const newColSpan = Math.max(1, Math.min(GRID_COLUMNS - drag.origCol, pointerCol - drag.origCol + 1));
-        const newRowSpan = Math.max(1, pointerRow - drag.origRow + 1);
+      } else if (d.kind === 'resize') {
+        const { col: pointerCol, row: pointerRow } = clientToGrid(e.clientX, e.clientY);
+        const newColSpan = Math.max(1, Math.min(GRID_COLUMNS - d.origCol, pointerCol - d.origCol + 1));
+        const newRowSpan = Math.max(1, pointerRow - d.origRow + 1);
 
-        // Validate
         const otherBlocks = blocksRef.current.filter(
-          (b) => b.id !== drag.blockId && !stashedRef.current.has(b.id) && b.is_enabled,
+          (b) => b.id !== d.blockId && !stashedRef.current.has(b.id) && b.is_enabled,
         );
         const positions: BioGridPosition[] = otherBlocks.map((b) => ({
           col: b.grid_col,
@@ -306,43 +300,45 @@ export function BioInteractiveCanvas({
           colSpan: b.grid_col_span,
           rowSpan: b.grid_row_span,
         }));
-        const candidate = { col: drag.origCol, row: drag.origRow, colSpan: newColSpan, rowSpan: newRowSpan };
-        const valid = isValidPlacement(drag.origCol, drag.origRow, newColSpan, newRowSpan) &&
+        const candidate = { col: d.origCol, row: d.origRow, colSpan: newColSpan, rowSpan: newRowSpan };
+        const valid =
+          isValidPlacement(d.origCol, d.origRow, newColSpan, newRowSpan) &&
           !checkOverlap(candidate, positions);
 
-        setDropTarget({
-          col: drag.origCol,
-          row: drag.origRow,
-          colSpan: newColSpan,
-          rowSpan: newRowSpan,
-          valid,
-        });
+        setDropTarget({ col: d.origCol, row: d.origRow, colSpan: newColSpan, rowSpan: newRowSpan, valid });
       }
     },
     [clientToGrid],
   );
 
-  const handleDocPointerUp = useCallback(
-    (e: PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag) return;
+  const handleOverlayPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
 
-      const isOverStashZone = e.clientY > window.innerHeight - STASH_ZONE_HEIGHT - 60;
+      const stashed = stashedRef.current;
+      const isOverStashZone =
+        d.kind !== 'resize' && e.clientY > window.innerHeight - STASH_ZONE_HEIGHT - 60;
 
-      if (drag.kind === 'move' || drag.kind === 'unstash') {
-        if (isOverStashZone && drag.kind !== 'unstash') {
-          // Stash the block
-          setStashedIds((prev) => new Set(prev).add(drag.blockId));
+      if (d.kind === 'move') {
+        if (isOverStashZone) {
+          setStashedIds((prev) => new Set(prev).add(d.blockId));
         } else {
-          // Try to place at drop target
-          const block = blocksRef.current.find((b) => b.id === drag.blockId);
+          applyMoveDrop(d, e.clientX, e.clientY, stashed);
+        }
+      } else if (d.kind === 'unstash') {
+        if (!isOverStashZone) {
+          // Try to place on grid
+          const block = blocksRef.current.find((b) => b.id === d.blockId);
           if (block) {
             const { col, row } = clientToGrid(e.clientX, e.clientY);
-            const clampedCol = Math.min(Math.max(0, col), GRID_COLUMNS - block.grid_col_span);
+            const colSpan = block.grid_col_span;
+            const rowSpan = block.grid_row_span;
+            const clampedCol = Math.min(Math.max(0, col), GRID_COLUMNS - colSpan);
             const clampedRow = Math.max(0, row);
 
             const otherBlocks = blocksRef.current.filter(
-              (b) => b.id !== drag.blockId && !stashedRef.current.has(b.id) && b.is_enabled,
+              (b) => b.id !== d.blockId && !stashed.has(b.id) && b.is_enabled,
             );
             const positions: BioGridPosition[] = otherBlocks.map((b) => ({
               col: b.grid_col,
@@ -350,60 +346,56 @@ export function BioInteractiveCanvas({
               colSpan: b.grid_col_span,
               rowSpan: b.grid_row_span,
             }));
-            const candidate = {
-              col: clampedCol,
-              row: clampedRow,
-              colSpan: block.grid_col_span,
-              rowSpan: block.grid_row_span,
-            };
-            const valid = isValidPlacement(clampedCol, clampedRow, block.grid_col_span, block.grid_row_span) &&
+            const candidate = { col: clampedCol, row: clampedRow, colSpan, rowSpan };
+            const valid =
+              isValidPlacement(clampedCol, clampedRow, colSpan, rowSpan) &&
               !checkOverlap(candidate, positions);
 
             if (valid) {
-              onMoveBlock(drag.blockId, clampedCol, clampedRow);
-              // If unstashing, remove from stash
-              if (drag.kind === 'unstash') {
+              onMoveBlock(d.blockId, clampedCol, clampedRow, stashed);
+              setStashedIds((prev) => {
+                const next = new Set(prev);
+                next.delete(d.blockId);
+                return next;
+              });
+            } else {
+              // Check for swap with existing block
+              const targetBlock = otherBlocks.find((b) =>
+                clampedCol >= b.grid_col &&
+                clampedCol < b.grid_col + b.grid_col_span &&
+                clampedRow >= b.grid_row &&
+                clampedRow < b.grid_row + b.grid_row_span,
+              );
+              if (targetBlock) {
+                // Place unstashed block at target's spot, move target to next empty
+                onMoveBlock(d.blockId, targetBlock.grid_col, targetBlock.grid_row, stashed);
+                const afterBlocks = blocksRef.current.filter(
+                  (b) => b.id !== d.blockId && b.id !== targetBlock.id && !stashed.has(b.id) && b.is_enabled,
+                );
+                const newPos = findNextEmptyPosition(
+                  [...afterBlocks, { ...block, grid_col: targetBlock.grid_col, grid_row: targetBlock.grid_row } as BioBlock],
+                  targetBlock.grid_col_span,
+                  targetBlock.grid_row_span,
+                );
+                onMoveBlock(targetBlock.id, newPos.col, newPos.row, stashed);
                 setStashedIds((prev) => {
                   const next = new Set(prev);
-                  next.delete(drag.blockId);
+                  next.delete(d.blockId);
                   return next;
                 });
               }
-            } else {
-              // Check if we're over another block — swap positions
-              const targetBlock = otherBlocks.find((b) => {
-                return (
-                  clampedCol >= b.grid_col &&
-                  clampedCol < b.grid_col + b.grid_col_span &&
-                  clampedRow >= b.grid_row &&
-                  clampedRow < b.grid_row + b.grid_row_span
-                );
-              });
-              if (targetBlock) {
-                const origCol = block.grid_col;
-                const origRow = block.grid_row;
-                onMoveBlock(drag.blockId, targetBlock.grid_col, targetBlock.grid_row);
-                onMoveBlock(targetBlock.id, origCol, origRow);
-                if (drag.kind === 'unstash') {
-                  setStashedIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(drag.blockId);
-                    return next;
-                  });
-                }
-              }
-              // else: invalid drop, block stays where it was
+              // else: invalid drop, stays in stash
             }
           }
         }
-      } else if (drag.kind === 'resize') {
-        // Apply resize
+        // If dropped back on stash zone, stays stashed (no action needed)
+      } else if (d.kind === 'resize') {
         const { col: pointerCol, row: pointerRow } = clientToGrid(e.clientX, e.clientY);
-        const newColSpan = Math.max(1, Math.min(GRID_COLUMNS - drag.origCol, pointerCol - drag.origCol + 1));
-        const newRowSpan = Math.max(1, pointerRow - drag.origRow + 1);
+        const newColSpan = Math.max(1, Math.min(GRID_COLUMNS - d.origCol, pointerCol - d.origCol + 1));
+        const newRowSpan = Math.max(1, pointerRow - d.origRow + 1);
 
         const otherBlocks = blocksRef.current.filter(
-          (b) => b.id !== drag.blockId && !stashedRef.current.has(b.id) && b.is_enabled,
+          (b) => b.id !== d.blockId && !stashed.has(b.id) && b.is_enabled,
         );
         const positions: BioGridPosition[] = otherBlocks.map((b) => ({
           col: b.grid_col,
@@ -411,12 +403,13 @@ export function BioInteractiveCanvas({
           colSpan: b.grid_col_span,
           rowSpan: b.grid_row_span,
         }));
-        const candidate = { col: drag.origCol, row: drag.origRow, colSpan: newColSpan, rowSpan: newRowSpan };
-        const valid = isValidPlacement(drag.origCol, drag.origRow, newColSpan, newRowSpan) &&
+        const candidate = { col: d.origCol, row: d.origRow, colSpan: newColSpan, rowSpan: newRowSpan };
+        const valid =
+          isValidPlacement(d.origCol, d.origRow, newColSpan, newRowSpan) &&
           !checkOverlap(candidate, positions);
 
         if (valid) {
-          onResizeBlock(drag.blockId, newColSpan, newRowSpan);
+          onResizeBlock(d.blockId, newColSpan, newRowSpan, stashed);
         }
       }
 
@@ -429,29 +422,74 @@ export function BioInteractiveCanvas({
     [clientToGrid, onMoveBlock, onResizeBlock],
   );
 
-  // Register/unregister document listeners when drag starts/ends
-  useEffect(() => {
-    if (!dragRender) return;
-    document.addEventListener('pointermove', handleDocPointerMove, { passive: false });
-    document.addEventListener('pointerup', handleDocPointerUp);
-    return () => {
-      document.removeEventListener('pointermove', handleDocPointerMove);
-      document.removeEventListener('pointerup', handleDocPointerUp);
-    };
-  }, [dragRender, handleDocPointerMove, handleDocPointerUp]);
+  /* ─── Move/swap drop helper ─────────────────────────────────────── */
+  const applyMoveDrop = useCallback(
+    (d: DragInfo, clientX: number, clientY: number, stashed: Set<string>) => {
+      const block = blocksRef.current.find((b) => b.id === d.blockId);
+      if (!block) return;
+
+      const { col, row } = clientToGrid(clientX, clientY);
+      const colSpan = block.grid_col_span;
+      const rowSpan = block.grid_row_span;
+      const clampedCol = Math.min(Math.max(0, col), GRID_COLUMNS - colSpan);
+      const clampedRow = Math.max(0, row);
+
+      const otherBlocks = blocksRef.current.filter(
+        (b) => b.id !== d.blockId && !stashed.has(b.id) && b.is_enabled,
+      );
+      const positions: BioGridPosition[] = otherBlocks.map((b) => ({
+        col: b.grid_col,
+        row: b.grid_row,
+        colSpan: b.grid_col_span,
+        rowSpan: b.grid_row_span,
+      }));
+      const candidate = { col: clampedCol, row: clampedRow, colSpan, rowSpan };
+      const valid =
+        isValidPlacement(clampedCol, clampedRow, colSpan, rowSpan) &&
+        !checkOverlap(candidate, positions);
+
+      if (valid) {
+        onMoveBlock(d.blockId, clampedCol, clampedRow, stashed);
+      } else {
+        // Try swap with the block at the drop position
+        const targetBlock = otherBlocks.find((b) =>
+          clampedCol >= b.grid_col &&
+          clampedCol < b.grid_col + b.grid_col_span &&
+          clampedRow >= b.grid_row &&
+          clampedRow < b.grid_row + b.grid_row_span,
+        );
+        if (targetBlock) {
+          const origCol = block.grid_col;
+          const origRow = block.grid_row;
+          onMoveBlock(d.blockId, targetBlock.grid_col, targetBlock.grid_row, stashed);
+          onMoveBlock(targetBlock.id, origCol, origRow, stashed);
+        }
+      }
+    },
+    [clientToGrid, onMoveBlock],
+  );
 
   /* ═══════════════════════════════════════════════════════════════════
      Start drag helpers
      ═══════════════════════════════════════════════════════════════════ */
 
-  const startMoveDrag = useCallback((blockId: string, e: React.PointerEvent) => {
-    const el = e.currentTarget as HTMLElement;
-    const rect = el.getBoundingClientRect();
+  const startDrag = useCallback((kind: DragKind, blockId: string, e: React.PointerEvent) => {
     const block = blocksRef.current.find((b) => b.id === blockId);
     if (!block) return;
 
+    let el: HTMLElement | null = null;
+    let rect = { left: 0, top: 0, width: 120, height: 60 };
+
+    if (kind === 'unstash') {
+      el = e.currentTarget as HTMLElement;
+      rect = el.getBoundingClientRect();
+    } else {
+      el = gridRef.current?.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement | null;
+      if (el) rect = el.getBoundingClientRect();
+    }
+
     const info: DragInfo = {
-      kind: 'move',
+      kind,
       blockId,
       startX: e.clientX,
       startY: e.clientY,
@@ -476,7 +514,6 @@ export function BioInteractiveCanvas({
     const block = blocksRef.current.find((b) => b.id === blockId);
     if (!block) return;
 
-    // Find the block element for dimensions
     const blockEl = gridRef.current?.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement | null;
     const rect = blockEl?.getBoundingClientRect() ?? { left: 0, top: 0, width: 100, height: 60 };
 
@@ -500,50 +537,25 @@ export function BioInteractiveCanvas({
     setDragRender(info);
   }, []);
 
-  const startUnstashDrag = useCallback((blockId: string, e: React.PointerEvent) => {
-    const el = e.currentTarget as HTMLElement;
-    const rect = el.getBoundingClientRect();
-    const block = blocksRef.current.find((b) => b.id === blockId);
-    if (!block) return;
-
-    const info: DragInfo = {
-      kind: 'unstash',
-      blockId,
-      startX: e.clientX,
-      startY: e.clientY,
-      currentX: e.clientX,
-      currentY: e.clientY,
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-      width: 120,
-      height: 60,
-      origCol: block.grid_col,
-      origRow: block.grid_row,
-      origColSpan: block.grid_col_span,
-      origRowSpan: block.grid_row_span,
-    };
-    dragRef.current = info;
-    setDragRender(info);
-  }, []);
-
   /* ═══════════════════════════════════════════════════════════════════
      Layout mode enter/exit
      ═══════════════════════════════════════════════════════════════════ */
 
   const enterLayoutMode = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(50);
     setLayoutMode(true);
   }, []);
 
   const exitLayoutMode = useCallback(() => {
-    // Re-place stashed blocks
+    // Re-place all stashed blocks into the grid
     const remaining = [...stashedIds];
     if (remaining.length > 0) {
-      const currentGrid = blocks.filter((b) => !stashedIds.has(b.id));
+      const currentGrid = blocks.filter((b) => b.is_enabled && !stashedIds.has(b.id));
       for (const id of remaining) {
         const block = blocks.find((b) => b.id === id);
         if (!block) continue;
         const pos = findNextEmptyPosition(currentGrid, block.grid_col_span, block.grid_row_span);
-        onMoveBlock(id, pos.col, pos.row);
+        onMoveBlock(id, pos.col, pos.row, stashedIds);
         currentGrid.push({ ...block, grid_col: pos.col, grid_row: pos.row });
       }
       setStashedIds(new Set());
@@ -564,34 +576,34 @@ export function BioInteractiveCanvas({
     (e: React.PointerEvent, blockId: string) => {
       if (!editMode) return;
 
-      // In layout mode, start drag immediately
+      // In layout mode, start drag immediately on the block
       if (layoutMode) {
         e.preventDefault();
-        startMoveDrag(blockId, e);
+        startDrag('move', blockId, e);
         return;
       }
 
-      // Normal mode: start long-press timer
+      // Normal mode: start long-press timer to enter layout mode
       const x = e.clientX;
       const y = e.clientY;
       longPressRef.current = {
         timer: setTimeout(() => {
-          enterLayoutMode();
           longPressRef.current = null;
+          enterLayoutMode();
         }, LONG_PRESS_MS),
         blockId,
         x,
         y,
       };
     },
-    [editMode, layoutMode, enterLayoutMode, startMoveDrag],
+    [editMode, layoutMode, enterLayoutMode, startDrag],
   );
 
   const handleBlockPointerMove = useCallback((e: React.PointerEvent) => {
     if (longPressRef.current) {
       const dx = e.clientX - longPressRef.current.x;
       const dy = e.clientY - longPressRef.current.y;
-      if (Math.abs(dx) > MOVE_CANCEL_THRESHOLD || Math.abs(dy) > MOVE_CANCEL_THRESHOLD) {
+      if (Math.abs(dx) > MOVE_CANCEL_PX || Math.abs(dy) > MOVE_CANCEL_PX) {
         clearTimeout(longPressRef.current.timer);
         longPressRef.current = null;
       }
@@ -605,14 +617,14 @@ export function BioInteractiveCanvas({
     }
   }, []);
 
-  /* ─── Unstash via tap (fallback) ─────────────────────────────────── */
+  /* ─── Unstash by tap (fallback when not dragging far enough) ─── */
   const unstashBlock = useCallback(
     (blockId: string) => {
       const block = blocks.find((b) => b.id === blockId);
       if (!block) return;
-      const currentGrid = blocks.filter((b) => !stashedIds.has(b.id));
+      const currentGrid = blocks.filter((b) => b.is_enabled && !stashedIds.has(b.id));
       const pos = findNextEmptyPosition(currentGrid, block.grid_col_span, block.grid_row_span);
-      onMoveBlock(blockId, pos.col, pos.row);
+      onMoveBlock(blockId, pos.col, pos.row, stashedIds);
       setStashedIds((prev) => {
         const next = new Set(prev);
         next.delete(blockId);
@@ -661,6 +673,8 @@ export function BioInteractiveCanvas({
           ...bgStyle,
           color: themeConfig.colors.text,
           fontFamily: `'${themeConfig.fonts.body.family}', sans-serif`,
+          // Only disable touch-action on the canvas during layout mode when NOT dragging
+          // (dragging is handled by the overlay)
           touchAction: layoutMode ? 'none' : undefined,
         }}
       >
@@ -839,52 +853,69 @@ export function BioInteractiveCanvas({
         </div>
       </div>
 
-      {/* ─── Drag ghost (floating) ─── */}
-      {dragRender && draggedBlock && isMoveDrag && (
+      {/* ═══════════════════════════════════════════════════════════════
+         DRAG OVERLAY — captures ALL pointer events during drag.
+         This eliminates the document-listener timing issue and
+         prevents scroll interference completely.
+         ═══════════════════════════════════════════════════════════════ */}
+      {isDragging && (
         <div
-          className="fixed z-50 pointer-events-none"
-          style={{
-            left: dragRender.currentX - dragRender.offsetX,
-            top: dragRender.currentY - dragRender.offsetY,
-            width: dragRender.width,
-            height: dragRender.height,
-            transform: 'scale(1.05) rotate(2deg)',
-            opacity: 0.85,
-            filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.25))',
-          }}
+          className="fixed inset-0 z-[100]"
+          style={{ touchAction: 'none' }}
+          onPointerMove={handleOverlayPointerMove}
+          onPointerUp={handleOverlayPointerUp}
         >
-          <div className="h-full w-full overflow-hidden rounded-lg bg-card">
-            <BlockRenderer block={draggedBlock} />
-          </div>
+          {/* Drag ghost (floating) */}
+          {draggedBlock && isMoveDrag && (
+            <div
+              className="pointer-events-none"
+              style={{
+                position: 'fixed',
+                left: dragRender.currentX - dragRender.offsetX,
+                top: dragRender.currentY - dragRender.offsetY,
+                width: dragRender.width,
+                height: dragRender.height,
+                transform: 'scale(1.05) rotate(2deg)',
+                opacity: 0.85,
+                filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.25))',
+                zIndex: 110,
+              }}
+            >
+              <div className="h-full w-full overflow-hidden rounded-lg bg-card">
+                <BlockRenderer block={draggedBlock} />
+              </div>
+            </div>
+          )}
+
+          {/* Stash drop zone (visible during move drag, not resize) */}
+          {dragRender.kind === 'move' && layoutMode && (
+            <div
+              className={`fixed left-4 right-4 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-all duration-200 ${
+                overStash
+                  ? 'border-foreground bg-foreground/10 scale-105'
+                  : 'border-muted-foreground/40 bg-background/80'
+              }`}
+              style={{
+                bottom: 72,
+                height: STASH_ZONE_HEIGHT,
+                backdropFilter: 'blur(8px)',
+                zIndex: 105,
+              }}
+            >
+              <Package
+                className={`h-5 w-5 transition-colors ${overStash ? 'text-foreground' : 'text-muted-foreground'}`}
+              />
+              <span
+                className={`text-sm font-medium transition-colors ${overStash ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                {overStash ? 'Release to stash' : 'Drag here to stash'}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ─── Stash drop zone (visible during move drag) ─── */}
-      {isMoveDrag && dragRender.kind === 'move' && layoutMode && (
-        <div
-          className={`fixed z-50 left-4 right-4 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-all duration-200 ${
-            overStash
-              ? 'border-foreground bg-foreground/10 scale-105'
-              : 'border-muted-foreground/40 bg-background/80'
-          }`}
-          style={{
-            bottom: 72,
-            height: STASH_ZONE_HEIGHT,
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <Package
-            className={`h-5 w-5 transition-colors ${overStash ? 'text-foreground' : 'text-muted-foreground'}`}
-          />
-          <span
-            className={`text-sm font-medium transition-colors ${overStash ? 'text-foreground' : 'text-muted-foreground'}`}
-          >
-            {overStash ? 'Release to stash' : 'Drag here to stash'}
-          </span>
-        </div>
-      )}
-
-      {/* ─── Stash content strip ─── */}
+      {/* ─── Stash content strip (when not dragging) ─── */}
       {layoutMode && stashedBlocks.length > 0 && !isDragging && (
         <div className="fixed bottom-[60px] left-0 right-0 z-40 px-4 py-2">
           <div className="flex items-center gap-2 rounded-xl bg-foreground/95 backdrop-blur-sm px-3 py-2 shadow-lg">
@@ -892,17 +923,18 @@ export function BioInteractiveCanvas({
             <span className="text-xs text-background/70 font-medium shrink-0">
               Stash ({stashedBlocks.length})
             </span>
-            <div className="flex-1 flex gap-1.5 overflow-x-auto" style={{ touchAction: 'none' }}>
+            <div className="flex-1 flex gap-1.5 overflow-x-auto">
               {stashedBlocks.map((block) => (
                 <div
                   key={block.id}
                   className="shrink-0 flex items-center gap-1.5 rounded-lg bg-background/15 px-2.5 py-1.5 text-[11px] font-medium text-background hover:bg-background/25 active:scale-95 transition-all cursor-grab"
+                  style={{ touchAction: 'none' }}
                   onPointerDown={(e) => {
                     e.preventDefault();
-                    startUnstashDrag(block.id, e);
+                    startDrag('unstash', block.id, e);
                   }}
                   onClick={(e) => {
-                    // Tap fallback (if no drag occurred)
+                    // Tap fallback (only if no drag was in progress)
                     if (!dragRef.current) {
                       e.stopPropagation();
                       unstashBlock(block.id);

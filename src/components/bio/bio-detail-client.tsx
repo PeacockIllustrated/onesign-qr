@@ -361,7 +361,7 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
       {/* ─── Main content area ───────────────────────────────────────── */}
       <div className="flex-1 flex">
         {/* === MOBILE: Full-width interactive canvas === */}
-        <div className="flex-1 lg:hidden pb-20 overflow-y-auto">
+        <div className={`flex-1 lg:hidden pb-20 ${mobileLayoutMode ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           <BioInteractiveCanvas
             blocks={blocks}
             links={links}

@@ -160,7 +160,7 @@ export function useGridLayout(initialBlocks: BioBlock[], pageId: string) {
   // ─── Move Block (local / optimistic only) ──────────────────────────
 
   const moveBlock = useCallback(
-    (blockId: string, col: number, row: number): void => {
+    (blockId: string, col: number, row: number, excludeIds?: Set<string>): void => {
       setBlocks((prev) => {
         const blockIndex = prev.findIndex((b) => b.id === blockId);
         if (blockIndex === -1) return prev;
@@ -174,16 +174,21 @@ export function useGridLayout(initialBlocks: BioBlock[], pageId: string) {
           return prev;
         }
 
-        // Check overlap against other blocks
-        const positions = prev.map((b) => ({
-          col: b.grid_col,
-          row: b.grid_row,
-          colSpan: b.grid_col_span,
-          rowSpan: b.grid_row_span,
-        }));
+        // Check overlap against other blocks (excluding stashed/hidden blocks)
+        const positions: { col: number; row: number; colSpan: number; rowSpan: number }[] = [];
+        for (let i = 0; i < prev.length; i++) {
+          if (i === blockIndex) continue;
+          if (excludeIds && excludeIds.has(prev[i].id)) continue;
+          positions.push({
+            col: prev[i].grid_col,
+            row: prev[i].grid_row,
+            colSpan: prev[i].grid_col_span,
+            rowSpan: prev[i].grid_row_span,
+          });
+        }
 
         const candidate = { col, row, colSpan, rowSpan };
-        if (checkOverlap(candidate, positions, blockIndex)) {
+        if (checkOverlap(candidate, positions)) {
           return prev;
         }
 
@@ -200,7 +205,7 @@ export function useGridLayout(initialBlocks: BioBlock[], pageId: string) {
   // ─── Resize Block (local / optimistic only) ────────────────────────
 
   const resizeBlock = useCallback(
-    (blockId: string, colSpan: number, rowSpan: number): void => {
+    (blockId: string, colSpan: number, rowSpan: number, excludeIds?: Set<string>): void => {
       setBlocks((prev) => {
         const blockIndex = prev.findIndex((b) => b.id === blockId);
         if (blockIndex === -1) return prev;
@@ -212,16 +217,21 @@ export function useGridLayout(initialBlocks: BioBlock[], pageId: string) {
           return prev;
         }
 
-        // Check overlap with new size against other blocks
-        const positions = prev.map((b) => ({
-          col: b.grid_col,
-          row: b.grid_row,
-          colSpan: b.grid_col_span,
-          rowSpan: b.grid_row_span,
-        }));
+        // Check overlap with new size against other blocks (excluding stashed/hidden blocks)
+        const positions: { col: number; row: number; colSpan: number; rowSpan: number }[] = [];
+        for (let i = 0; i < prev.length; i++) {
+          if (i === blockIndex) continue;
+          if (excludeIds && excludeIds.has(prev[i].id)) continue;
+          positions.push({
+            col: prev[i].grid_col,
+            row: prev[i].grid_row,
+            colSpan: prev[i].grid_col_span,
+            rowSpan: prev[i].grid_row_span,
+          });
+        }
 
         const candidate = { col: block.grid_col, row: block.grid_row, colSpan, rowSpan };
-        if (checkOverlap(candidate, positions, blockIndex)) {
+        if (checkOverlap(candidate, positions)) {
           return prev;
         }
 
