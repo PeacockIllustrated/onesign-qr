@@ -16,6 +16,7 @@ import {
   Pencil,
   LayoutTemplate,
   ChevronLeft,
+  Move,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -28,8 +29,10 @@ import {
 } from '@/components/ui';
 import { BioDesignControls } from '@/components/bio/bio-design-controls';
 import { BioPreviewPanel } from '@/components/bio/bio-preview-panel';
+import { BioInteractiveCanvas } from '@/components/bio/bio-interactive-canvas';
 import { BioBlockToolbar } from '@/components/bio/grid/bio-block-toolbar';
 import { BioBlockEditPanel } from '@/components/bio/grid/bio-block-edit-panel';
+import { BioGridCanvas } from '@/components/bio/grid/bio-grid-canvas';
 import { BioAnalyticsPanel } from '@/components/bio/bio-analytics-panel';
 import { TemplatePicker } from '@/components/bio/template-picker';
 import { useGridLayout } from '@/components/bio/grid/use-grid-layout';
@@ -132,6 +135,8 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
   const [editMode, setEditMode] = useState(true); // edit indicators on/off
   const [isUpdating, setIsUpdating] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [mobileLayoutMode, setMobileLayoutMode] = useState(false);
+  const [desktopRearranging, setDesktopRearranging] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
@@ -357,10 +362,10 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
       <div className="flex-1 flex">
         {/* === MOBILE: Full-width interactive canvas === */}
         <div className="flex-1 lg:hidden pb-20 overflow-y-auto">
-          <InteractiveCanvas
+          <BioInteractiveCanvas
             blocks={blocks}
             links={links}
-            layoutMode={layoutMode}
+            contentLayoutMode={layoutMode}
             themeConfig={themeConfig}
             bgStyle={bgStyle}
             spacingConfig={spacingConfig}
@@ -380,6 +385,29 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
             cardLayout={cardLayout}
             onBlockTap={openBlockEditor}
             onHeaderTap={() => setActiveSheet('style')}
+            onMoveBlock={moveBlock}
+            onSavePositions={savePositions}
+            onLayoutModeChange={setMobileLayoutMode}
+            contactCard={
+              <ContactCardPreview
+                title={page.title}
+                bio={page.bio}
+                subtitle={subtitle}
+                company={company}
+                jobTitle={jobTitle}
+                location={location}
+                contactEmail={contactEmail}
+                contactPhone={contactPhone}
+                contactWebsite={contactWebsite}
+                cardLayout={cardLayout ?? 'centered'}
+                avatarUrl={avatarUrl}
+                coverUrl={coverUrl}
+                coverPositionY={coverPositionY ?? 50}
+                coverAspectRatio={coverAspectRatio}
+                themeConfig={themeConfig}
+                initial={page.title ? page.title.charAt(0).toUpperCase() : '?'}
+              />
+            }
           />
         </div>
 
@@ -409,23 +437,51 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
                     </button>
                   </div>
 
-                  {/* Block list — tap to edit */}
-                  <div className="space-y-1.5">
-                    {blocks.map((block) => (
-                      <button
-                        key={block.id}
-                        type="button"
-                        onClick={() => openBlockEditor(block.id)}
-                        className={`w-full text-left rounded-lg border p-3 transition-all hover:border-foreground/20 active:scale-[0.98] ${
-                          selectedBlockId === block.id ? 'border-foreground/40 bg-secondary/50' : 'border-border'
-                        } ${!block.is_enabled ? 'opacity-40' : ''}`}
-                      >
-                        <div className="h-10 overflow-hidden rounded-sm">
-                          <BlockRenderer block={block} compact />
-                        </div>
-                      </button>
-                    ))}
+                  {/* Rearrange toggle */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{blocks.length} blocks</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1.5"
+                      onClick={() => setDesktopRearranging(!desktopRearranging)}
+                    >
+                      <Move className="h-3 w-3" />
+                      {desktopRearranging ? 'done rearranging' : 'rearrange'}
+                    </Button>
                   </div>
+
+                  {/* Desktop: Grid canvas for rearranging */}
+                  {desktopRearranging ? (
+                    <div className="rounded-lg border border-border p-1">
+                      <BioGridCanvas
+                        blocks={blocks}
+                        selectedBlockId={selectedBlockId}
+                        onSelectBlock={(id) => { if (id) openBlockEditor(id); else setSelectedBlockId(null); }}
+                        onMoveBlock={(id, col, row) => { moveBlock(id, col, row); debouncedSave(); }}
+                        onResizeBlock={(id, cs, rs) => { resizeBlock(id, cs, rs); debouncedSave(); }}
+                        onAddBlockAt={() => {}}
+                      />
+                    </div>
+                  ) : (
+                    /* Block list — tap to edit */
+                    <div className="space-y-1.5">
+                      {blocks.map((block) => (
+                        <button
+                          key={block.id}
+                          type="button"
+                          onClick={() => openBlockEditor(block.id)}
+                          className={`w-full text-left rounded-lg border p-3 transition-all hover:border-foreground/20 active:scale-[0.98] ${
+                            selectedBlockId === block.id ? 'border-foreground/40 bg-secondary/50' : 'border-border'
+                          } ${!block.is_enabled ? 'opacity-40' : ''}`}
+                        >
+                          <div className="h-10 overflow-hidden rounded-sm">
+                            <BlockRenderer block={block} compact />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
 
@@ -508,8 +564,8 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
         )}
       </div>
 
-      {/* ─── Mobile: Floating action bar ─────────────────────────────── */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-sm safe-area-pb">
+      {/* ─── Mobile: Floating action bar (hidden during layout mode) ─── */}
+      <div className={`lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-sm safe-area-pb transition-transform duration-300 ${mobileLayoutMode ? 'translate-y-full' : 'translate-y-0'}`}>
         <div className="flex items-center justify-around px-2 py-2">
           <FloatingBarButton
             icon={Plus}
@@ -684,188 +740,6 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
       >
         <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-background" />
         <span className="text-xs">saving...</span>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   Interactive Canvas — Full-width bio page preview with tap-to-edit
-   ═══════════════════════════════════════════════════════════════════════ */
-
-function InteractiveCanvas({
-  blocks,
-  links,
-  layoutMode,
-  themeConfig,
-  bgStyle,
-  spacingConfig,
-  editMode,
-  page,
-  avatarUrl,
-  coverUrl,
-  subtitle,
-  company,
-  jobTitle,
-  location,
-  contactEmail,
-  contactPhone,
-  contactWebsite,
-  coverAspectRatio,
-  coverPositionY,
-  cardLayout,
-  onBlockTap,
-  onHeaderTap,
-}: {
-  blocks: BioBlock[];
-  links: BioLinkItem[];
-  layoutMode: BioLayoutMode;
-  themeConfig: ReturnType<typeof resolveFullThemeConfig>;
-  bgStyle: React.CSSProperties;
-  spacingConfig: { gap: string; padding: string };
-  editMode: boolean;
-  page: BioLinkPage;
-  avatarUrl: string | null;
-  coverUrl: string | null;
-  subtitle: string;
-  company: string;
-  jobTitle: string;
-  location: string;
-  contactEmail: string;
-  contactPhone: string;
-  contactWebsite: string;
-  coverAspectRatio: string | null;
-  coverPositionY: number | null;
-  cardLayout: BioCardLayout | null;
-  onBlockTap: (blockId: string) => void;
-  onHeaderTap: () => void;
-}) {
-  const initial = page.title ? page.title.charAt(0).toUpperCase() : '?';
-  const posY = coverPositionY ?? 50;
-
-  // Visible blocks sorted by grid position
-  const visibleBlocks = blocks
-    .filter((b) => b.is_enabled)
-    .sort((a, b) => a.grid_row - b.grid_row || a.grid_col - b.grid_col);
-
-  return (
-    <div
-      className="min-h-full flex flex-col items-center"
-      style={{
-        ...bgStyle,
-        color: themeConfig.colors.text,
-        fontFamily: `'${themeConfig.fonts.body.family}', sans-serif`,
-      }}
-    >
-      {/* Background overlay */}
-      {themeConfig.background.overlayCSS && (
-        <div
-          className="pointer-events-none fixed inset-0 z-0"
-          style={{ backgroundImage: themeConfig.background.overlayCSS }}
-        />
-      )}
-
-      <div
-        className="relative w-full max-w-md mx-auto px-4 py-10 flex flex-col items-center"
-        style={{ gap: spacingConfig.gap }}
-      >
-        {/* ─── Header / Contact Card (tap to edit) ─── */}
-        <button
-          type="button"
-          onClick={onHeaderTap}
-          className={`relative w-full text-left group ${editMode ? '' : 'pointer-events-none'}`}
-        >
-          {editMode && (
-            <div className="absolute -right-1 -top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/90 shadow-md border border-border opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
-              <Pencil className="h-3.5 w-3.5 text-foreground" />
-            </div>
-          )}
-          <ContactCardPreview
-            title={page.title}
-            bio={page.bio}
-            subtitle={subtitle}
-            company={company}
-            jobTitle={jobTitle}
-            location={location}
-            contactEmail={contactEmail}
-            contactPhone={contactPhone}
-            contactWebsite={contactWebsite}
-            cardLayout={cardLayout ?? 'centered'}
-            avatarUrl={avatarUrl}
-            coverUrl={coverUrl}
-            coverPositionY={posY}
-            coverAspectRatio={coverAspectRatio}
-            themeConfig={themeConfig}
-            initial={initial}
-          />
-        </button>
-
-        {/* ─── Grid blocks ─── */}
-        {layoutMode === 'grid' && visibleBlocks.length > 0 && (
-          <div
-            className="w-full"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gridAutoRows: 'minmax(60px, auto)',
-              gap: spacingConfig.gap,
-            }}
-          >
-            {visibleBlocks.map((block) => (
-              <button
-                key={block.id}
-                type="button"
-                onClick={() => editMode && onBlockTap(block.id)}
-                className={`relative group text-left ${editMode ? 'cursor-pointer' : 'pointer-events-none'}`}
-                style={{
-                  gridColumn: `${block.grid_col + 1} / span ${block.grid_col_span}`,
-                  gridRow: `${block.grid_row + 1} / span ${block.grid_row_span}`,
-                  minWidth: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                {editMode && (
-                  <div className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 shadow-sm border border-border opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
-                    <Pencil className="h-3 w-3 text-foreground" />
-                  </div>
-                )}
-                <div className="h-full">
-                  <BlockRenderer block={block} />
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* ─── Legacy links ─── */}
-        {layoutMode === 'list' && links.filter((l) => l.is_enabled).length > 0 && (
-          <div className="w-full flex flex-col" style={{ gap: spacingConfig.gap }}>
-            {links.filter((l) => l.is_enabled).map((link) => (
-              <div
-                key={link.id}
-                className="flex w-full items-center justify-center gap-2 text-center text-sm font-medium px-4 py-3 transition-colors"
-                style={{
-                  borderRadius: themeConfig.buttonStyle.borderRadius,
-                  borderWidth: themeConfig.buttonStyle.borderWidth,
-                  borderStyle: 'solid',
-                  backgroundColor: themeConfig.colors.buttonBg,
-                  color: themeConfig.colors.buttonText,
-                  borderColor: themeConfig.colors.buttonBorder,
-                  fontFamily: `'${themeConfig.fonts.body.family}', sans-serif`,
-                }}
-              >
-                {link.title}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {blocks.length === 0 && links.length === 0 && (
-          <p className="text-sm" style={{ color: themeConfig.colors.textSecondary }}>
-            Tap + to add your first block
-          </p>
-        )}
       </div>
     </div>
   );
