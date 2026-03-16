@@ -33,7 +33,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage and track your QR codes
           </p>
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Scans</p>
-                <p className="text-2xl font-bold mt-1">{formatNumber(totalScans)}</p>
+                <p className="text-2xl font-semibold mt-1">{formatNumber(totalScans)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                 <BarChart3 className="h-5 w-5 text-muted-foreground" />
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Codes</p>
-                <p className="text-2xl font-bold mt-1">{activeCount}</p>
+                <p className="text-2xl font-semibold mt-1">{activeCount}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                 <Activity className="h-5 w-5 text-muted-foreground" />
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Codes</p>
-                <p className="text-2xl font-bold mt-1">{totalCodes}</p>
+                <p className="text-2xl font-semibold mt-1">{totalCodes}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                 <Hash className="h-5 w-5 text-muted-foreground" />
@@ -92,7 +92,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Bio Views</p>
-                <p className="text-2xl font-bold mt-1">{formatNumber(bioPage?.total_views ?? 0)}</p>
+                <p className="text-2xl font-semibold mt-1">{formatNumber(bioPage?.total_views ?? 0)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                 <Eye className="h-5 w-5 text-muted-foreground" />
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
       {/* Bio Page Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold tracking-tight">Bio Page</h2>
+          <h2 className="text-lg font-medium tracking-tight">Bio Page</h2>
           {!bioPage && (
             <Link href="/app/bio/new">
               <Button variant="outline" size="sm" className="rounded-lg">
@@ -131,7 +131,7 @@ export default async function DashboardPage() {
 
       {/* QR Code Grid */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold tracking-tight">QR Codes</h2>
+        <h2 className="text-lg font-medium tracking-tight">QR Codes</h2>
       </div>
       {!qrCodes || qrCodes.length === 0 ? (
         <EmptyState />
@@ -153,7 +153,7 @@ function EmptyState() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
           <OneSignIcon size={32} />
         </div>
-        <h2 className="text-lg font-semibold mb-2">No QR codes yet</h2>
+        <h2 className="text-lg font-medium mb-2">No QR codes yet</h2>
         <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
           Create your first QR code to get started. Managed QR codes can be
           updated without reprinting.
@@ -182,7 +182,7 @@ function BioPageCard({ page }: { page: any }) {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold truncate">{page.title}</h3>
+                <h3 className="font-medium truncate">{page.title}</h3>
                 <Badge variant={page.is_active ? 'success' : 'secondary'} className="rounded-md shrink-0">
                   {page.is_active ? 'Active' : 'Inactive'}
                 </Badge>
@@ -232,7 +232,7 @@ function QRCard({ qr }: { qr: any }) {
           {/* Info */}
           <div className="space-y-2.5">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold truncate">{qr.name}</h3>
+              <h3 className="font-medium truncate">{qr.name}</h3>
               <div className="flex items-center gap-1.5 shrink-0">
                 <Badge variant={qr.is_active ? 'success' : 'secondary'} className="rounded-md">
                   {qr.is_active ? 'Active' : 'Inactive'}

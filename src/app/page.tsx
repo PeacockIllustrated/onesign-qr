@@ -29,7 +29,7 @@ export default function LandingPage() {
       {/* Hero */}
       <main className="flex-1">
         <section className="container mx-auto px-4 py-24 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+          <h1 className="text-4xl md:text-6xl font-semibold tracking-tight mb-6">
             QR codes that never break
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
@@ -50,7 +50,7 @@ export default function LandingPage() {
         {/* Features */}
         <section className="border-t border-border bg-muted/30">
           <div className="container mx-auto px-4 py-24">
-            <h2 className="text-2xl font-bold text-center mb-12">
+            <h2 className="text-2xl font-semibold text-center mb-12">
               Why choose managed QR codes
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -81,7 +81,7 @@ export default function LandingPage() {
         {/* CTA */}
         <section className="border-t border-border">
           <div className="container mx-auto px-4 py-24 text-center">
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className="text-2xl font-semibold mb-4">
               Ready to create QR codes that last?
             </h2>
             <p className="text-muted-foreground mb-8">
@@ -127,7 +127,7 @@ function FeatureCard({
       <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-muted mb-4">
         {icon}
       </div>
-      <h3 className="font-semibold mb-2">{title}</h3>
+      <h3 className="font-medium mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );

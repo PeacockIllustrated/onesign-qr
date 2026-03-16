@@ -78,7 +78,7 @@ export default function BioPage() {
       {/* Header — stacks on mobile */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">your bio pages</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold">your bio pages</h1>
           <p className="text-sm text-muted-foreground">
             Only one can be live at a time
           </p>
@@ -123,7 +123,7 @@ function EmptyState() {
         <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-sm bg-muted mb-4">
           <Link2 className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" />
         </div>
-        <h2 className="text-lg font-semibold mb-2">no bio pages yet</h2>
+        <h2 className="text-lg font-medium mb-2">no bio pages yet</h2>
         <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
           Create your first link-in-bio page to share all your important links in one place.
         </p>
@@ -158,7 +158,7 @@ function BioPageCard({
           {/* Info */}
           <div className="space-y-2.5 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base sm:text-lg font-semibold truncate">{page.title}</h3>
+              <h3 className="text-base sm:text-lg font-medium truncate">{page.title}</h3>
               <Badge variant={page.is_active ? 'success' : 'secondary'}>
                 {page.is_active ? 'live' : 'draft'}
               </Badge>

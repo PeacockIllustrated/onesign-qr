@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { preconnect } from 'react-dom';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   resolveFullThemeConfig,
@@ -118,6 +119,10 @@ export default async function BioPage({ params }: PageProps) {
   });
 
   const googleFontsUrl = buildGoogleFontsUrl(themeConfig);
+  if (googleFontsUrl) {
+    preconnect('https://fonts.googleapis.com');
+    preconnect('https://fonts.gstatic.com', { crossOrigin: 'anonymous' });
+  }
   const spacingConfig = SPACING_MAP[themeConfig.spacing];
 
   const avatarUrl = page.avatar_storage_path
@@ -149,13 +154,9 @@ export default async function BioPage({ params }: PageProps) {
         <link rel="icon" href={faviconUrl} />
       )}
 
-      {/* Google Fonts — zero JS, SSR-friendly */}
+      {/* Google Fonts — React 19 hoists this to <head> via precedence */}
       {googleFontsUrl && (
-        <>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link rel="stylesheet" href={googleFontsUrl} />
-        </>
+        <link rel="stylesheet" href={googleFontsUrl} precedence="default" />
       )}
 
       <div

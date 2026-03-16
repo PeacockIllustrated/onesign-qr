@@ -56,7 +56,7 @@ export default async function QRDetailPage({ params }: PageProps) {
 
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{qr.name}</h1>
+            <h1 className="text-2xl font-semibold">{qr.name}</h1>
             <div className="flex items-center gap-3 mt-2">
               <Badge variant={qr.is_active ? 'success' : 'secondary'}>
                 {qr.is_active ? 'active' : 'inactive'}

@@ -197,7 +197,7 @@ export default function NewBioPage() {
             <ArrowLeft className="h-4 w-4" />
             back
           </Link>
-          <h1 className="text-xl sm:text-2xl font-bold">create a new bio page</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold">create a new bio page</h1>
         </div>
 
         {/* Step indicator */}

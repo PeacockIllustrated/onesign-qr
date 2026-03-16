@@ -17,7 +17,7 @@ export default function AppError({
   return (
     <div className="flex items-center justify-center p-8 min-h-[60vh]">
       <div className="text-center space-y-4 max-w-md">
-        <h2 className="text-xl font-bold">something went wrong</h2>
+        <h2 className="text-xl font-semibold">something went wrong</h2>
         <p className="text-sm text-muted-foreground">
           An error occurred while loading this page.
         </p>
