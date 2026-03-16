@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { LayoutTemplate } from 'lucide-react';
 import type { BioBlock, BioBlockType, BioBlockContent } from '@/types/bio';
 import { BIO_DEFAULTS } from '@/lib/constants';
+import { BIO_TEMPLATES_MAP } from '@/lib/bio/templates';
+import type { BioTemplate, BioTemplateBlock } from '@/lib/bio/templates';
 import { useGridLayout } from './use-grid-layout';
 import { BioBlockToolbar } from './bio-block-toolbar';
 import { BioGridCanvas } from './bio-grid-canvas';
 import { BioBlockEditPanel } from './bio-block-edit-panel';
+import { TemplatePicker } from '@/components/bio/template-picker';
 
 interface BioGridEditorProps {
   blocks: BioBlock[];
@@ -21,6 +25,7 @@ export function BioGridEditor({
 }: BioGridEditorProps) {
   const {
     blocks,
+    setBlocks,
     addBlock,
     updateBlock,
     deleteBlock,
@@ -31,6 +36,8 @@ export function BioGridEditor({
   } = useGridLayout(initialBlocks, pageId);
 
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevBlocksRef = useRef(blocks);
 
@@ -108,6 +115,75 @@ export function BioGridEditor({
     updateBlock(selectedBlockId, { is_enabled: !block.is_enabled });
   }, [selectedBlockId, blocks, updateBlock]);
 
+  // ─── Apply Template ───────────────────────────────────────────────
+
+  const handleApplyTemplate = useCallback(
+    async (templateId: string | null) => {
+      setShowTemplatePicker(false);
+
+      if (templateId === null) return; // "Blank" selected — nothing to do
+
+      const template = BIO_TEMPLATES_MAP[templateId];
+      if (!template) return;
+
+      setApplyingTemplate(true);
+      setSelectedBlockId(null);
+
+      try {
+        // 1. Delete all existing blocks
+        const persistedBlocks = blocks.filter((b) => !b.id.startsWith('temp-'));
+        await Promise.all(
+          persistedBlocks.map((b) =>
+            fetch(`/api/bio/${pageId}/blocks/${b.id}`, { method: 'DELETE' })
+          )
+        );
+
+        // 2. Insert template blocks sequentially to preserve order
+        const createdBlocks: BioBlock[] = [];
+        for (const tb of template.blocks) {
+          const res = await fetch(`/api/bio/${pageId}/blocks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              block_type: tb.block_type,
+              grid_col: tb.grid_col,
+              grid_row: tb.grid_row,
+              grid_col_span: tb.grid_col_span,
+              grid_row_span: tb.grid_row_span,
+              content: tb.content,
+              is_enabled: true,
+            }),
+          });
+          if (res.ok) {
+            createdBlocks.push(await res.json());
+          }
+        }
+
+        // 3. Update page settings (theme, layout, fonts, etc.)
+        await fetch(`/api/bio/${pageId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            theme: template.theme,
+            card_layout: template.card_layout,
+            spacing: template.spacing,
+            border_radius: template.border_radius,
+            font_title: template.font_title,
+            font_body: template.font_body,
+          }),
+        });
+
+        // 4. Update local state with new blocks
+        setBlocks(createdBlocks);
+      } catch (err) {
+        console.error('Failed to apply template:', err);
+      } finally {
+        setApplyingTemplate(false);
+      }
+    },
+    [blocks, pageId, setBlocks]
+  );
+
   const selectedBlock = selectedBlockId
     ? blocks.find((b) => b.id === selectedBlockId) ?? null
     : null;
@@ -116,11 +192,24 @@ export function BioGridEditor({
     <div className="flex gap-0">
       {/* Left: toolbar + canvas */}
       <div className="flex flex-1 flex-col gap-4 overflow-auto">
-        <BioBlockToolbar
-          onAddBlock={handleAddBlock}
-          blockCount={blocks.length}
-          maxBlocks={BIO_DEFAULTS.MAX_BLOCKS_PER_PAGE}
-        />
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <BioBlockToolbar
+              onAddBlock={handleAddBlock}
+              blockCount={blocks.length}
+              maxBlocks={BIO_DEFAULTS.MAX_BLOCKS_PER_PAGE}
+            />
+          </div>
+          <button
+            type="button"
+            disabled={applyingTemplate}
+            onClick={() => setShowTemplatePicker(true)}
+            className="mb-0.5 flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-foreground/20 hover:bg-secondary hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <LayoutTemplate className="h-4 w-4" />
+            Templates
+          </button>
+        </div>
 
         <BioGridCanvas
           blocks={blocks}
@@ -189,6 +278,15 @@ export function BioGridEditor({
             />
           </div>
         </div>
+      )}
+
+      {/* Template picker modal */}
+      {showTemplatePicker && (
+        <TemplatePicker
+          onSelect={handleApplyTemplate}
+          onClose={() => setShowTemplatePicker(false)}
+          isReplace={blocks.length > 0}
+        />
       )}
     </div>
   );
