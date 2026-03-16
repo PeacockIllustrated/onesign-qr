@@ -28,6 +28,7 @@ import { DividerForm } from './forms/divider-form';
 import { SpotifyForm } from './forms/spotify-form';
 import { YouTubeForm } from './forms/youtube-form';
 import { MapForm } from './forms/map-form';
+import { CountdownForm } from './forms/countdown-form';
 
 interface BioBlockEditPanelProps {
   block: BioBlock;
@@ -171,6 +172,7 @@ function BlockFormSwitch({
     case 'map':
       return <MapForm content={block.content as BioBlockContentMap} onChange={onUpdate} />;
     case 'countdown':
+      return <CountdownForm content={block.content as BioBlockContentCountdown} onChange={onUpdate} />;
     case 'payment_link':
     case 'gallery':
     case 'contact_form':

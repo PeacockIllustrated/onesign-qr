@@ -26,6 +26,7 @@ import { PublicSpacerBlock } from './block-renderers/spacer-block';
 import { PublicSpotifyBlock } from './block-renderers/spotify-block';
 import { PublicYouTubeBlock } from './block-renderers/youtube-block';
 import { PublicMapBlock } from './block-renderers/map-block';
+import { PublicCountdownBlock } from './block-renderers/countdown-block';
 
 interface BioPublicBlockProps {
   block: BioBlock;
@@ -126,6 +127,14 @@ export function BioPublicBlock({
       );
 
     case 'countdown':
+      return (
+        <PublicCountdownBlock
+          content={block.content as BioBlockContentCountdown}
+          themeConfig={themeConfig}
+          colSpan={block.grid_col_span}
+        />
+      );
+
     case 'payment_link':
     case 'gallery':
     case 'contact_form':

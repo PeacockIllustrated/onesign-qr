@@ -20,6 +20,7 @@ import {
   Github,
   Mail,
   Twitch,
+  Timer,
 } from 'lucide-react';
 import type {
   BioBlock,
@@ -120,6 +121,12 @@ export function BlockRenderer({ block, compact }: BlockRendererProps) {
         />
       );
     case 'countdown':
+      return (
+        <CountdownBlockRenderer
+          content={block.content as BioBlockContentCountdown}
+          compact={compact}
+        />
+      );
     case 'payment_link':
     case 'gallery':
     case 'contact_form':
@@ -530,6 +537,46 @@ function MapBlockRenderer({
       >
         {content.query}
       </span>
+    </div>
+  );
+}
+
+// ─── Countdown ──────────────────────────────────────────────────────
+
+function CountdownBlockRenderer({
+  content,
+  compact,
+}: {
+  content: BioBlockContentCountdown;
+  compact?: boolean;
+}) {
+  if (!content.target_datetime) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border">
+        <Timer className={`text-muted-foreground ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
+        <span className="text-[10px] text-muted-foreground">Set target date</span>
+      </div>
+    );
+  }
+
+  const styleLabel = content.style === 'compact' ? 'Compact' : 'Large (boxes)';
+
+  return (
+    <div className="flex h-full w-full items-center justify-center gap-2.5 rounded-sm bg-secondary px-3">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground/5">
+        <Timer
+          className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}
+          style={{ color: '#6366f1' }}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <span className={`block truncate font-medium text-foreground ${compact ? 'text-xs' : 'text-sm'}`}>
+          {content.label || 'Countdown'}
+        </span>
+        <span className="block truncate text-[10px] text-muted-foreground">
+          {styleLabel}
+        </span>
+      </div>
     </div>
   );
 }
