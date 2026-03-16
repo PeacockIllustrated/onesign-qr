@@ -1,10 +1,12 @@
 'use client';
 
-import { X, Trash2, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
+import { X, Trash2, Eye, EyeOff, Paintbrush } from 'lucide-react';
 import type {
   BioBlock,
   BioBlockContent,
   BioBlockType,
+  BioStyleOverrides,
   BioBlockContentLink,
   BioBlockContentHeading,
   BioBlockContentText,
@@ -63,6 +65,8 @@ export function BioBlockEditPanel({
   onToggleEnabled,
   onClose,
 }: BioBlockEditPanelProps) {
+  const [activeTab, setActiveTab] = useState<'content' | 'style'>('content');
+
   return (
     <div className="flex w-80 flex-col border-l border-border bg-card">
       {/* Header */}
@@ -110,8 +114,39 @@ export function BioBlockEditPanel({
           </button>
         </div>
 
-        {/* Block-type-specific form */}
-        <BlockFormSwitch block={block} onUpdate={onUpdate} />
+        {/* Tab bar */}
+        <div className="flex items-center gap-0.5 rounded-md border border-border bg-secondary/50 p-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('content')}
+            className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeTab === 'content'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Content
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('style')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeTab === 'style'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Paintbrush className="h-3 w-3" />
+            Style
+          </button>
+        </div>
+
+        {/* Tab content */}
+        {activeTab === 'content' ? (
+          <BlockFormSwitch block={block} onUpdate={onUpdate} />
+        ) : (
+          <StyleOverridesForm block={block} onUpdate={onUpdate} />
+        )}
 
         {/* Grid position info */}
         <div className="rounded-sm border border-border px-3 py-2.5">
@@ -182,4 +217,177 @@ function BlockFormSwitch({
     default:
       return <p className="text-xs text-muted-foreground">No editor available for this block type.</p>;
   }
+}
+
+// ─── Style Overrides Form ─────────────────────────────────────────────
+
+const BORDER_RADIUS_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'Inherit' },
+  { value: 'sharp', label: 'Sharp' },
+  { value: 'rounded', label: 'Rounded' },
+  { value: 'pill', label: 'Pill' },
+  { value: 'soft', label: 'Soft' },
+  { value: 'chunky', label: 'Chunky' },
+  { value: 'organic', label: 'Organic' },
+];
+
+const PADDING_OPTIONS: { value: string; label: string }[] = [
+  { value: 'sm', label: 'SM' },
+  { value: 'md', label: 'MD' },
+  { value: 'lg', label: 'LG' },
+];
+
+const SHADOW_OPTIONS: { value: string; label: string }[] = [
+  { value: 'none', label: 'None' },
+  { value: 'sm', label: 'SM' },
+  { value: 'md', label: 'MD' },
+  { value: 'lg', label: 'LG' },
+];
+
+function StyleOverridesForm({
+  block,
+  onUpdate,
+}: {
+  block: BioBlock;
+  onUpdate: (content: BioBlockContent) => void;
+}) {
+  const content = block.content as Record<string, unknown>;
+  const overrides = (content.style_overrides ?? {}) as BioStyleOverrides;
+
+  const updateOverride = (field: keyof BioStyleOverrides, value: string | undefined) => {
+    const updated = { ...overrides };
+    if (value === undefined || value === '') {
+      delete updated[field];
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (updated as any)[field] = value;
+    }
+    // Remove style_overrides entirely if empty
+    const hasAny = Object.keys(updated).length > 0;
+    const newContent = { ...content };
+    if (hasAny) {
+      newContent.style_overrides = updated;
+    } else {
+      delete newContent.style_overrides;
+    }
+    onUpdate(newContent as BioBlockContent);
+  };
+
+  const resetAll = () => {
+    const newContent = { ...content };
+    delete newContent.style_overrides;
+    onUpdate(newContent as BioBlockContent);
+  };
+
+  const inputClass =
+    'w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring';
+
+  return (
+    <div className="space-y-3">
+      {/* Background color */}
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Background color
+        </label>
+        <input
+          type="text"
+          value={overrides.bg_color ?? ''}
+          onChange={(e) => updateOverride('bg_color', e.target.value || undefined)}
+          placeholder="#ffffff"
+          className={inputClass}
+        />
+      </div>
+
+      {/* Border radius */}
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Border radius
+        </label>
+        <select
+          value={overrides.border_radius ?? ''}
+          onChange={(e) => updateOverride('border_radius', e.target.value || undefined)}
+          className={inputClass}
+        >
+          {BORDER_RADIUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Border */}
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Border
+        </label>
+        <input
+          type="text"
+          value={overrides.border ?? ''}
+          onChange={(e) => updateOverride('border', e.target.value || undefined)}
+          placeholder="1px solid #ccc"
+          className={inputClass}
+        />
+      </div>
+
+      {/* Padding — segmented control */}
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Padding
+        </label>
+        <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+          {PADDING_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() =>
+                updateOverride('padding', overrides.padding === opt.value ? undefined : opt.value as BioStyleOverrides['padding'])
+              }
+              className={`flex-1 rounded-sm px-2 py-1.5 text-xs font-medium transition-colors ${
+                overrides.padding === opt.value
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Shadow — segmented control */}
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Shadow
+        </label>
+        <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+          {SHADOW_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() =>
+                updateOverride('shadow', overrides.shadow === opt.value ? undefined : opt.value as BioStyleOverrides['shadow'])
+              }
+              className={`flex-1 rounded-sm px-2 py-1.5 text-xs font-medium transition-colors ${
+                overrides.shadow === opt.value
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Reset link */}
+      <button
+        type="button"
+        onClick={resetAll}
+        className="text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+      >
+        Reset to defaults
+      </button>
+    </div>
+  );
 }
