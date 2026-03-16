@@ -7,28 +7,31 @@ import {
   Copy,
   Eye,
   Link2,
+  BarChart3,
+  Paintbrush,
+  ChevronRight,
+  X,
+  Loader2,
 } from 'lucide-react';
 import {
   Button,
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
-  Input,
-  Label,
+  Badge,
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
   useToast,
 } from '@/components/ui';
-import { BioEditorLayout } from '@/components/bio/bio-editor-layout';
 import { BioDesignControls } from '@/components/bio/bio-design-controls';
 import { BioPreviewPanel } from '@/components/bio/bio-preview-panel';
 import { BioContentEditor } from '@/components/bio/grid/bio-content-editor';
 import { BioAnalyticsPanel } from '@/components/bio/bio-analytics-panel';
+import { PreviewModeToggle, PREVIEW_WIDTHS } from '@/components/bio/preview-mode-toggle';
+import type { PreviewMode } from '@/components/bio/preview-mode-toggle';
 import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
-import { formatDate, formatNumber } from '@/lib/utils';
+import { formatNumber } from '@/lib/utils';
 import type {
   BioLinkPage,
   BioLinkItem,
@@ -50,91 +53,54 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
   const router = useRouter();
   const { addToast } = useToast();
 
-  // Links state
+  // Links & blocks
   const [links, setLinks] = useState<BioLinkItem[]>(items);
-
-  // Blocks state (grid mode)
   const [blocks, setBlocks] = useState<BioBlock[]>(initialBlocks);
   const layoutMode: BioLayoutMode = page.layout_mode ?? (initialBlocks.length > 0 ? 'grid' : 'list');
 
-  // Theme state
+  // Theme
   const [theme, setTheme] = useState<BioLinkTheme>(page.theme);
+  const [customBgColor, setCustomBgColor] = useState<string | null>(page.custom_bg_color);
+  const [customTextColor, setCustomTextColor] = useState<string | null>(page.custom_text_color);
+  const [customAccentColor, setCustomAccentColor] = useState<string | null>(page.custom_accent_color);
 
-  // Color overrides
-  const [customBgColor, setCustomBgColor] = useState<string | null>(
-    page.custom_bg_color
-  );
-  const [customTextColor, setCustomTextColor] = useState<string | null>(
-    page.custom_text_color
-  );
-  const [customAccentColor, setCustomAccentColor] = useState<string | null>(
-    page.custom_accent_color
-  );
-
-  // Font overrides (default to theme's fonts)
   const themeDefaults = THEME_CONFIGS[page.theme] ?? THEME_CONFIGS.minimal;
-  const [fontTitle, setFontTitle] = useState<string>(
-    page.font_title ?? themeDefaults.fonts.title.family
-  );
-  const [fontBody, setFontBody] = useState<string>(
-    page.font_body ?? themeDefaults.fonts.body.family
-  );
-
-  // Layout overrides
-  const [borderRadius, setBorderRadius] = useState<BioBorderRadius | null>(
-    page.border_radius
-  );
+  const [fontTitle, setFontTitle] = useState<string>(page.font_title ?? themeDefaults.fonts.title.family);
+  const [fontBody, setFontBody] = useState<string>(page.font_body ?? themeDefaults.fonts.body.family);
+  const [borderRadius, setBorderRadius] = useState<BioBorderRadius | null>(page.border_radius);
   const [spacing, setSpacing] = useState<BioSpacing | null>(page.spacing);
-  const [backgroundVariant, setBackgroundVariant] = useState<string | null>(
-    page.background_variant
-  );
+  const [backgroundVariant, setBackgroundVariant] = useState<string | null>(page.background_variant);
 
-  const [isUpdating, setIsUpdating] = useState(false);
+  // Media
+  const buildStorageUrl = (path: string | null) =>
+    path ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${path}` : null;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(buildStorageUrl(page.avatar_storage_path));
+  const [faviconUrl, setFaviconUrl] = useState<string | null>(buildStorageUrl(page.favicon_storage_path));
+  const [coverUrl, setCoverUrl] = useState<string | null>(buildStorageUrl(page.cover_storage_path));
 
-  // Avatar state
-  const buildAvatarUrl = (path: string | null) =>
-    path
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${path}`
-      : null;
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(
-    buildAvatarUrl(page.avatar_storage_path)
-  );
-
-  // Favicon state
-  const [faviconUrl, setFaviconUrl] = useState<string | null>(
-    page.favicon_storage_path
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.favicon_storage_path}`
-      : null
-  );
-
-  // Card layout & contact info state
-  const [cardLayout, setCardLayout] = useState<BioCardLayout | null>(
-    page.card_layout
-  );
-  const [coverUrl, setCoverUrl] = useState<string | null>(
-    page.cover_storage_path
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bio-avatars/${page.cover_storage_path}`
-      : null
-  );
-  const [coverAspectRatio, setCoverAspectRatio] = useState<string | null>(
-    page.cover_aspect_ratio
-  );
-  const [coverPositionY, setCoverPositionY] = useState<number | null>(
-    page.cover_position_y
-  );
+  // Card layout & contact
+  const [cardLayout, setCardLayout] = useState<BioCardLayout | null>(page.card_layout);
+  const [coverAspectRatio, setCoverAspectRatio] = useState<string | null>(page.cover_aspect_ratio);
+  const [coverPositionY, setCoverPositionY] = useState<number | null>(page.cover_position_y);
   const [subtitle, setSubtitle] = useState<string>(page.subtitle ?? '');
   const [company, setCompany] = useState<string>(page.company ?? '');
   const [jobTitle, setJobTitle] = useState<string>(page.job_title ?? '');
   const [location, setLocation] = useState<string>(page.location ?? '');
-  const [contactEmail, setContactEmail] = useState<string>(
-    page.contact_email ?? ''
-  );
-  const [contactPhone, setContactPhone] = useState<string>(
-    page.contact_phone ?? ''
-  );
-  const [contactWebsite, setContactWebsite] = useState<string>(
-    page.contact_website ?? ''
-  );
+  const [contactEmail, setContactEmail] = useState<string>(page.contact_email ?? '');
+  const [contactPhone, setContactPhone] = useState<string>(page.contact_phone ?? '');
+  const [contactWebsite, setContactWebsite] = useState<string>(page.contact_website ?? '');
+
+  // UI
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [stylePanelOpen, setStylePanelOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
+
+  const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
+
+  const copyToClipboard = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    addToast({ title: 'Copied to clipboard', variant: 'success' });
+  };
 
   const handleContactFieldChange = (field: string, value: string) => {
     switch (field) {
@@ -148,41 +114,21 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
     }
   };
 
-  const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
-
-  const copyToClipboard = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    addToast({ title: 'Copied to clipboard', variant: 'success' });
-  };
-
-  // When theme changes, also update font defaults if user hasn't overridden them
   const handleThemeChange = (newTheme: BioLinkTheme) => {
     const newDefaults = THEME_CONFIGS[newTheme] ?? THEME_CONFIGS.minimal;
     const oldDefaults = THEME_CONFIGS[theme] ?? THEME_CONFIGS.minimal;
-
     setTheme(newTheme);
-
-    // If fonts match old theme defaults, update to new theme defaults
-    if (fontTitle === oldDefaults.fonts.title.family) {
-      setFontTitle(newDefaults.fonts.title.family);
-    }
-    if (fontBody === oldDefaults.fonts.body.family) {
-      setFontBody(newDefaults.fonts.body.family);
-    }
-
-    // Reset background variant when switching themes
+    if (fontTitle === oldDefaults.fonts.title.family) setFontTitle(newDefaults.fonts.title.family);
+    if (fontBody === oldDefaults.fonts.body.family) setFontBody(newDefaults.fonts.body.family);
     setBackgroundVariant(null);
   };
 
   const updateAppearance = async () => {
     setIsUpdating(true);
     try {
-      // Determine if fonts are custom or theme defaults
       const currentDefaults = THEME_CONFIGS[theme] ?? THEME_CONFIGS.minimal;
-      const fontTitleOverride =
-        fontTitle !== currentDefaults.fonts.title.family ? fontTitle : null;
-      const fontBodyOverride =
-        fontBody !== currentDefaults.fonts.body.family ? fontBody : null;
+      const fontTitleOverride = fontTitle !== currentDefaults.fonts.title.family ? fontTitle : null;
+      const fontBodyOverride = fontBody !== currentDefaults.fonts.body.family ? fontBody : null;
 
       const res = await fetch(`/api/bio/${page.id}`, {
         method: 'PATCH',
@@ -212,220 +158,230 @@ export function BioDetailClient({ page, items, blocks: initialBlocks = [] }: Bio
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to update appearance');
+        throw new Error(data.error || 'Failed to save');
       }
 
-      addToast({ title: 'Appearance updated', variant: 'success' });
+      addToast({ title: 'Saved', variant: 'success' });
       router.refresh();
     } catch (error: any) {
-      addToast({
-        title: 'Failed to update',
-        description: error.message,
-        variant: 'error',
-      });
+      addToast({ title: 'Failed to save', description: error.message, variant: 'error' });
     } finally {
       setIsUpdating(false);
     }
   };
 
+  const previewPanel = (
+    <BioPreviewPanel
+      title={page.title}
+      bio={page.bio}
+      theme={theme}
+      customBgColor={customBgColor}
+      customTextColor={customTextColor}
+      customAccentColor={customAccentColor}
+      fontTitle={fontTitle}
+      fontBody={fontBody}
+      borderRadius={borderRadius}
+      spacing={spacing}
+      backgroundVariant={backgroundVariant}
+      avatarUrl={avatarUrl}
+      links={links}
+      layoutMode={layoutMode}
+      blocks={blocks}
+      cardLayout={cardLayout}
+      coverUrl={coverUrl}
+      subtitle={subtitle}
+      company={company}
+      jobTitle={jobTitle}
+      location={location}
+      contactEmail={contactEmail}
+      contactPhone={contactPhone}
+      contactWebsite={contactWebsite}
+      coverAspectRatio={coverAspectRatio}
+      coverPositionY={coverPositionY}
+    />
+  );
+
   return (
-    <Tabs defaultValue="overview">
-      <TabsList>
-        <TabsTrigger value="overview">overview</TabsTrigger>
-        <TabsTrigger value="content">content</TabsTrigger>
-        <TabsTrigger value="appearance">appearance</TabsTrigger>
-        <TabsTrigger value="analytics">analytics</TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      {/* ─── Compact Header Bar ─── */}
+      <Card>
+        <CardContent className="py-3 px-4 flex flex-wrap items-center gap-3">
+          <Badge variant={page.is_active ? 'success' : 'secondary'} className="shrink-0">
+            {page.is_active ? 'live' : 'draft'}
+          </Badge>
 
-      {/* Overview Tab */}
-      <TabsContent value="overview">
-        <Card>
-          <CardContent className="pt-6 space-y-6">
-            {/* Title */}
-            <div className="space-y-2">
-              <Label>title</Label>
-              <p className="font-medium">{page.title}</p>
-            </div>
+          <button
+            type="button"
+            onClick={() => copyToClipboard(pageUrl)}
+            className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors truncate min-w-0"
+            title="Copy URL"
+          >
+            <Link2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">/p/{page.slug}</span>
+            <Copy className="h-3 w-3 shrink-0 opacity-50" />
+          </button>
 
-            {/* Slug */}
-            <div className="space-y-2">
-              <Label>slug</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={`/p/${page.slug}`}
-                  readOnly
-                  className="font-mono text-sm"
-                />
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Eye className="h-3.5 w-3.5" />
+            {formatNumber(page.total_views)}
+          </span>
+
+          <div className="flex items-center gap-2 ml-auto">
+            {page.is_active && (
+              <a href={pageUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  view live
+                </Button>
+              </a>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ─── Main Tabs ─── */}
+      <Tabs defaultValue="design">
+        <TabsList>
+          <TabsTrigger value="design">
+            <Paintbrush className="h-3.5 w-3.5 mr-1.5" />
+            design
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
+            analytics
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ─── Design Tab: Content + Style + Preview ─── */}
+        <TabsContent value="design" className="min-h-[500px]">
+          <div className="flex gap-6">
+            {/* Left: Content editor + collapsible style panel */}
+            <div className="flex-1 min-w-0">
+              {/* Style toggle bar */}
+              <div className="flex items-center justify-between mb-4">
                 <Button
                   variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(`/p/${page.slug}`)}
+                  size="sm"
+                  onClick={() => setStylePanelOpen(!stylePanelOpen)}
+                  className="gap-2"
                 >
-                  <Copy className="h-4 w-4" />
+                  <Paintbrush className="h-3.5 w-3.5" />
+                  {stylePanelOpen ? 'hide style' : 'style & profile'}
+                  <ChevronRight className={`h-3.5 w-3.5 transition-transform ${stylePanelOpen ? 'rotate-180' : ''}`} />
                 </Button>
-              </div>
-            </div>
 
-            {/* Page URL */}
-            <div className="space-y-2">
-              <Label>page url</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={pageUrl}
-                  readOnly
-                  className="font-mono text-sm"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(pageUrl)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <a
-                  href={pageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="outline" size="icon">
-                    <ExternalLink className="h-4 w-4" />
+                {stylePanelOpen && (
+                  <Button size="sm" onClick={updateAppearance} disabled={isUpdating}>
+                    {isUpdating ? (
+                      <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />saving...</>
+                    ) : (
+                      'save style'
+                    )}
                   </Button>
-                </a>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Share this URL with your audience
-              </p>
-            </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-              <div>
-                <p className="text-sm text-muted-foreground">total views</p>
-                <p className="font-medium flex items-center gap-1.5">
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                  {formatNumber(page.total_views)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">created</p>
-                <p className="font-medium">{formatDate(page.created_at)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
+              {/* Collapsible Style Panel */}
+              {stylePanelOpen && (
+                <Card className="mb-6">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-sm">style & profile</h3>
+                      <button
+                        type="button"
+                        onClick={() => setStylePanelOpen(false)}
+                        className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <BioDesignControls
+                      theme={theme}
+                      onThemeChange={handleThemeChange}
+                      fontTitle={fontTitle}
+                      fontBody={fontBody}
+                      onFontTitleChange={setFontTitle}
+                      onFontBodyChange={setFontBody}
+                      customBgColor={customBgColor}
+                      customTextColor={customTextColor}
+                      customAccentColor={customAccentColor}
+                      onBgColorChange={setCustomBgColor}
+                      onTextColorChange={setCustomTextColor}
+                      onAccentColorChange={setCustomAccentColor}
+                      backgroundVariant={backgroundVariant}
+                      onBackgroundVariantChange={setBackgroundVariant}
+                      borderRadius={borderRadius}
+                      onBorderRadiusChange={setBorderRadius}
+                      spacing={spacing}
+                      onSpacingChange={setSpacing}
+                      pageId={page.id}
+                      avatarUrl={avatarUrl}
+                      onAvatarChange={(url) => { setAvatarUrl(url); router.refresh(); }}
+                      faviconUrl={faviconUrl}
+                      onFaviconChange={(url) => { setFaviconUrl(url); router.refresh(); }}
+                      cardLayout={cardLayout}
+                      onCardLayoutChange={setCardLayout}
+                      coverUrl={coverUrl}
+                      onCoverChange={(url) => { setCoverUrl(url); router.refresh(); }}
+                      coverAspectRatio={coverAspectRatio}
+                      onCoverAspectRatioChange={setCoverAspectRatio}
+                      coverPositionY={coverPositionY}
+                      onCoverPositionYChange={setCoverPositionY}
+                      subtitle={subtitle}
+                      company={company}
+                      jobTitle={jobTitle}
+                      location={location}
+                      contactEmail={contactEmail}
+                      contactPhone={contactPhone}
+                      contactWebsite={contactWebsite}
+                      onContactFieldChange={handleContactFieldChange}
+                    />
+                    <div className="pt-6">
+                      <Button onClick={updateAppearance} disabled={isUpdating} className="w-full sm:w-auto">
+                        {isUpdating ? (
+                          <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />saving...</>
+                        ) : (
+                          'save style'
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-      {/* Content Tab */}
-      <TabsContent value="content" className="min-h-[500px]">
-        <BioContentEditor
-          layoutMode={layoutMode}
-          blocks={blocks}
-          links={links}
-          pageId={page.id}
-          onBlocksChange={setBlocks}
-          onLinksChange={setLinks}
-        />
-      </TabsContent>
-
-      {/* Appearance Tab — Split-screen editor */}
-      <TabsContent value="appearance">
-        <BioEditorLayout
-          controls={
-            <>
-              <BioDesignControls
-                theme={theme}
-                onThemeChange={handleThemeChange}
-                fontTitle={fontTitle}
-                fontBody={fontBody}
-                onFontTitleChange={setFontTitle}
-                onFontBodyChange={setFontBody}
-                customBgColor={customBgColor}
-                customTextColor={customTextColor}
-                customAccentColor={customAccentColor}
-                onBgColorChange={setCustomBgColor}
-                onTextColorChange={setCustomTextColor}
-                onAccentColorChange={setCustomAccentColor}
-                backgroundVariant={backgroundVariant}
-                onBackgroundVariantChange={setBackgroundVariant}
-                borderRadius={borderRadius}
-                onBorderRadiusChange={setBorderRadius}
-                spacing={spacing}
-                onSpacingChange={setSpacing}
+              {/* Content Editor (blocks / links) */}
+              <BioContentEditor
+                layoutMode={layoutMode}
+                blocks={blocks}
+                links={links}
                 pageId={page.id}
-                avatarUrl={avatarUrl}
-                onAvatarChange={(url) => {
-                  setAvatarUrl(url);
-                  router.refresh();
-                }}
-                faviconUrl={faviconUrl}
-                onFaviconChange={(url) => {
-                  setFaviconUrl(url);
-                  router.refresh();
-                }}
-                cardLayout={cardLayout}
-                onCardLayoutChange={setCardLayout}
-                coverUrl={coverUrl}
-                onCoverChange={(url) => {
-                  setCoverUrl(url);
-                  router.refresh();
-                }}
-                coverAspectRatio={coverAspectRatio}
-                onCoverAspectRatioChange={setCoverAspectRatio}
-                coverPositionY={coverPositionY}
-                onCoverPositionYChange={setCoverPositionY}
-                subtitle={subtitle}
-                company={company}
-                jobTitle={jobTitle}
-                location={location}
-                contactEmail={contactEmail}
-                contactPhone={contactPhone}
-                contactWebsite={contactWebsite}
-                onContactFieldChange={handleContactFieldChange}
+                onBlocksChange={setBlocks}
+                onLinksChange={setLinks}
               />
-              <div className="pt-4">
-                <Button onClick={updateAppearance} disabled={isUpdating} className="w-full sm:w-auto">
-                  {isUpdating ? 'saving...' : 'save appearance'}
-                </Button>
-              </div>
-            </>
-          }
-          preview={
-            <BioPreviewPanel
-              title={page.title}
-              bio={page.bio}
-              theme={theme}
-              customBgColor={customBgColor}
-              customTextColor={customTextColor}
-              customAccentColor={customAccentColor}
-              fontTitle={fontTitle}
-              fontBody={fontBody}
-              borderRadius={borderRadius}
-              spacing={spacing}
-              backgroundVariant={backgroundVariant}
-              avatarUrl={avatarUrl}
-              links={links}
-              layoutMode={layoutMode}
-              blocks={blocks}
-              cardLayout={cardLayout}
-              coverUrl={coverUrl}
-              subtitle={subtitle}
-              company={company}
-              jobTitle={jobTitle}
-              location={location}
-              contactEmail={contactEmail}
-              contactPhone={contactPhone}
-              contactWebsite={contactWebsite}
-              coverAspectRatio={coverAspectRatio}
-              coverPositionY={coverPositionY}
-            />
-          }
-        />
-      </TabsContent>
+            </div>
 
-      {/* Analytics Tab */}
-      <TabsContent value="analytics">
-        <BioAnalyticsPanel pageId={page.id} />
-      </TabsContent>
-    </Tabs>
+            {/* Right: Live preview (desktop, sticky) */}
+            <div className="hidden xl:block w-[320px] shrink-0">
+              <div className="sticky top-6">
+                <div className="mb-3 flex justify-center">
+                  <PreviewModeToggle mode={previewMode} onChange={setPreviewMode} />
+                </div>
+                <div
+                  className="mx-auto transition-all duration-200"
+                  style={{ maxWidth: PREVIEW_WIDTHS[previewMode] }}
+                >
+                  {previewPanel}
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ─── Analytics Tab ─── */}
+        <TabsContent value="analytics">
+          <BioAnalyticsPanel pageId={page.id} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
