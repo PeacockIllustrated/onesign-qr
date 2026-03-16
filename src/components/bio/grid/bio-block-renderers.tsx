@@ -21,6 +21,7 @@ import {
   Mail,
   Twitch,
   Timer,
+  DollarSign,
 } from 'lucide-react';
 import type {
   BioBlock,
@@ -128,6 +129,12 @@ export function BlockRenderer({ block, compact }: BlockRendererProps) {
         />
       );
     case 'payment_link':
+      return (
+        <PaymentLinkBlockRenderer
+          content={block.content as BioBlockContentPaymentLink}
+          compact={compact}
+        />
+      );
     case 'gallery':
     case 'contact_form':
       return (
@@ -575,6 +582,75 @@ function CountdownBlockRenderer({
         </span>
         <span className="block truncate text-[10px] text-muted-foreground">
           {styleLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Payment Link ────────────────────────────────────────────────────
+
+const PAYMENT_PLATFORM_COLORS: Record<BioBlockContentPaymentLink['platform'], string> = {
+  paypal: '#003087',
+  venmo: '#008CFF',
+  cashapp: '#00D632',
+  stripe: '#635BFF',
+  buymeacoffee: '#FFDD00',
+  'ko-fi': '#FF5E5B',
+  custom: 'currentColor',
+};
+
+const PAYMENT_PLATFORM_LABELS: Record<BioBlockContentPaymentLink['platform'], string> = {
+  paypal: 'PayPal',
+  venmo: 'Venmo',
+  cashapp: 'Cash App',
+  stripe: 'Stripe',
+  buymeacoffee: 'Buy Me a Coffee',
+  'ko-fi': 'Ko-fi',
+  custom: 'Support',
+};
+
+function PaymentLinkBlockRenderer({
+  content,
+  compact,
+}: {
+  content: BioBlockContentPaymentLink;
+  compact?: boolean;
+}) {
+  if (!content.url) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-border">
+        <DollarSign className={`text-muted-foreground ${compact ? 'h-4 w-4' : 'h-6 w-6'}`} />
+        <span className="text-[10px] text-muted-foreground">Add payment link</span>
+      </div>
+    );
+  }
+
+  const platformColor = PAYMENT_PLATFORM_COLORS[content.platform];
+  const platformLabel = PAYMENT_PLATFORM_LABELS[content.platform];
+
+  return (
+    <div className="flex h-full w-full items-center justify-center gap-2.5 rounded-sm bg-secondary px-3">
+      <div
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+        style={{
+          backgroundColor:
+            platformColor === 'currentColor' ? 'hsl(var(--foreground)/0.05)' : `${platformColor}20`,
+        }}
+      >
+        <DollarSign
+          className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}
+          style={{ color: platformColor === 'currentColor' ? undefined : platformColor }}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <span
+          className={`block truncate font-medium text-foreground ${compact ? 'text-xs' : 'text-sm'}`}
+        >
+          {content.display_text || platformLabel}
+        </span>
+        <span className="block truncate text-[10px] text-muted-foreground">
+          {platformLabel}
         </span>
       </div>
     </div>

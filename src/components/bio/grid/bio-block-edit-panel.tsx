@@ -29,6 +29,7 @@ import { SpotifyForm } from './forms/spotify-form';
 import { YouTubeForm } from './forms/youtube-form';
 import { MapForm } from './forms/map-form';
 import { CountdownForm } from './forms/countdown-form';
+import { PaymentLinkForm } from './forms/payment-link-form';
 
 interface BioBlockEditPanelProps {
   block: BioBlock;
@@ -174,6 +175,7 @@ function BlockFormSwitch({
     case 'countdown':
       return <CountdownForm content={block.content as BioBlockContentCountdown} onChange={onUpdate} />;
     case 'payment_link':
+      return <PaymentLinkForm content={block.content as BioBlockContentPaymentLink} onChange={onUpdate} />;
     case 'gallery':
     case 'contact_form':
       return <p className="text-xs text-muted-foreground">Editor coming soon for this block type.</p>;

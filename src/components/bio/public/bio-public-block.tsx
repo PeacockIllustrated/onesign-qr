@@ -27,6 +27,7 @@ import { PublicSpotifyBlock } from './block-renderers/spotify-block';
 import { PublicYouTubeBlock } from './block-renderers/youtube-block';
 import { PublicMapBlock } from './block-renderers/map-block';
 import { PublicCountdownBlock } from './block-renderers/countdown-block';
+import { PublicPaymentLinkBlock } from './block-renderers/payment-link-block';
 
 interface BioPublicBlockProps {
   block: BioBlock;
@@ -136,6 +137,15 @@ export function BioPublicBlock({
       );
 
     case 'payment_link':
+      return (
+        <PublicPaymentLinkBlock
+          content={block.content as BioBlockContentPaymentLink}
+          themeConfig={themeConfig}
+          blockId={block.id}
+          pageId={pageId}
+        />
+      );
+
     case 'gallery':
     case 'contact_form':
       return null;
