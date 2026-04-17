@@ -29,11 +29,16 @@ function stripComments(sql: string): string {
 export function lintMigrationContent(sql: string): LintResult {
   const violations: string[] = [];
   const cleaned = stripComments(sql);
-  const normalized = cleaned.toLowerCase();
+  // Remove double-quote characters so "qr_codes" becomes qr_codes and "public"."qr_codes" becomes public.qr_codes
+  // This handles quoted identifiers that bypass simple regex matching
+  const normalized = cleaned.toLowerCase().replace(/"/g, '');
 
-  // DROP TABLE qr_codes
+  // Allow optional schema prefix (e.g., public.qr_codes, foo.qr_codes, or bare qr_codes)
+  const schemaPrefix = '(?:[a-z_][a-z0-9_]*\\.)?';
+
+  // DROP TABLE qr_codes [with optional schema prefix]
   if (
-    new RegExp(`drop\\s+table\\s+(if\\s+exists\\s+)?${PROTECTED_TABLE}\\b`).test(
+    new RegExp(`drop\\s+table\\s+(if\\s+exists\\s+)?${schemaPrefix}${PROTECTED_TABLE}\\b`).test(
       normalized
     )
   ) {
@@ -42,14 +47,24 @@ export function lintMigrationContent(sql: string): LintResult {
     );
   }
 
-  // Find ALTER TABLE qr_codes ... statements, then check the body of each.
+  // Find ALTER TABLE qr_codes ... statements [with optional schema prefix], then check the body of each.
   const alterRegex = new RegExp(
-    `alter\\s+table\\s+(only\\s+)?${PROTECTED_TABLE}\\b([^;]*);`,
+    `alter\\s+table\\s+(only\\s+)?${schemaPrefix}${PROTECTED_TABLE}\\b([^;]*);`,
     'g'
   );
   let match: RegExpExecArray | null;
   while ((match = alterRegex.exec(normalized)) !== null) {
     const body = match[2];
+
+    // Check for whole-table RENAME (table-level operation)
+    if (new RegExp(`rename\\s+to\\b`).test(body)) {
+      violations.push(
+        `Forbidden RENAME of protected table "${PROTECTED_TABLE}". ` +
+          `This table is relied on by the production redirect handler.`
+      );
+    }
+
+    // Check for protected column operations
     for (const col of PROTECTED_COLUMNS) {
       const bodyPatterns = [
         new RegExp(`drop\\s+column\\s+(if\\s+exists\\s+)?${col}\\b`),

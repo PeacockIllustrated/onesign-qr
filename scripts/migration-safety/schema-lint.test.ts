@@ -56,4 +56,87 @@ describe('lintMigrationContent', () => {
     const sql = `ALTER TABLE bio_link_pages DROP COLUMN analytics_enabled;`;
     expect(lintMigrationContent(sql).violations).toEqual([]);
   });
+
+  // Blocker 1: Schema-qualified table names
+  it('flags DROP TABLE public.qr_codes (schema-qualified)', () => {
+    const sql = `DROP TABLE public.qr_codes;`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+  });
+
+  it('flags ALTER TABLE public.qr_codes DROP COLUMN slug (schema-qualified)', () => {
+    const sql = `ALTER TABLE public.qr_codes DROP COLUMN slug;`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+  });
+
+  it('flags DROP TABLE other_schema.qr_codes (schema-qualified with different schema)', () => {
+    const sql = `DROP TABLE other_schema.qr_codes;`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+  });
+
+  // Blocker 2: Quoted identifiers
+  it('flags DROP TABLE "qr_codes" (double-quoted)', () => {
+    const sql = `DROP TABLE "qr_codes";`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+  });
+
+  it('flags ALTER TABLE "qr_codes" DROP COLUMN slug (double-quoted)', () => {
+    const sql = `ALTER TABLE "qr_codes" DROP COLUMN slug;`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+  });
+
+  it('flags DROP TABLE "public"."qr_codes" (schema and table both quoted)', () => {
+    const sql = `DROP TABLE "public"."qr_codes";`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+  });
+
+  // Blocker 3: Whole-table RENAME TO
+  it('flags ALTER TABLE qr_codes RENAME TO qr_codes_old (whole-table rename)', () => {
+    const sql = `ALTER TABLE qr_codes RENAME TO qr_codes_old;`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+    expect(lintMigrationContent(sql).violations[0]).toContain('RENAME');
+  });
+
+  it('flags ALTER TABLE "qr_codes" RENAME TO other_name (quoted, whole-table rename)', () => {
+    const sql = `ALTER TABLE "qr_codes" RENAME TO other_name;`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+    expect(lintMigrationContent(sql).violations[0]).toContain('RENAME');
+  });
+
+  it('flags ALTER TABLE public.qr_codes RENAME TO foo (schema-qualified, whole-table rename)', () => {
+    const sql = `ALTER TABLE public.qr_codes RENAME TO foo;`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+    expect(lintMigrationContent(sql).violations[0]).toContain('RENAME');
+  });
+
+  // Important: Ensure IF EXISTS is still caught
+  it('flags ALTER TABLE qr_codes DROP COLUMN IF EXISTS slug', () => {
+    const sql = `ALTER TABLE qr_codes DROP COLUMN IF EXISTS slug;`;
+    expect(lintMigrationContent(sql).violations).toHaveLength(1);
+  });
+
+  // Safe ALTER forms should NOT flag
+  it('does not flag ALTER TABLE qr_codes ALTER COLUMN slug DROP DEFAULT', () => {
+    const sql = `ALTER TABLE qr_codes ALTER COLUMN slug DROP DEFAULT;`;
+    expect(lintMigrationContent(sql).violations).toEqual([]);
+  });
+
+  it('does not flag ALTER TABLE qr_codes ALTER COLUMN slug SET NOT NULL', () => {
+    const sql = `ALTER TABLE qr_codes ALTER COLUMN slug SET NOT NULL;`;
+    expect(lintMigrationContent(sql).violations).toEqual([]);
+  });
+
+  it('does not flag ALTER TABLE qr_codes ADD COLUMN new_col TEXT', () => {
+    const sql = `ALTER TABLE qr_codes ADD COLUMN new_col TEXT;`;
+    expect(lintMigrationContent(sql).violations).toEqual([]);
+  });
+
+  it('does not flag ALTER TABLE qr_codes ALTER COLUMN slug DROP DEFAULT (case-insensitive)', () => {
+    const sql = `alter table qr_codes alter column slug drop default;`;
+    expect(lintMigrationContent(sql).violations).toEqual([]);
+  });
+
+  it('does not flag ALTER TABLE "qr_codes" ADD COLUMN safe_new_col TEXT (quoted, safe ADD)', () => {
+    const sql = `ALTER TABLE "qr_codes" ADD COLUMN safe_new_col TEXT;`;
+    expect(lintMigrationContent(sql).violations).toEqual([]);
+  });
 });
