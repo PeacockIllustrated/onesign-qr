@@ -22,6 +22,13 @@ and the CI schema-lint check blocks PRs that do this.
 
 ## Pre-flight checklist (Phase 0.A)
 
+### CI gates (must be green on the branch being deployed)
+
+1. `npm run test:run` — all unit tests pass.
+2. `npm run type-check` — TypeScript compiles without errors.
+3. `npm run migration:schema-lint` — migration directory passes schema-lint.
+4. `npm run lint` — linter passes.
+
 All items must be checked before the migration is applied to production.
 
 - [ ] Supabase PITR is active on the project (Supabase Dashboard →
