@@ -69,7 +69,7 @@ definition. The risk is only to the migration itself succeeding. Steps:
 
    Record the row counts in your notes.
 
-3. In Terminal A, open `supabase/migrations/00015_organizations_and_org_id_columns.sql`
+3. In Terminal A, open `supabase/migrations/00016_organizations_and_org_id_columns.sql`
    and paste the contents into the Supabase SQL editor. Execute.
 
 4. If the SQL editor reports any error: **STOP. DO NOT CONTINUE. DO NOT
@@ -146,6 +146,128 @@ COMMIT;
 After rollback: re-run the slug-integrity and row-count diffs to confirm the
 database is back at the before-snapshot state.
 
+---
+
+## Pre-flight checklist (Phase 0.B)
+
+Phase 0.B is a data-only migration: it creates one personal organisation per
+`auth.users` row, inserts the owner membership, and populates `org_id` on
+`bio_link_pages` and `qr_codes`. No schema changes. The migration is
+idempotent — safe to re-run. It is executed inside a single transaction;
+any assertion failure rolls the whole thing back.
+
+- [ ] Phase 0.A has been complete in production for ≥24 hours with no
+      redirect regressions and no user-facing incidents.
+- [ ] Supabase PITR is active; retention ≥7 days.
+- [ ] A fresh backup has been taken **today**.
+      `BACKUP_ID: _______________`
+- [ ] Phase 0.B has been rehearsed end-to-end against staging:
+      migration + `backfill-verify` + slug-integrity + row-count diffs all
+      pass with zero deltas on owned tables, and
+      `COUNT(organizations)` equals `COUNT(auth.users)` post-migration.
+- [ ] The CI gates listed in the Phase 0.A section are still green on the
+      branch being deployed.
+- [ ] `scripts/migration-safety/rollback-0b.sql` has been reviewed and
+      pasted into a second terminal ready to execute.
+- [ ] A reviewer who is not the primary operator has read this runbook
+      section and the migration SQL.
+- [ ] Migration window scheduled in the lowest-traffic slot with on-call
+      awake.
+
+## Execution (Phase 0.B)
+
+1. In Terminal B, capture pre-migration snapshots:
+
+   ```
+   npm run migration:snapshot -- /tmp/phase-0b-slug-before.json
+   npm run migration:rowcount-snapshot -- /tmp/phase-0b-rows-before.json
+   ```
+
+2. Record the pre-migration parity numbers:
+
+   ```sql
+   SELECT COUNT(*) FROM auth.users;                     -- note this
+   SELECT COUNT(*) FROM organizations;                  -- expect 0
+   SELECT COUNT(*) FROM organization_members;           -- expect 0
+   SELECT COUNT(*) FILTER (WHERE org_id IS NULL) FROM bio_link_pages;
+   SELECT COUNT(*) FILTER (WHERE org_id IS NULL) FROM qr_codes;
+   ```
+
+3. In Terminal A, paste the full contents of
+   `supabase/migrations/00017_backfill_personal_orgs.sql` into the Supabase
+   SQL editor. Execute.
+
+4. If the editor reports any error: **STOP. DO NOT RE-RUN.** The
+   transaction has already rolled back; nothing changed. Investigate before
+   proceeding. If the fault is transient (network), you may re-run.
+   Otherwise, file an incident and pause.
+
+5. Capture post-migration snapshots:
+
+   ```
+   npm run migration:snapshot -- /tmp/phase-0b-slug-after.json
+   npm run migration:rowcount-snapshot -- /tmp/phase-0b-rows-after.json
+   ```
+
+6. Run the diffs:
+
+   ```
+   npm run migration:diff -- /tmp/phase-0b-slug-before.json /tmp/phase-0b-slug-after.json
+   npm run migration:rowcount-diff -- /tmp/phase-0b-rows-before.json /tmp/phase-0b-rows-after.json
+   ```
+
+   Slug integrity must be clean. Row counts on owned tables
+   (`bio_link_pages`, `qr_codes`, and every `bio_*`) must not have changed.
+
+7. Run the automated post-condition check:
+
+   ```
+   npm run migration:backfill-verify
+   ```
+
+   Expected: `Backfill verification passed.` (exit 0).
+
+8. Manual parity check:
+
+   ```sql
+   SELECT COUNT(*) FROM auth.users;                     -- A
+   SELECT COUNT(*) FROM organizations
+     WHERE slug LIKE 'personal-%' AND deleted_at IS NULL; -- B
+   SELECT COUNT(DISTINCT user_id) FROM organization_members
+     JOIN organizations o ON o.id = organization_members.org_id
+     WHERE role = 'owner'
+       AND o.slug LIKE 'personal-%'
+       AND o.deleted_at IS NULL;                         -- C
+
+   -- A must equal B must equal C.
+
+   SELECT COUNT(*) FILTER (WHERE org_id IS NULL) FROM bio_link_pages;
+   SELECT COUNT(*) FILTER (WHERE org_id IS NULL) FROM qr_codes;
+   -- Both expect 0.
+   ```
+
+9. Hit at least three known-good production QRs manually. Log HTTP status
+   and Location header. All must return 307 to the expected destination.
+
+10. Append a Phase 0.B entry to the Completion log.
+
+## Rollback (Phase 0.B)
+
+**Only safe if no user-visible writes to organizations or memberships have
+happened since the backfill.** If a real org has been created (slug not
+starting with `personal-`) do not run this automatic rollback; instead,
+open a hotfix SQL that targets only the rows you need to revert.
+
+```
+-- In Supabase SQL editor
+-- Paste the contents of scripts/migration-safety/rollback-0b.sql
+```
+
+After rollback: re-run the slug-integrity diff and confirm zero deltas
+from the pre-Phase-0.B snapshot.
+
+---
+
 ## Completion log
 
 <!-- Append an entry per run. -->
@@ -161,5 +283,23 @@ database is back at the before-snapshot state.
 - Backup ID:
 - Row count deltas:
 - Slug integrity diff:
+- Anomalies:
+- Signed off by:
+
+### Phase 0.B staging rehearsal, YYYY-MM-DD HH:MM TZ
+- Backup ID:
+- auth.users count:
+- organizations personal-* count after:
+- Slug integrity diff:
+- Row count deltas on owned tables:
+- Anomalies:
+- Signed off by:
+
+### Phase 0.B production, YYYY-MM-DD HH:MM TZ
+- Backup ID:
+- auth.users count:
+- organizations personal-* count after:
+- Slug integrity diff:
+- Row count deltas on owned tables:
 - Anomalies:
 - Signed off by:
