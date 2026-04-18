@@ -14,7 +14,10 @@
     "test:coverage": "vitest run --coverage",
     "migration:schema-lint": "tsx scripts/migration-safety/schema-lint-cli.ts",
     "migration:snapshot": "tsx scripts/migration-safety/slug-integrity-snapshot.ts",
-    "migration:diff": "tsx scripts/migration-safety/slug-integrity-diff.ts"
+    "migration:diff": "tsx scripts/migration-safety/slug-integrity-diff.ts",
+    "migration:rowcount-snapshot": "tsx scripts/migration-safety/row-count-snapshot.ts",
+    "migration:rowcount-diff": "tsx scripts/migration-safety/row-count-diff.ts",
+    "migration:backfill-verify": "tsx scripts/migration-safety/backfill-verify.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
