@@ -15,6 +15,8 @@
 --
 -- Rollback: see docs/superpowers/runbooks/phase-0-migration.md
 
+BEGIN;
+
 -- =============================================================================
 -- HELPER: generate_unique_org_slug
 --
@@ -76,15 +78,49 @@ BEGIN
     END IF;
 
     org_name := email_prefix || '''s workspace';
-    org_slug := generate_unique_org_slug(email_prefix);
 
-    INSERT INTO organizations (name, slug, plan)
-    VALUES (org_name, org_slug, 'free')
-    RETURNING id INTO new_org_id;
+    -- Retry loop: on unique_violation for slug (concurrent signup took it),
+    -- regenerate and try again up to 3 times before giving up.
+    DECLARE
+      attempt INT := 0;
+    BEGIN
+      LOOP
+        org_slug := generate_unique_org_slug(email_prefix);
+        BEGIN
+          INSERT INTO organizations (name, slug, plan)
+          VALUES (org_name, org_slug, 'free')
+          RETURNING id INTO new_org_id;
+          EXIT;
+        EXCEPTION WHEN unique_violation THEN
+          attempt := attempt + 1;
+          IF attempt >= 3 THEN
+            RAISE;
+          END IF;
+        END;
+      END LOOP;
+    END;
 
     INSERT INTO organization_members (org_id, user_id, role)
     VALUES (new_org_id, u.id, 'owner');
   END LOOP;
+END $$;
+
+-- =============================================================================
+-- INVARIANT CHECK: each user must have at most one membership before we
+-- populate org_id on data rows. If this raises, the backfill or a prior
+-- partial run created duplicates — investigate before continuing.
+-- =============================================================================
+
+DO $$
+DECLARE
+  dup_count INT;
+BEGIN
+  SELECT COUNT(*) INTO dup_count FROM (
+    SELECT user_id FROM organization_members GROUP BY user_id HAVING COUNT(*) > 1
+  ) t;
+  IF dup_count > 0 THEN
+    RAISE EXCEPTION 'Invariant violation: % user(s) have duplicate memberships. Aborting migration.', dup_count;
+  END IF;
 END $$;
 
 -- =============================================================================
@@ -152,11 +188,27 @@ BEGIN
   END IF;
 
   org_name := email_prefix || '''s workspace';
-  org_slug := generate_unique_org_slug(email_prefix);
 
-  INSERT INTO organizations (name, slug, plan)
-  VALUES (org_name, org_slug, 'free')
-  RETURNING id INTO new_org_id;
+  -- Retry loop: on unique_violation for slug (concurrent signup took it),
+  -- regenerate and try again up to 3 times before giving up.
+  DECLARE
+    attempt INT := 0;
+  BEGIN
+    LOOP
+      org_slug := generate_unique_org_slug(email_prefix);
+      BEGIN
+        INSERT INTO organizations (name, slug, plan)
+        VALUES (org_name, org_slug, 'free')
+        RETURNING id INTO new_org_id;
+        EXIT;
+      EXCEPTION WHEN unique_violation THEN
+        attempt := attempt + 1;
+        IF attempt >= 3 THEN
+          RAISE;
+        END IF;
+      END;
+    END LOOP;
+  END;
 
   INSERT INTO organization_members (org_id, user_id, role)
   VALUES (new_org_id, NEW.id, 'owner');
@@ -170,3 +222,58 @@ CREATE TRIGGER trg_auto_create_personal_org
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION auto_create_personal_org();
+
+-- =============================================================================
+-- BACKFILL PASS 2: create personal orgs for any signups that slipped through
+-- the race window between END LOOP and CREATE TRIGGER above
+-- =============================================================================
+
+DO $$
+DECLARE
+  u RECORD;
+  new_org_id UUID;
+  email_prefix TEXT;
+  org_name TEXT;
+  org_slug TEXT;
+BEGIN
+  FOR u IN
+    SELECT id, email
+    FROM auth.users
+    WHERE NOT EXISTS (
+      SELECT 1 FROM organization_members WHERE organization_members.user_id = auth.users.id
+    )
+  LOOP
+    email_prefix := coalesce(split_part(u.email, '@', 1), '');
+    IF email_prefix = '' THEN
+      email_prefix := 'user';
+    END IF;
+
+    org_name := email_prefix || '''s workspace';
+
+    -- Retry loop: on unique_violation for slug (concurrent signup took it),
+    -- regenerate and try again up to 3 times before giving up.
+    DECLARE
+      attempt INT := 0;
+    BEGIN
+      LOOP
+        org_slug := generate_unique_org_slug(email_prefix);
+        BEGIN
+          INSERT INTO organizations (name, slug, plan)
+          VALUES (org_name, org_slug, 'free')
+          RETURNING id INTO new_org_id;
+          EXIT;
+        EXCEPTION WHEN unique_violation THEN
+          attempt := attempt + 1;
+          IF attempt >= 3 THEN
+            RAISE;
+          END IF;
+        END;
+      END LOOP;
+    END;
+
+    INSERT INTO organization_members (org_id, user_id, role)
+    VALUES (new_org_id, u.id, 'owner');
+  END LOOP;
+END $$;
+
+COMMIT;
