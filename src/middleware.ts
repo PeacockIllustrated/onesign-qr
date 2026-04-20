@@ -2,6 +2,10 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { checkRedirectLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { resolveActiveOrgIdForMiddleware } from '@/lib/org/active-org';
+import {
+  ADMIN_SESSION_COOKIE,
+  verifyAdminSessionCookie,
+} from '@/lib/admin/admin-session';
 
 export async function middleware(request: NextRequest) {
   // -----------------------------------------------------------------------
@@ -145,6 +149,34 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session if it exists
   const { data: { user } } = await supabase.auth.getUser();
+
+  // -----------------------------------------------------------------------
+  // Admin route gate — /admin/* requires authentication + admin session cookie
+  //
+  // Unauthenticated users are sent to the regular auth login first.
+  // Authenticated users without a valid admin session cookie are redirected
+  // to /admin/login (which is always reachable — it's how you get the cookie).
+  // isPlatformAdmin() is NOT checked here; that happens in the admin layout
+  // for defence-in-depth without adding a DB round-trip to every request.
+  // -----------------------------------------------------------------------
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('next', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // /admin/login is reachable without a session cookie — it's how you get one.
+    if (pathname !== '/admin/login') {
+      const cookieValue = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+      const verify = await verifyAdminSessionCookie(cookieValue);
+      if (!verify.valid || verify.userId !== user.id) {
+        const adminLoginUrl = new URL('/admin/login', request.url);
+        adminLoginUrl.searchParams.set('next', pathname);
+        return NextResponse.redirect(adminLoginUrl);
+      }
+    }
+  }
 
   // Protected routes
   if (pathname.startsWith('/app')) {
