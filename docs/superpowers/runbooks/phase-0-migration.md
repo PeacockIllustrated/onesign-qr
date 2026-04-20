@@ -1114,3 +1114,80 @@ App rollback: revert the deploy. No other data affected.
 - Smoke test:
 - Anomalies:
 - Signed off by:
+
+---
+
+# Shopfront (Foundation + Admin + Browse)
+
+Ships a browsable catalog and admin product CRUD. Checkout is deferred to
+the follow-up Stripe plan — the "Buy" button renders disabled with a
+"coming soon" copy.
+
+## Pre-flight
+
+1. `npm run test:run` — all pass.
+2. `npm run type-check` — clean.
+3. `npm run migration:schema-lint` — passes.
+4. Super-admin dashboard live in production (required for product CRUD UI).
+5. No new env vars required in this release.
+
+## Execution
+
+1. Apply `supabase/migrations/00024_shopfront.sql` in the Supabase SQL
+   editor.
+
+2. Verify the storage bucket and tables exist:
+
+   ```sql
+   SELECT id, public FROM storage.buckets WHERE id = 'shop-product-media';
+   -- expect 1 row with public = true
+
+   SELECT tablename FROM pg_tables
+   WHERE tablename LIKE 'shop\_%' ESCAPE '\';
+   -- expect 5 rows: shop_products, shop_product_variants,
+   -- shop_product_customizations, shop_orders, shop_order_items
+   ```
+
+3. Deploy the app (Vercel auto-deploys on merge).
+
+4. Seed at least one product via `/admin/shop/products/new` — fill the
+   form, paste a product image URL (any test image from imgur/unsplash is
+   fine for now), save, toggle is_active on, and confirm it appears in the
+   customer view at `/app/shop`.
+
+5. Smoke test:
+   - Sign in as an org owner (non-admin). Visit `/app/shop` → hero + grid
+     render. Click a product → detail page renders with "Checkout coming
+     soon" button disabled.
+   - Sign in as tom@onesignanddigital.com (platform admin). Visit
+     `/admin/shop/products` → list view with your seeded product. Click
+     into it → edit form. Edit the name → save → list updates. Delete →
+     product disappears from `/app/shop`.
+
+## Rollback
+
+```sql
+DROP TABLE IF EXISTS shop_order_items;
+DROP TABLE IF EXISTS shop_orders;
+DROP TABLE IF EXISTS shop_product_customizations;
+DROP TABLE IF EXISTS shop_product_variants;
+DROP TABLE IF EXISTS shop_products;
+DROP TYPE IF EXISTS shop_customization_field_type;
+DROP TYPE IF EXISTS shop_order_status;
+DROP TYPE IF EXISTS shop_product_category;
+
+-- Remove the bucket (careful — this deletes all uploaded media):
+-- DELETE FROM storage.objects WHERE bucket_id = 'shop-product-media';
+-- DELETE FROM storage.buckets WHERE id = 'shop-product-media';
+```
+
+App rollback: revert the deploy.
+
+## Completion log
+
+### Production, YYYY-MM-DD HH:MM TZ
+- Migration applied:
+- Smoke test:
+- First product seeded:
+- Anomalies:
+- Signed off by:
