@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { NextRequest, NextResponse as NextResponseType } from 'next/server';
 
 export const ACTIVE_ORG_COOKIE = 'lynx_active_org';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
@@ -101,4 +102,48 @@ export async function setActiveOrgCookie(orgId: string): Promise<void> {
 export async function clearActiveOrgCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(ACTIVE_ORG_COOKIE);
+}
+
+/**
+ * Middleware-safe variant of resolveActiveOrgId. Uses request/response
+ * cookies directly because `cookies()` from next/headers is not available
+ * in the Edge runtime middleware.
+ *
+ * Returns the resolved org id (falls back to the first membership if the
+ * cookie is missing/stale and writes the cookie on the response). Returns
+ * an empty string if the user has no memberships — middleware should not
+ * throw on this case; the downstream route handler will surface errors
+ * appropriately.
+ */
+export async function resolveActiveOrgIdForMiddleware(
+  client: SupabaseClient,
+  userId: string,
+  request: NextRequest,
+  response: NextResponseType
+): Promise<ResolveResult> {
+  const { data: memberships, error } = await client
+    .from('organization_members')
+    .select('org_id')
+    .eq('user_id', userId);
+
+  if (error || !memberships || memberships.length === 0) {
+    return { orgId: '', wasReset: false };
+  }
+
+  const membershipIds = memberships.map((m) => m.org_id as string);
+  const cookieOrg = request.cookies.get(ACTIVE_ORG_COOKIE)?.value;
+
+  if (cookieOrg && membershipIds.includes(cookieOrg)) {
+    return { orgId: cookieOrg, wasReset: false };
+  }
+
+  const fresh = membershipIds[0];
+  response.cookies.set(ACTIVE_ORG_COOKIE, fresh, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: COOKIE_MAX_AGE_SECONDS,
+    path: '/',
+  });
+  return { orgId: fresh, wasReset: true };
 }
