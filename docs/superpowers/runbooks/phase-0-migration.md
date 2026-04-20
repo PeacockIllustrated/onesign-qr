@@ -502,3 +502,487 @@ Users can still log in, bio pages still work, QR redirects still work.
 - QR redirect spot check:
 - Anomalies:
 - Signed off by:
+
+---
+
+# Phase 0.C.2 — Data-Table RLS Rewrite + NOT NULL Tightening
+
+Phase 0.C.2 is the highest-risk phase of the foundation work. It rewrites
+RLS on every data table (bio_* and qr_* families) from owner-scoped to
+org-scoped, and then tightens `org_id` to `NOT NULL`. Three separate
+migrations, each with its own window.
+
+## Phase 0.C.2.a — qr_* tables (migration 00019)
+
+### Pre-flight checklist
+
+1. `npm run test:run` — all tests pass (157).
+2. `npm run type-check` — clean.
+3. `npm run migration:schema-lint` — passes.
+4. Phase 0.C.1 (migration 00018) confirmed live and working in production.
+5. Full DB backup taken today. `BACKUP_ID: _______________`
+6. A second engineer has read the migration SQL.
+7. Rollback SQL pasted into a second terminal.
+
+### Execution
+
+1. Pre-migration snapshots:
+
+   ```
+   npm run migration:snapshot -- /tmp/phase-0c2a-slug-before.json
+   tsx scripts/migration-safety/row-count-snapshot.ts /tmp/phase-0c2a-rows-before.json
+   ```
+
+2. Apply `supabase/migrations/00019_rewrite_rls_on_qr_tables.sql` in the
+   Supabase SQL editor.
+
+3. If any error: STOP. Run the 0.C.2.a rollback SQL below.
+
+4. Post-migration snapshots + diffs:
+
+   ```
+   npm run migration:snapshot -- /tmp/phase-0c2a-slug-after.json
+   tsx scripts/migration-safety/row-count-snapshot.ts /tmp/phase-0c2a-rows-after.json
+   npm run migration:diff -- /tmp/phase-0c2a-slug-before.json /tmp/phase-0c2a-slug-after.json
+   tsx scripts/migration-safety/row-count-diff.ts /tmp/phase-0c2a-rows-before.json /tmp/phase-0c2a-rows-after.json
+   ```
+
+   Expected: zero deltas on both. This is a policy-only migration — no data
+   changes.
+
+5. Verify the new policies exist:
+
+   ```sql
+   SELECT tablename, policyname FROM pg_policies
+   WHERE tablename IN ('qr_codes', 'qr_styles', 'qr_assets', 'qr_scan_events', 'qr_audit_log')
+   ORDER BY tablename, policyname;
+   ```
+
+   Expected tables and counts:
+   - qr_codes: 4 user policies + 1 public = 5
+   - qr_styles: 3
+   - qr_assets: 3
+   - qr_scan_events: 1
+   - qr_audit_log: 1
+
+6. Functional smoke test:
+
+   - Log in as a normal user → visit `/app` → the QR codes list must show
+     your QR codes exactly as before.
+   - Click into one QR code → detail page loads with styling, analytics.
+   - Hit a known-good production QR URL in a browser (anonymous) → 307
+     redirect still works.
+   - Create a new QR code from the UI → it appears in the list.
+
+7. Append a completion note below.
+
+### Rollback (Phase 0.C.2.a)
+
+Restores the owner-scoped policies. Safe because `owner_id` column is still
+populated on every row.
+
+```sql
+BEGIN;
+
+-- qr_codes
+DROP POLICY IF EXISTS "Users can view own QR codes" ON qr_codes;
+DROP POLICY IF EXISTS "Users can create QR codes" ON qr_codes;
+DROP POLICY IF EXISTS "Users can update own QR codes" ON qr_codes;
+DROP POLICY IF EXISTS "Users can delete own QR codes" ON qr_codes;
+
+CREATE POLICY "Users can view own QR codes"
+  ON qr_codes FOR SELECT TO authenticated
+  USING (owner_id = auth.uid());
+CREATE POLICY "Users can create QR codes"
+  ON qr_codes FOR INSERT TO authenticated
+  WITH CHECK (owner_id = auth.uid());
+CREATE POLICY "Users can update own QR codes"
+  ON qr_codes FOR UPDATE TO authenticated
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid());
+CREATE POLICY "Users can delete own QR codes"
+  ON qr_codes FOR DELETE TO authenticated
+  USING (owner_id = auth.uid());
+
+-- qr_styles
+DROP POLICY IF EXISTS "Users can view own QR styles" ON qr_styles;
+DROP POLICY IF EXISTS "Users can insert own QR styles" ON qr_styles;
+DROP POLICY IF EXISTS "Users can update own QR styles" ON qr_styles;
+
+CREATE POLICY "Users can view own QR styles"
+  ON qr_styles FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM qr_codes
+    WHERE qr_codes.id = qr_styles.qr_id AND qr_codes.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can insert own QR styles"
+  ON qr_styles FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM qr_codes
+    WHERE qr_codes.id = qr_styles.qr_id AND qr_codes.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can update own QR styles"
+  ON qr_styles FOR UPDATE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM qr_codes
+    WHERE qr_codes.id = qr_styles.qr_id AND qr_codes.owner_id = auth.uid()
+  ));
+
+-- qr_assets
+DROP POLICY IF EXISTS "Users can view own QR assets" ON qr_assets;
+DROP POLICY IF EXISTS "Users can insert own QR assets" ON qr_assets;
+DROP POLICY IF EXISTS "Users can delete own QR assets" ON qr_assets;
+
+CREATE POLICY "Users can view own QR assets"
+  ON qr_assets FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM qr_codes
+    WHERE qr_codes.id = qr_assets.qr_id AND qr_codes.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can insert own QR assets"
+  ON qr_assets FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM qr_codes
+    WHERE qr_codes.id = qr_assets.qr_id AND qr_codes.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can delete own QR assets"
+  ON qr_assets FOR DELETE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM qr_codes
+    WHERE qr_codes.id = qr_assets.qr_id AND qr_codes.owner_id = auth.uid()
+  ));
+
+-- qr_scan_events
+DROP POLICY IF EXISTS "Users can view own scan events" ON qr_scan_events;
+CREATE POLICY "Users can view own scan events"
+  ON qr_scan_events FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM qr_codes
+    WHERE qr_codes.id = qr_scan_events.qr_id AND qr_codes.owner_id = auth.uid()
+  ));
+
+-- qr_audit_log
+DROP POLICY IF EXISTS "Users can view own audit logs" ON qr_audit_log;
+CREATE POLICY "Users can view own audit logs"
+  ON qr_audit_log FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM qr_codes
+    WHERE qr_codes.id = qr_audit_log.qr_id AND qr_codes.owner_id = auth.uid()
+  ));
+
+COMMIT;
+```
+
+### Phase 0.C.2.a Completion log
+
+<!-- Append an entry per run. -->
+
+### Production, YYYY-MM-DD HH:MM TZ
+- Backup ID:
+- Policies verified (qr_*):
+- Smoke test:
+- QR redirect spot check:
+- Anomalies:
+- Signed off by:
+
+## Phase 0.C.2.b — bio_* tables (migration 00020)
+
+### Pre-flight checklist
+
+1. Phase 0.C.2.a (00019) has been live in production for at least 1 hour
+   with no customer reports of broken access. Wait longer if in doubt —
+   this is not a race.
+2. CI gates green (same as 0.C.2.a).
+3. Full DB backup today. `BACKUP_ID: _______________`
+4. Rollback SQL ready.
+
+### Execution
+
+1. Pre-migration snapshots:
+
+   ```
+   npm run migration:snapshot -- /tmp/phase-0c2b-slug-before.json
+   tsx scripts/migration-safety/row-count-snapshot.ts /tmp/phase-0c2b-rows-before.json
+   ```
+
+2. Apply `supabase/migrations/00020_rewrite_rls_on_bio_tables.sql`.
+
+3. If any error: STOP. Run the 0.C.2.b rollback SQL below.
+
+4. Post-migration diffs — same commands as 0.C.2.a but with 0c2b paths.
+
+5. Verify policies:
+
+   ```sql
+   SELECT tablename, policyname FROM pg_policies
+   WHERE tablename IN (
+     'bio_link_pages', 'bio_link_items', 'bio_link_view_events',
+     'bio_link_click_events', 'bio_link_audit_log', 'bio_blocks',
+     'bio_block_click_events', 'bio_form_submissions'
+   )
+   ORDER BY tablename, policyname;
+   ```
+
+   Expected counts:
+   - bio_link_pages: 4 user + 1 public = 5
+   - bio_link_items: 4 user + 1 public = 5
+   - bio_link_view_events: 1
+   - bio_link_click_events: 1
+   - bio_link_audit_log: 1
+   - bio_blocks: 4 user + 1 public = 5
+   - bio_block_click_events: 1
+   - bio_form_submissions: 3
+
+6. Functional smoke test:
+
+   - Log in as normal user → `/app/bio` → page list shows your pages.
+   - Click into a bio page → edit it → save a change → confirm persisted.
+   - Visit a public bio page URL (`/p/<slug>`) in an incognito window → it
+     renders correctly (public-read policies unchanged).
+   - Submit a contact form on a public bio page → owner should receive
+     email + see submission in inbox.
+
+7. Append a completion note below.
+
+### Rollback (Phase 0.C.2.b)
+
+Restores the owner-scoped policies on bio_* tables. Safe because `owner_id`
+still populated.
+
+```sql
+BEGIN;
+
+-- bio_link_pages
+DROP POLICY IF EXISTS "Users can view own bio pages" ON bio_link_pages;
+DROP POLICY IF EXISTS "Users can create bio pages" ON bio_link_pages;
+DROP POLICY IF EXISTS "Users can update own bio pages" ON bio_link_pages;
+DROP POLICY IF EXISTS "Users can delete own bio pages" ON bio_link_pages;
+
+CREATE POLICY "Users can view own bio pages"
+  ON bio_link_pages FOR SELECT TO authenticated
+  USING (owner_id = auth.uid());
+CREATE POLICY "Users can create bio pages"
+  ON bio_link_pages FOR INSERT TO authenticated
+  WITH CHECK (owner_id = auth.uid());
+CREATE POLICY "Users can update own bio pages"
+  ON bio_link_pages FOR UPDATE TO authenticated
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid());
+CREATE POLICY "Users can delete own bio pages"
+  ON bio_link_pages FOR DELETE TO authenticated
+  USING (owner_id = auth.uid());
+
+-- bio_link_items
+DROP POLICY IF EXISTS "Users can view own bio items" ON bio_link_items;
+DROP POLICY IF EXISTS "Users can create bio items" ON bio_link_items;
+DROP POLICY IF EXISTS "Users can update own bio items" ON bio_link_items;
+DROP POLICY IF EXISTS "Users can delete own bio items" ON bio_link_items;
+
+CREATE POLICY "Users can view own bio items"
+  ON bio_link_items FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_link_items.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can create bio items"
+  ON bio_link_items FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_link_items.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can update own bio items"
+  ON bio_link_items FOR UPDATE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_link_items.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can delete own bio items"
+  ON bio_link_items FOR DELETE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_link_items.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+
+-- bio_link_view_events
+DROP POLICY IF EXISTS "Users can view own bio view events" ON bio_link_view_events;
+CREATE POLICY "Users can view own bio view events"
+  ON bio_link_view_events FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_link_view_events.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+
+-- bio_link_click_events
+DROP POLICY IF EXISTS "Users can view own bio click events" ON bio_link_click_events;
+CREATE POLICY "Users can view own bio click events"
+  ON bio_link_click_events FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_link_click_events.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+
+-- bio_link_audit_log
+DROP POLICY IF EXISTS "Users can view own bio audit logs" ON bio_link_audit_log;
+CREATE POLICY "Users can view own bio audit logs"
+  ON bio_link_audit_log FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_link_audit_log.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+
+-- bio_blocks
+DROP POLICY IF EXISTS "Users can view own bio blocks" ON bio_blocks;
+DROP POLICY IF EXISTS "Users can create bio blocks" ON bio_blocks;
+DROP POLICY IF EXISTS "Users can update own bio blocks" ON bio_blocks;
+DROP POLICY IF EXISTS "Users can delete own bio blocks" ON bio_blocks;
+
+CREATE POLICY "Users can view own bio blocks"
+  ON bio_blocks FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_blocks.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can create bio blocks"
+  ON bio_blocks FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_blocks.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can update own bio blocks"
+  ON bio_blocks FOR UPDATE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_blocks.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+CREATE POLICY "Users can delete own bio blocks"
+  ON bio_blocks FOR DELETE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_blocks.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+
+-- bio_block_click_events
+DROP POLICY IF EXISTS "Users can view own bio block click events" ON bio_block_click_events;
+CREATE POLICY "Users can view own bio block click events"
+  ON bio_block_click_events FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_block_click_events.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+
+-- bio_form_submissions
+DROP POLICY IF EXISTS "bio_form_submissions_select_own" ON bio_form_submissions;
+DROP POLICY IF EXISTS "bio_form_submissions_update_own" ON bio_form_submissions;
+DROP POLICY IF EXISTS "bio_form_submissions_delete_own" ON bio_form_submissions;
+
+CREATE POLICY "bio_form_submissions_select_own"
+  ON bio_form_submissions FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_form_submissions.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+CREATE POLICY "bio_form_submissions_update_own"
+  ON bio_form_submissions FOR UPDATE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_form_submissions.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+CREATE POLICY "bio_form_submissions_delete_own"
+  ON bio_form_submissions FOR DELETE TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM bio_link_pages
+    WHERE bio_link_pages.id = bio_form_submissions.page_id
+      AND bio_link_pages.owner_id = auth.uid()
+  ));
+
+COMMIT;
+```
+
+### Phase 0.C.2.b Completion log
+
+### Production, YYYY-MM-DD HH:MM TZ
+- Backup ID:
+- Policies verified (bio_*):
+- Smoke test:
+- Public bio page spot check:
+- Anomalies:
+- Signed off by:
+
+## Phase 0.C.2.c — NOT NULL tightening (migration 00021)
+
+### Pre-flight checklist
+
+1. Phase 0.C.2.b (00020) has been live in production for at least 1 hour
+   with no customer reports.
+2. CI gates green.
+3. **Pre-flight invariant queries** — run these and confirm both return 0:
+
+   ```sql
+   SELECT COUNT(*) FROM bio_link_pages WHERE org_id IS NULL;  -- expect 0
+   SELECT COUNT(*) FROM qr_codes WHERE org_id IS NULL;        -- expect 0
+   ```
+
+   If either returns non-zero, **DO NOT proceed**. Fix the NULL rows first
+   (either backfill them manually or delete them if they're genuinely
+   orphaned).
+
+4. Full DB backup today. `BACKUP_ID: _______________`
+
+### Execution
+
+1. Pre-migration snapshots (same commands as above with 0c2c paths).
+2. Apply `supabase/migrations/00021_tighten_org_id_not_null.sql`.
+3. If the ALTER fails, it means the pre-flight query was wrong or data
+   changed between the check and the ALTER. Investigate.
+4. Post-migration snapshots + diffs (expect zero deltas — no data changes).
+5. Verify the NOT NULL constraint landed:
+
+   ```sql
+   SELECT column_name, is_nullable FROM information_schema.columns
+   WHERE table_name IN ('bio_link_pages', 'qr_codes')
+     AND column_name = 'org_id';
+   -- Both rows should show is_nullable = 'NO'
+   ```
+
+6. Smoke test:
+   - Create a new bio page from the UI → still works.
+   - Create a new QR code from the UI → still works.
+   - Hit a production QR → still 307-redirects.
+
+7. Append a completion note below.
+
+### Rollback (Phase 0.C.2.c)
+
+Trivial — remove the NOT NULL constraint.
+
+```sql
+BEGIN;
+
+ALTER TABLE bio_link_pages ALTER COLUMN org_id DROP NOT NULL;
+ALTER TABLE qr_codes ALTER COLUMN org_id DROP NOT NULL;
+
+COMMIT;
+```
+
+### Phase 0.C.2.c Completion log
+
+### Production, YYYY-MM-DD HH:MM TZ
+- Backup ID:
+- NOT NULL verified:
+- Smoke test:
+- Anomalies:
+- Signed off by:
