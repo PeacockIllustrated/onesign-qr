@@ -325,3 +325,180 @@ After rollback: re-run the verification queries above — all should return 0
 - Trigger test result:
 - Anomalies:
 - Signed off by:
+
+---
+
+# Phase 0.C.1 — Organisation Table RLS + Active-Org Session
+
+Phase 0.C.1 enables row-level security on the four organisation tables
+(previously RLS-disabled for Phase 0.B backfill access) and ships the
+application-layer plumbing for multi-org membership (session cookie,
+switcher UI). This phase does NOT touch RLS on data tables (bio_link_pages,
+qr_codes, children) — that's Phase 0.C.2. The redirect handler continues
+to use the admin client and is unaffected.
+
+## Pre-flight checklist (Phase 0.C.1)
+
+### CI gates (must be green on the branch being deployed)
+
+1. `npm run test:run` — all unit tests pass.
+2. `npm run type-check` — TypeScript compiles without errors.
+3. `npm run migration:schema-lint` — migration directory passes schema-lint.
+4. `npm run lint` — linter passes.
+
+### Operational pre-flight
+
+- [ ] Phase 0.B (migration 00017) confirmed applied in production with all
+      verification queries green.
+- [ ] Full database backup taken today. `BACKUP_ID: _______________`
+- [ ] Supabase PITR active.
+- [ ] Application deploy of the Phase 0.C.1 branch is READY but NOT yet
+      live. Migration applies first; app deploy follows within minutes.
+- [ ] One platform admin row exists in production (or will be inserted
+      via service_role during this window). Without this, no one will be
+      able to manage platform-level state after RLS is enabled on
+      `platform_admins`. To insert (via Supabase SQL editor as service
+      role):
+      ```sql
+      INSERT INTO platform_admins (user_id, granted_by, notes)
+      VALUES (
+        (SELECT id FROM auth.users WHERE email = '<your-admin-email>'),
+        NULL,
+        'Initial platform admin'
+      );
+      ```
+- [ ] Rollback SQL (below) ready in a second terminal.
+
+## Execution (Phase 0.C.1)
+
+1. Capture pre-migration snapshots:
+
+   ```
+   npm run migration:snapshot -- /tmp/phase-0c1-slug-before.json
+   tsx scripts/migration-safety/row-count-snapshot.ts /tmp/phase-0c1-rows-before.json
+   ```
+
+2. Apply `supabase/migrations/00018_enable_rls_on_org_tables.sql` in the
+   Supabase SQL editor.
+
+3. If any error: STOP. Run the rollback SQL below.
+
+4. Capture post-migration snapshots + diffs:
+
+   ```
+   npm run migration:snapshot -- /tmp/phase-0c1-slug-after.json
+   tsx scripts/migration-safety/row-count-snapshot.ts /tmp/phase-0c1-rows-after.json
+   npm run migration:diff -- /tmp/phase-0c1-slug-before.json /tmp/phase-0c1-slug-after.json
+   tsx scripts/migration-safety/row-count-diff.ts /tmp/phase-0c1-rows-before.json /tmp/phase-0c1-rows-after.json
+   ```
+
+   Expected: zero deltas on both. This migration adds policies, doesn't
+   change row data.
+
+5. Verify the helper functions and policies exist:
+
+   ```sql
+   SELECT proname FROM pg_proc WHERE proname IN (
+     'is_platform_admin', 'is_member_of_org', 'role_in_org'
+   );
+   -- expect 3 rows
+
+   SELECT tablename, policyname FROM pg_policies
+   WHERE tablename IN (
+     'organizations', 'organization_members', 'organization_invites', 'platform_admins'
+   )
+   ORDER BY tablename, policyname;
+   -- expect multiple policies across all four tables
+   ```
+
+6. Verify RLS is actually enabled:
+
+   ```sql
+   SELECT relname, relrowsecurity FROM pg_class
+   WHERE relname IN (
+     'organizations', 'organization_members', 'organization_invites', 'platform_admins'
+   );
+   -- all four relrowsecurity should be true
+   ```
+
+7. Smoke-test with two test accounts (or one test + one real):
+
+   - Sign in as user A. Visit `/app`. The org switcher should render
+     showing user A's personal org. The `lynx_active_org` cookie should
+     be set.
+   - Check dev tools → Application → Cookies → confirm cookie is
+     HTTP-only, SameSite=Lax, value is a UUID.
+   - Hit a known-good production QR in a browser → confirm 307 redirect
+     still works (redirect handler bypasses RLS, unaffected).
+
+8. Deploy the application code to the same environment (Vercel auto-deploy
+   on branch merge is typical).
+
+9. Append a completion note in the log below.
+
+## Rollback (Phase 0.C.1)
+
+Rollback disables RLS on the four tables and drops the policies. This
+restores the Phase 0.B state where those tables are RLS-free. The helper
+functions can stay — they're harmless when no policy references them.
+
+```sql
+BEGIN;
+
+ALTER TABLE organizations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE organization_members DISABLE ROW LEVEL SECURITY;
+ALTER TABLE organization_invites DISABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_admins DISABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "organizations_select_member_or_admin" ON organizations;
+DROP POLICY IF EXISTS "organizations_insert_platform_admin" ON organizations;
+DROP POLICY IF EXISTS "organizations_update_owner_admin" ON organizations;
+DROP POLICY IF EXISTS "organizations_delete_owner" ON organizations;
+
+DROP POLICY IF EXISTS "organization_members_select_org_members" ON organization_members;
+DROP POLICY IF EXISTS "organization_members_insert_owner_admin" ON organization_members;
+DROP POLICY IF EXISTS "organization_members_update_owner_admin" ON organization_members;
+DROP POLICY IF EXISTS "organization_members_delete_owner_admin_or_self" ON organization_members;
+
+DROP POLICY IF EXISTS "organization_invites_select_parties" ON organization_invites;
+DROP POLICY IF EXISTS "organization_invites_insert_owner_admin" ON organization_invites;
+DROP POLICY IF EXISTS "organization_invites_update_invitee_or_admin" ON organization_invites;
+DROP POLICY IF EXISTS "organization_invites_delete_creator_or_admin" ON organization_invites;
+
+DROP POLICY IF EXISTS "platform_admins_select_self" ON platform_admins;
+DROP POLICY IF EXISTS "platform_admins_insert_self" ON platform_admins;
+DROP POLICY IF EXISTS "platform_admins_update_self" ON platform_admins;
+DROP POLICY IF EXISTS "platform_admins_delete_self" ON platform_admins;
+
+-- Keep the helper functions — they're pure, harmless, and Phase 0.C.2 uses them.
+-- If truly needed to remove:
+-- DROP FUNCTION IF EXISTS is_platform_admin();
+-- DROP FUNCTION IF EXISTS is_member_of_org(UUID);
+-- DROP FUNCTION IF EXISTS role_in_org(UUID);
+
+COMMIT;
+```
+
+After rollback: the app still works because the Phase 0.B state is restored.
+Users can still log in, bio pages still work, QR redirects still work.
+
+## Phase 0.C.1 Completion log
+
+<!-- Append an entry per run. -->
+
+### Staging rehearsal, YYYY-MM-DD HH:MM TZ
+- Backup ID:
+- Policies verified:
+- RLS enabled verified:
+- Smoke test (2 users):
+- Anomalies:
+- Signed off by:
+
+### Production, YYYY-MM-DD HH:MM TZ
+- Backup ID:
+- Policies verified:
+- RLS enabled verified:
+- Smoke test:
+- QR redirect spot check:
+- Anomalies:
+- Signed off by:
