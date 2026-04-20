@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { checkRedirectLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
+import { resolveActiveOrgIdForMiddleware } from '@/lib/org/active-org';
 
 export async function middleware(request: NextRequest) {
   // -----------------------------------------------------------------------
@@ -152,6 +153,9 @@ export async function middleware(request: NextRequest) {
       redirectUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(redirectUrl);
     }
+
+    // Seed the active-org cookie so /app/* route handlers always have it
+    await resolveActiveOrgIdForMiddleware(supabase, user.id, request, response);
   }
 
   // Auth routes - redirect to app if already logged in
