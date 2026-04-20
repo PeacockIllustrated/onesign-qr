@@ -12,6 +12,21 @@ const config: Config = {
         sans: ['var(--font-gilroy)', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // OneSign – Lynx brand accent. Base is #58a386.
+        // Use as: bg-lynx-500, text-lynx-400, ring-lynx-600, etc.
+        lynx: {
+          50: '#f3faf6',
+          100: '#def2e7',
+          200: '#bde6cf',
+          300: '#93d3b4',
+          400: '#6fbf98',
+          500: '#58a386',
+          600: '#3e8068',
+          700: '#336754',
+          800: '#2b5344',
+          900: '#214039',
+        },
+
         // Monochrome base
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

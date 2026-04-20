@@ -33,7 +33,7 @@ export function ComingSoonCta({ pricePence }: ComingSoonCtaProps) {
         Payments go live with the next release. Want a test order?{' '}
         <a
           href="mailto:hello@onesignanddigital.com"
-          className="text-amber-400 underline underline-offset-2 hover:text-amber-300 transition-colors"
+          className="text-lynx-400 underline underline-offset-2 hover:text-lynx-300 transition-colors"
         >
           hello@onesignanddigital.com
         </a>

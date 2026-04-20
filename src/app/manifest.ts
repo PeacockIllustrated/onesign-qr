@@ -2,13 +2,14 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'OneSign & Digital',
-    short_name: 'OneSign',
-    description: 'Generate print-ready QR codes that never break. Create managed links and bio pages.',
+    name: 'OneSign – Lynx',
+    short_name: 'Lynx',
+    description:
+      'Business presence platform — bio pages, QR codes, NFC merchandise, review funnels.',
     start_url: '/app',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: '#000000',
+    theme_color: '#58a386',
     icons: [
       {
         src: '/icon-192.png',

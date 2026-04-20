@@ -18,25 +18,35 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#000000',
+  themeColor: '#58a386',
 };
 
 export const metadata: Metadata = {
-  title: 'QR Generator - OneSign & Digital',
-  description: 'Generate print-ready QR codes that never break. Create managed links that can be updated without reprinting.',
-  keywords: ['QR code', 'QR generator', 'OneSign', 'managed links', 'print QR'],
+  title: 'OneSign – Lynx',
+  description:
+    'Business presence platform. Bio pages, QR codes, NFC merchandise, review funnels — all in one dashboard for UK small businesses.',
+  keywords: [
+    'OneSign',
+    'Lynx',
+    'bio page',
+    'QR code',
+    'NFC',
+    'link in bio',
+    'small business',
+    'review funnel',
+  ],
   icons: {
     icon: [
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/LogoFAVICON.svg', type: 'image/svg+xml' },
+      { url: '/onesign-lynx-icon-light.svg', type: 'image/svg+xml' },
     ],
     apple: '/apple-touch-icon.png',
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'OneSign',
+    title: 'OneSign – Lynx',
   },
 };
 

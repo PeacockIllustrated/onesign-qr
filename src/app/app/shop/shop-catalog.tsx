@@ -85,8 +85,8 @@ export function ShopCatalog({ products }: ShopCatalogProps) {
           <div className="max-w-2xl">
             {/* Eyebrow */}
             <div className="inline-flex items-center gap-2 mb-6">
-              <span className="inline-block w-6 h-px bg-amber-400" aria-hidden="true" />
-              <span className="text-amber-400 text-xs font-semibold uppercase tracking-[0.2em]">
+              <span className="inline-block w-6 h-px bg-lynx-400" aria-hidden="true" />
+              <span className="text-lynx-400 text-xs font-semibold uppercase tracking-[0.2em]">
                 OneSign Physical
               </span>
             </div>
@@ -94,7 +94,7 @@ export function ShopCatalog({ products }: ShopCatalogProps) {
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-[3.5rem] font-bold text-white leading-[1.05] tracking-tight">
               Make your business{' '}
-              <span className="text-amber-400">impossible</span>
+              <span className="text-lynx-400">impossible</span>
               <br className="hidden sm:block" /> to ignore.
             </h1>
 
@@ -236,7 +236,7 @@ function EmptyState({ filtered, categoryLabel, onReset }: EmptyStateProps) {
           <PackageSearch className="h-9 w-9 text-zinc-300" aria-hidden="true" />
         </div>
         {/* Decorative dots */}
-        <div className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-amber-400" aria-hidden="true" />
+        <div className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-lynx-400" aria-hidden="true" />
         <div className="absolute -bottom-1 -left-2 w-2 h-2 rounded-full bg-zinc-300" aria-hidden="true" />
       </div>
 

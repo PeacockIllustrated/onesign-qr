@@ -76,7 +76,7 @@ export default async function ShopProductPage({ params }: PageProps) {
       <div className="max-w-7xl mx-auto px-5 md:px-8 pt-6 pb-0">
         <Link
           href="/app/shop"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-amber-400 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 rounded"
+          className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-lynx-400 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lynx-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 rounded"
           aria-label="Back to shop"
         >
           <ChevronLeft

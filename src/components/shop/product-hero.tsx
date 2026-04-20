@@ -16,7 +16,7 @@ function UKMadeIcon() {
       viewBox="0 0 14 14"
       fill="none"
       aria-hidden="true"
-      className="text-amber-400/70"
+      className="text-lynx-400/70"
     >
       <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.2" />
       <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -32,7 +32,7 @@ function DispatchIcon() {
       viewBox="0 0 14 14"
       fill="none"
       aria-hidden="true"
-      className="text-amber-400/70"
+      className="text-lynx-400/70"
     >
       <path
         d="M1 4.5h8a1 1 0 0 1 1 1v4.5H1V4.5Z"
@@ -60,7 +60,7 @@ function NfcIcon() {
       viewBox="0 0 14 14"
       fill="none"
       aria-hidden="true"
-      className="text-amber-400/70"
+      className="text-lynx-400/70"
     >
       <path
         d="M4 10.5C2.067 9.5 1 8.5 1 7s1.067-2.5 3-3.5"
@@ -119,7 +119,7 @@ function ImagePlaceholder() {
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900">
       <div className="relative w-20 h-20 opacity-30">
-        <div className="absolute inset-0 border-2 border-amber-400 rounded-xl rotate-6" />
+        <div className="absolute inset-0 border-2 border-lynx-400 rounded-xl rotate-6" />
         <div className="absolute inset-0 border-2 border-zinc-400 rounded-xl -rotate-3" />
         <div className="absolute inset-0 border-2 border-zinc-500 rounded-xl" />
       </div>
@@ -232,9 +232,9 @@ export function ProductHero({
                       aria-label={`View image ${idx + 1} of ${allImages.length}`}
                       aria-pressed={activeImage === url}
                       className={[
-                        'relative flex-none w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900',
+                        'relative flex-none w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lynx-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900',
                         activeImage === url
-                          ? 'border-amber-400'
+                          ? 'border-lynx-400'
                           : 'border-zinc-700 hover:border-zinc-500',
                       ].join(' ')}
                     >
@@ -255,8 +255,8 @@ export function ProductHero({
             <div className="flex flex-col">
               {/* Category pill */}
               <span className="inline-flex items-center gap-1.5 self-start">
-                <span className="w-1 h-1 rounded-full bg-amber-400" aria-hidden="true" />
-                <span className="text-xs tracking-widest uppercase text-amber-400 font-semibold">
+                <span className="w-1 h-1 rounded-full bg-lynx-400" aria-hidden="true" />
+                <span className="text-xs tracking-widest uppercase text-lynx-400 font-semibold">
                   {categoryLabel}
                 </span>
               </span>
@@ -283,7 +283,7 @@ export function ProductHero({
                     {/* Amber dot separator */}
                     {idx > 0 && (
                       <span
-                        className="w-1 h-1 rounded-full bg-amber-400/40 flex-none"
+                        className="w-1 h-1 rounded-full bg-lynx-400/40 flex-none"
                         aria-hidden="true"
                       />
                     )}
@@ -321,8 +321,8 @@ export function ProductHero({
           {/* Section heading */}
           <div className="mb-10 md:mb-14">
             <div className="inline-flex items-center gap-2 mb-3">
-              <span className="inline-block w-5 h-px bg-amber-400" aria-hidden="true" />
-              <span className="text-amber-400 text-xs font-semibold uppercase tracking-[0.2em]">
+              <span className="inline-block w-5 h-px bg-lynx-400" aria-hidden="true" />
+              <span className="text-lynx-400 text-xs font-semibold uppercase tracking-[0.2em]">
                 The Lynx workflow
               </span>
             </div>
@@ -343,7 +343,7 @@ export function ProductHero({
               <li key={step} className="flex flex-col">
                 {/* Step number */}
                 <span
-                  className="text-4xl font-bold text-amber-400/30 tabular-nums leading-none mb-4"
+                  className="text-4xl font-bold text-lynx-400/30 tabular-nums leading-none mb-4"
                   aria-hidden="true"
                 >
                   {step}

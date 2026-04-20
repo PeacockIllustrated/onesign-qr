@@ -1,15 +1,18 @@
-# OneSign QR Generator
+# OneSign – Lynx
 
-Production-grade QR code generator that creates QR codes which remain valid indefinitely.
+Business presence platform for UK small businesses. Bio pages, managed QR codes, NFC merchandise, review funnels, team accounts — all in one dashboard.
+
+Brand accent: `#58a386` (Tailwind: `lynx-500`).
 
 ## Features
 
-- **Managed Links**: QR codes point to our redirect service, allowing destination changes without reprinting
-- **Direct Mode**: Encode URLs directly into QR codes (permanent, no redirect)
-- **Custom Styling**: Colors, module shapes, eye shapes, quiet zones
-- **Multiple Exports**: SVG (vector), PNG (multiple sizes), PDF (coming soon)
-- **Privacy-First Analytics**: Track scans without storing personal data
-- **Built for Durability**: Your QR codes use our stable domain with no third-party dependencies
+- **Bio Pages**: Block-based editor with templates, forms, galleries, link blocks, QR embeds
+- **Managed QR Codes**: Print once, redirect anywhere — destinations update without reprinting
+- **Team Accounts**: Multi-user organisations with owner/admin/member roles
+- **Review Funnels**: Smart 5★-to-Google, low-rating-to-private-feedback flows
+- **Shopfront**: Branded NFC cards, review boards, table talkers, A-frames (fulfilled by OneSign & Digital)
+- **Privacy-First Analytics**: Scans and clicks tracked without storing personal data
+- **Super-Admin Dashboard**: Platform-wide visibility for OneSign staff, fully audited
 
 ## Stack
 
