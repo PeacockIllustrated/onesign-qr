@@ -26,7 +26,7 @@ export function OneSignIcon({
   const src =
     variant === 'dark'
       ? '/onesign-lynx-icon-dark.svg'
-      : '/onesign-lynx-icon-light.svg';
+      : '/onesign-lynx-icon-dark.svg';
   return (
     <Image
       src={src}
@@ -54,7 +54,7 @@ export function OneSignWordmark({
   className,
 }: OneSignWordmarkProps) {
   const src =
-    variant === 'white' ? '/onesign-lynx-dark.svg' : '/onesign-lynx-light.svg';
+    variant === 'white' ? '/onesign-lynx-dark.svg' : '/onesign-lynx-dark.svg';
   return (
     <Image
       src={src}
