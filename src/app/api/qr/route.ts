@@ -4,6 +4,7 @@ import { validateUrlStrict } from '@/lib/security/url-validator';
 import { checkQrCreateLimit, checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { createQRSchema } from '@/validations/qr';
 import { writeAuditLog } from '@/lib/audit';
+import { getPersonalOrgId } from '@/lib/org/get-personal-org';
 
 const MAX_SLUG_RETRIES = 3;
 
@@ -71,10 +72,13 @@ export async function POST(request: NextRequest) {
       }
 
       // Create QR code
+      const orgId = await getPersonalOrgId(supabase, user.id);
+
       const { data: created, error: createError } = await supabase
         .from('qr_codes')
         .insert({
           owner_id: user.id,
+          org_id: orgId,
           name,
           mode,
           slug: mode === 'managed' ? finalSlug : null,

@@ -3,15 +3,18 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Plus, Link2, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Plus, Link2, Menu, X, Users, ShoppingBag } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { OneSignIcon, OneSignWordmark } from '@/components/ui';
+import { OrgSwitcher } from '@/components/org/org-switcher';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/app', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/app/new', icon: Plus, label: 'Create QR' },
   { href: '/app/bio', icon: Link2, label: 'Bio Pages' },
+  { href: '/app/settings/team', icon: Users, label: 'Team' },
+  { href: '/app/shop', icon: ShoppingBag, label: 'Shop' },
 ] as const;
 
 interface AppSidebarProps {
@@ -32,6 +35,11 @@ export function AppSidebar({ userEmail, children }: AppSidebarProps) {
         <Link href="/app" className="flex items-center" onClick={closeSidebar}>
           <OneSignWordmark variant="black" height={22} />
         </Link>
+      </div>
+
+      {/* Organisation Switcher */}
+      <div className="px-3 py-2">
+        <OrgSwitcher />
       </div>
 
       {/* Navigation */}

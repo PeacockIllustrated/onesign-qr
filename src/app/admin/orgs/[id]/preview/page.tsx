@@ -1,0 +1,141 @@
+import { notFound } from 'next/navigation';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+import { logAdminAction } from '@/lib/admin/audit';
+import { ViewAsBanner } from '@/components/admin/view-as-banner';
+
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+export default async function OrgPreviewPage({ params }: Props) {
+  const { id } = await params;
+  const admin = createAdminClient();
+
+  const { data: org } = await admin
+    .from('organizations')
+    .select('id, name')
+    .eq('id', id)
+    .single();
+  if (!org) notFound();
+
+  // Hoist page ids first so the submissions query has a clean IN filter.
+  const { data: pagesRowsForIds } = await admin
+    .from('bio_link_pages')
+    .select('id')
+    .eq('org_id', id);
+  const pageIds = (pagesRowsForIds ?? []).map((p) => p.id as string);
+
+  const [{ data: pages }, { data: qrs }, submissionsResp] = await Promise.all([
+    admin
+      .from('bio_link_pages')
+      .select('id, slug, title, theme, is_active')
+      .eq('org_id', id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false }),
+    admin
+      .from('qr_codes')
+      .select('id, slug, name, mode, destination_url, is_active')
+      .eq('org_id', id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false }),
+    pageIds.length > 0
+      ? admin
+          .from('bio_form_submissions')
+          .select('id, name, email, subject, is_read, submitted_at')
+          .in('page_id', pageIds)
+          .order('submitted_at', { ascending: false })
+          .limit(50)
+      : Promise.resolve({ data: [] as Array<{ id: string; name: string; email: string; subject: string | null; is_read: boolean; submitted_at: string }> }),
+  ]);
+  const submissions = submissionsResp.data;
+
+  const server = await createClient();
+  const {
+    data: { user },
+  } = await server.auth.getUser();
+  if (user) {
+    await logAdminAction({
+      actorUserId: user.id,
+      action: 'admin.view_as_preview',
+      targetType: 'organization',
+      targetId: id,
+    });
+  }
+
+  return (
+    <div className="-mx-6 -my-8">
+      <ViewAsBanner orgName={org.name} orgId={id} />
+      <div className="max-w-4xl mx-auto p-6 space-y-8">
+        <h1 className="text-2xl font-semibold">{org.name} · Preview</h1>
+
+        <section>
+          <h2 className="text-lg font-semibold mb-2">
+            Bio pages ({(pages ?? []).length})
+          </h2>
+          <ul className="bg-white border rounded divide-y">
+            {(pages ?? []).map((p) => (
+              <li key={p.id} className="p-3 text-sm flex justify-between">
+                <span>
+                  {p.title}
+                  <span className="ml-2 text-xs text-gray-500">/p/{p.slug}</span>
+                </span>
+                <span className="text-xs text-gray-500">
+                  {p.theme ?? '—'} · {p.is_active ? 'active' : 'draft'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold mb-2">
+            QR codes ({(qrs ?? []).length})
+          </h2>
+          <ul className="bg-white border rounded divide-y">
+            {(qrs ?? []).map((q) => (
+              <li key={q.id} className="p-3 text-sm">
+                <div className="flex justify-between">
+                  <span>
+                    {q.name}
+                    <span className="ml-2 text-xs text-gray-500">
+                      /r/{q.slug}
+                    </span>
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {q.mode} · {q.is_active ? 'active' : 'disabled'}
+                  </span>
+                </div>
+                {q.destination_url && (
+                  <div className="text-xs text-gray-400 truncate mt-1">
+                    → {q.destination_url}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold mb-2">
+            Recent form submissions ({(submissions ?? []).length})
+          </h2>
+          <ul className="bg-white border rounded divide-y">
+            {(submissions ?? []).map((s) => (
+              <li key={s.id} className="p-3 text-sm flex justify-between">
+                <span>
+                  <strong>{s.name}</strong> · {s.email}
+                  {s.subject ? ` · ${s.subject}` : ''}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {new Date(s.submitted_at).toLocaleString()}
+                  {s.is_read ? '' : ' · unread'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}

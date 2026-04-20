@@ -20,7 +20,24 @@
       "Bash(node -e:*)",
       "Bash(xargs cat:*)",
       "Bash(git status:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(bash \"C:\\\\Users\\\\peaco\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.0.2\\\\skills\\\\brainstorming\\\\scripts\\\\start-server.sh\" --project-dir \"c:\\\\Users\\\\peaco\\\\Documents\\\\onesign-qr\")",
+      "Bash(npx vitest:*)",
+      "Bash(git commit:*)",
+      "Bash(mkdir -p \"/c/Users/peaco/Documents/onesign-qr/src/app/api/bio/[id]/form\")",
+      "Bash(mkdir -p \"/c/Users/peaco/Documents/onesign-qr/src/app/api/bio/[id]/submissions/[subId]\")",
+      "Bash(find . -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.js\" \\\\\\) -exec grep -l \"contact\\\\|form\\\\|email\\\\|mailer\\\\|sendEmail\\\\|resend\\\\|sendgrid\\\\|postmark\" {} \\\\;)",
+      "Bash(xargs grep *)",
+      "Bash(ls docs/)",
+      "Bash(ls docs/superpowers/)",
+      "Bash(ls docs/superpowers/specs/)",
+      "Bash(git -C /c/Users/peaco/Documents/onesign-qr log --oneline -10)",
+      "Bash(npx tsx *)",
+      "Bash(npm run *)",
+      "Bash(node tmp-lint-test.mjs)",
+      "Bash(npm test *)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)"
     ]
   }
 }

@@ -1,0 +1,155 @@
+<h2>Dashboard Redesign Direction</h2>
+<p class="subtitle">Which overall direction feels right for the OneSign dashboard?</p>
+
+<div class="cards">
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;overflow:hidden;">
+      <div style="background:#fff;min-height:340px;display:flex;font-family:system-ui;">
+        <!-- Sidebar -->
+        <div style="width:200px;background:#fafafa;border-right:1px solid #eee;padding:20px 16px;display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:16px;border-bottom:1px solid #eee;margin-bottom:12px;">
+            <svg viewBox="0 0 301.51 271.85" style="width:24px;height:24px;"><path d="M261.17,235.51c26.89-24.41,40.34-57.63,40.34-99.68c0-42.05-13.41-75.19-40.24-99.45C234.46,12.11,197.69,0,150.97,0C104.12,0,67.24,12.11,40.35,36.37C13.45,60.63,0,93.78,0,135.83c0,42.05,13.52,75.27,40.55,99.68c24.78,22.35,57.76,34.47,98.95,36.34V158.62H54.94v-55.71h7.15c26.23,0,46.17-4.41,59.8-13.25c13.63-8.81,22.45-22.97,26.49-42.47h66.4v215.32C232.59,256.39,248.06,247.43,261.17,235.51" fill="#000"/></svg>
+            <span style="font-weight:600;font-size:14px;letter-spacing:-0.3px;">OneSign</span>
+          </div>
+          <div style="padding:8px 12px;background:#000;color:#fff;border-radius:6px;font-size:13px;font-weight:500;">Dashboard</div>
+          <div style="padding:8px 12px;color:#888;font-size:13px;">Create QR</div>
+          <div style="padding:8px 12px;color:#888;font-size:13px;">Bio Pages</div>
+        </div>
+        <!-- Main -->
+        <div style="flex:1;padding:24px 28px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+            <div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:-0.5px;">Your QR Codes</div>
+              <div style="font-size:13px;color:#888;margin-top:2px;">3 active codes</div>
+            </div>
+            <div style="background:#000;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;">+ Create QR</div>
+          </div>
+          <!-- Stats bar -->
+          <div style="display:flex;gap:12px;margin-bottom:20px;">
+            <div style="flex:1;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:14px 16px;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Total Scans</div>
+              <div style="font-size:22px;font-weight:700;margin-top:4px;">1,247</div>
+            </div>
+            <div style="flex:1;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:14px 16px;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Active Codes</div>
+              <div style="font-size:22px;font-weight:700;margin-top:4px;">3</div>
+            </div>
+            <div style="flex:1;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:14px 16px;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Bio Pages</div>
+              <div style="font-size:22px;font-weight:700;margin-top:4px;">1</div>
+            </div>
+          </div>
+          <!-- Cards -->
+          <div style="display:flex;gap:12px;">
+            <div style="flex:1;border:1px solid #eee;border-radius:8px;padding:16px;">
+              <div style="width:100%;aspect-ratio:1;background:#f5f5f5;border-radius:4px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                <div style="width:60px;height:60px;background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50%/10px 10px;border-radius:2px;"></div>
+              </div>
+              <div style="font-size:13px;font-weight:600;">Menu QR</div>
+              <div style="font-size:11px;color:#888;margin-top:2px;">847 scans</div>
+            </div>
+            <div style="flex:1;border:1px solid #eee;border-radius:8px;padding:16px;">
+              <div style="width:100%;aspect-ratio:1;background:#f5f5f5;border-radius:4px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                <div style="width:60px;height:60px;background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50%/10px 10px;border-radius:2px;"></div>
+              </div>
+              <div style="font-size:13px;font-weight:600;">Promo QR</div>
+              <div style="font-size:11px;color:#888;margin-top:2px;">312 scans</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Stats-Forward Dashboard</h3>
+      <p>Summary stats at the top, giving a quick overview before the QR card grid. Clean sidebar with the OneSign icon logo. Rounded corners, subtle card borders, airy spacing.</p>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;overflow:hidden;">
+      <div style="background:#fff;min-height:340px;display:flex;font-family:system-ui;">
+        <!-- Sidebar -->
+        <div style="width:200px;background:#000;padding:20px 16px;display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:16px;border-bottom:1px solid #333;margin-bottom:12px;">
+            <svg viewBox="0 0 301.51 271.85" style="width:24px;height:24px;"><path d="M261.17,235.51c26.89-24.41,40.34-57.63,40.34-99.68c0-42.05-13.41-75.19-40.24-99.45C234.46,12.11,197.69,0,150.97,0C104.12,0,67.24,12.11,40.35,36.37C13.45,60.63,0,93.78,0,135.83c0,42.05,13.52,75.27,40.55,99.68c24.78,22.35,57.76,34.47,98.95,36.34V158.62H54.94v-55.71h7.15c26.23,0,46.17-4.41,59.8-13.25c13.63-8.81,22.45-22.97,26.49-42.47h66.4v215.32C232.59,256.39,248.06,247.43,261.17,235.51" fill="#fff"/></svg>
+            <span style="font-weight:600;font-size:14px;letter-spacing:-0.3px;color:#fff;">OneSign</span>
+          </div>
+          <div style="padding:8px 12px;background:rgba(255,255,255,0.12);color:#fff;border-radius:6px;font-size:13px;font-weight:500;">Dashboard</div>
+          <div style="padding:8px 12px;color:#888;font-size:13px;">Create QR</div>
+          <div style="padding:8px 12px;color:#888;font-size:13px;">Bio Pages</div>
+          <div style="margin-top:auto;padding:12px;border-top:1px solid #333;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;">J</div>
+              <span style="color:#aaa;font-size:12px;">john@email.com</span>
+            </div>
+          </div>
+        </div>
+        <!-- Main -->
+        <div style="flex:1;padding:24px 28px;background:#fafafa;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+            <div style="font-size:20px;font-weight:700;letter-spacing:-0.5px;">Dashboard</div>
+            <div style="background:#000;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;">+ Create QR</div>
+          </div>
+          <!-- Table-like list -->
+          <div style="background:#fff;border:1px solid #eee;border-radius:10px;overflow:hidden;">
+            <div style="display:flex;padding:10px 16px;border-bottom:1px solid #f0f0f0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">
+              <div style="flex:2;">Name</div>
+              <div style="flex:1;">Status</div>
+              <div style="flex:1;">Scans</div>
+              <div style="flex:1;">Created</div>
+            </div>
+            <div style="display:flex;padding:14px 16px;border-bottom:1px solid #f5f5f5;align-items:center;">
+              <div style="flex:2;display:flex;align-items:center;gap:10px;">
+                <div style="width:32px;height:32px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                  <div style="width:20px;height:20px;background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50%/5px 5px;border-radius:1px;"></div>
+                </div>
+                <span style="font-size:13px;font-weight:600;">Menu QR</span>
+              </div>
+              <div style="flex:1;"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">Active</span></div>
+              <div style="flex:1;font-size:13px;font-weight:500;">847</div>
+              <div style="flex:1;font-size:12px;color:#888;">Mar 1</div>
+            </div>
+            <div style="display:flex;padding:14px 16px;border-bottom:1px solid #f5f5f5;align-items:center;">
+              <div style="flex:2;display:flex;align-items:center;gap:10px;">
+                <div style="width:32px;height:32px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                  <div style="width:20px;height:20px;background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50%/5px 5px;border-radius:1px;"></div>
+                </div>
+                <span style="font-size:13px;font-weight:600;">Promo QR</span>
+              </div>
+              <div style="flex:1;"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">Active</span></div>
+              <div style="flex:1;font-size:13px;font-weight:500;">312</div>
+              <div style="flex:1;font-size:12px;color:#888;">Feb 15</div>
+            </div>
+            <div style="display:flex;padding:14px 16px;align-items:center;">
+              <div style="flex:2;display:flex;align-items:center;gap:10px;">
+                <div style="width:32px;height:32px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                  <div style="width:20px;height:20px;background:repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 50%/5px 5px;border-radius:1px;"></div>
+                </div>
+                <span style="font-size:13px;font-weight:600;">Event QR</span>
+              </div>
+              <div style="flex:1;"><span style="background:#f5f5f5;color:#888;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">Inactive</span></div>
+              <div style="flex:1;font-size:13px;font-weight:500;">88</div>
+              <div style="flex:1;font-size:12px;color:#888;">Jan 20</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Dark Sidebar + Table View</h3>
+      <p>Dark sidebar with the white OneSign logo for stronger brand presence. Table/list view instead of cards for a more professional, data-dense dashboard. Light gray main content area for contrast.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>Both directions include:</h3>
+  <ul style="color:#aaa;font-size:14px;line-height:1.8;">
+    <li>OneSign icon logo replacing the generic QR icon everywhere</li>
+    <li>Full wordmark logo on landing page and auth screens</li>
+    <li>Better spacing and visual hierarchy</li>
+    <li>Rounded corners and modern card styling</li>
+  </ul>
+</div>

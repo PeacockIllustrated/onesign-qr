@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { isValidUUID } from '@/validations/qr';
 import { writeBioAuditLog } from '@/lib/audit';
+import { getPersonalOrgId } from '@/lib/org/get-personal-org';
 
 /**
  * POST /api/bio/[id]/qr - Generate a QR code linked to this bio page
@@ -59,6 +60,9 @@ export async function POST(
 
     const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/p/${page.slug}`;
 
+    // Get user's org ID
+    const orgId = await getPersonalOrgId(supabase, user.id);
+
     // Generate slug for the QR code
     const { data: qrSlug, error: slugError } = await supabase.rpc('generate_qr_unique_slug');
     if (slugError || !qrSlug) {
@@ -73,6 +77,7 @@ export async function POST(
       .from('qr_codes')
       .insert({
         owner_id: user.id,
+        org_id: orgId,
         name: `QR for ${page.title}`,
         mode: 'managed' as const,
         slug: qrSlug,
