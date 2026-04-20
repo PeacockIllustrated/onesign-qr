@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isPlatformAdmin } from '@/lib/admin/is-platform-admin';
-import { setAdminSession } from '@/lib/admin/admin-session';
 import { AdminNav } from '@/components/admin/admin-nav';
 
 export default async function AdminLayout({
@@ -29,16 +28,12 @@ export default async function AdminLayout({
     redirect('/app');
   }
 
-  // Refresh the admin session cookie on activity.
-  try {
-    await setAdminSession(user.id);
-  } catch (err) {
-    console.error(
-      `[AdminLayout] setAdminSession threw — likely ADMIN_SESSION_SECRET missing or <32 chars in prod env. Error:`,
-      err
-    );
-    throw err;
-  }
+  // NOTE: cookie refresh on render is not possible from a Server Component —
+  // Next.js only allows cookie writes from Route Handlers and Server Actions.
+  // The admin session cookie gets its 30-minute window from when POST
+  // /api/admin/session issues it; it does not roll forward on activity in
+  // this iteration. A future change can add rolling refresh from middleware
+  // (which CAN write response cookies) if needed.
 
   return (
     <div className="min-h-screen bg-gray-50">
