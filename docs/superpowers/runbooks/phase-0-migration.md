@@ -986,3 +986,60 @@ COMMIT;
 - Smoke test:
 - Anomalies:
 - Signed off by:
+
+---
+
+# Invite Flow
+
+Not part of Phase 0 foundation — this is the first feature phase that
+depends on the foundation. Ships one small DB migration + app code.
+
+## Pre-flight
+
+1. `npm run test:run` — all tests pass.
+2. `npm run type-check` — clean.
+3. `npm run migration:schema-lint` — passes.
+4. Phase 0.C.2 complete (NOT NULL constraint on org_id active).
+5. `RESEND_API_KEY` set in production env vars.
+
+## Execution
+
+1. Apply `supabase/migrations/00022_invite_pending_unique.sql` in the
+   Supabase SQL editor.
+
+2. Verify the index exists:
+
+   ```sql
+   SELECT indexname FROM pg_indexes
+   WHERE tablename = 'organization_invites'
+     AND indexname = 'idx_invites_unique_pending';
+   -- expect 1 row
+   ```
+
+3. Deploy the application code (Vercel auto-deploys on merge).
+
+4. Smoke test:
+   - Sign in as an owner or admin.
+   - Navigate to `/app/settings/team`.
+   - Send an invite to a test email address you control.
+   - Confirm the invite appears in the pending list.
+   - Check the recipient inbox — the email should arrive within a minute.
+   - Click the accept link, sign in/up, click Accept.
+   - Confirm the accept redirects to `/app` with the new org active.
+
+## Rollback
+
+```sql
+DROP INDEX IF EXISTS idx_invites_unique_pending;
+```
+
+No app rollback SQL — reverting the deploy removes the UI. DB invites table
+is unchanged by this feature.
+
+## Completion log
+
+### Production, YYYY-MM-DD HH:MM TZ
+- Index verified:
+- Invite email round-trip:
+- Anomalies:
+- Signed off by:
