@@ -1043,3 +1043,74 @@ is unchanged by this feature.
 - Invite email round-trip:
 - Anomalies:
 - Signed off by:
+
+---
+
+# Super-Admin Dashboard
+
+Ships the `/admin` area: platform-admin-gated dashboard with step-up auth,
+audit log, org/user directories, and read-only view-as preview. Unblocks
+the Shopfront plan.
+
+## Pre-flight
+
+1. `npm run test:run` — all pass.
+2. `npm run type-check` — clean.
+3. `npm run migration:schema-lint` — passes.
+4. **New env var required:** `ADMIN_SESSION_SECRET` must be set in Vercel
+   production env. Generate with:
+   ```
+   openssl rand -base64 48
+   ```
+   Paste the result into Vercel → Settings → Environment Variables → Production.
+   Must be at least 32 characters.
+5. Phase 0 foundation complete in production.
+6. At least one `platform_admins` row exists.
+
+## Execution
+
+1. Apply `supabase/migrations/00023_platform_audit_log.sql` in the Supabase
+   SQL editor.
+
+2. Verify:
+   ```sql
+   SELECT tablename FROM pg_tables WHERE tablename = 'platform_audit_log';
+   -- expect 1 row
+   SELECT relrowsecurity FROM pg_class WHERE relname = 'platform_audit_log';
+   -- expect true
+   ```
+
+3. Deploy the app (Vercel auto-deploys on merge).
+
+4. Smoke test (as the seeded platform admin):
+   - Sign in normally at `/auth/login`.
+   - Navigate to `/admin` → should redirect to `/admin/login` with a step-up
+     password prompt.
+   - Enter password → should land at `/admin` home with KPI tiles.
+   - Click Organisations → list loads. Click an org → detail loads. Click
+     "View as (read-only preview)" → preview renders with a red banner.
+   - Click Users → list loads. Click a user → detail loads.
+   - Click Audit log → recent admin actions visible including your own
+     `admin_session.created`, `admin.view_org`, `admin.view_user`,
+     `admin.view_as_preview` entries.
+   - Wait 31 minutes (or manually expire the cookie via DevTools → Cookies)
+     → next /admin request should redirect to /admin/login.
+   - Click "Exit admin" in the admin nav → should clear the cookie and
+     return to /app.
+
+## Rollback
+
+```sql
+DROP TABLE IF EXISTS platform_audit_log;
+```
+
+App rollback: revert the deploy. No other data affected.
+
+## Completion log
+
+### Production, YYYY-MM-DD HH:MM TZ
+- `ADMIN_SESSION_SECRET` set:
+- Migration 00023 applied:
+- Smoke test:
+- Anomalies:
+- Signed off by:
