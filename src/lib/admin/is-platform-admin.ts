@@ -18,8 +18,18 @@ export async function isPlatformAdmin(userId: string): Promise<boolean> {
     .maybeSingle();
 
   if (error) {
-    console.error('[isPlatformAdmin] lookup failed', error);
+    console.error(
+      `[isPlatformAdmin] lookup FAILED for userId=${userId}. ` +
+      `This usually means SUPABASE_SERVICE_ROLE_KEY is missing or wrong in the env. Error:`,
+      error
+    );
     return false;
+  }
+  if (data === null) {
+    console.error(
+      `[isPlatformAdmin] no platform_admins row for userId=${userId}. ` +
+      `If you expected to be an admin, confirm platform_admins.user_id matches this id.`
+    );
   }
   return data !== null;
 }

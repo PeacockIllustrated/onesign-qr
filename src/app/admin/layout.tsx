@@ -13,15 +13,32 @@ export default async function AdminLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect('/auth/login?next=/admin');
+  if (!user) {
+    console.error('[AdminLayout] no user — redirecting to /auth/login');
+    redirect('/auth/login?next=/admin');
+  }
 
   // Defence in depth: middleware checked the admin session cookie; layout
   // checks platform_admins membership before rendering any admin content.
   const isAdmin = await isPlatformAdmin(user.id);
-  if (!isAdmin) redirect('/app');
+  if (!isAdmin) {
+    console.error(
+      `[AdminLayout] isPlatformAdmin returned false for user ${user.id} (${user.email ?? '?'}) — redirecting to /app. ` +
+      `Check SUPABASE_SERVICE_ROLE_KEY in prod env, or confirm platform_admins.user_id matches ${user.id}.`
+    );
+    redirect('/app');
+  }
 
   // Refresh the admin session cookie on activity.
-  await setAdminSession(user.id);
+  try {
+    await setAdminSession(user.id);
+  } catch (err) {
+    console.error(
+      `[AdminLayout] setAdminSession threw — likely ADMIN_SESSION_SECRET missing or <32 chars in prod env. Error:`,
+      err
+    );
+    throw err;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
