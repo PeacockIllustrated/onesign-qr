@@ -137,3 +137,39 @@ export async function POST(request: Request) {
     { status: 201 }
   );
 }
+
+export async function GET() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const cookieStore = await cookies();
+  const activeOrgId = cookieStore.get(ACTIVE_ORG_COOKIE)?.value;
+  if (!activeOrgId) {
+    return NextResponse.json(
+      { error: 'No active organisation' },
+      { status: 400 }
+    );
+  }
+
+  const { data, error } = await supabase
+    .from('organization_invites')
+    .select('id, email, role, expires_at, created_at')
+    .eq('org_id', activeOrgId)
+    .is('accepted_at', null);
+
+  if (error) {
+    return NextResponse.json(
+      { error: 'Failed to load invites' },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ invites: data ?? [] });
+}

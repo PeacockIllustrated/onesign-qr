@@ -220,3 +220,59 @@ describe('POST /api/org/invites', () => {
     expect(res.status).toBe(409);
   });
 });
+
+describe('GET /api/org/invites', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns 401 when unauthenticated', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+    const { GET } = await import('@/app/api/org/invites/route');
+    const res = await GET();
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 when no active org cookie', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'u1' } },
+      error: null,
+    });
+    mockCookieStore.get.mockReturnValue(undefined);
+    const { GET } = await import('@/app/api/org/invites/route');
+    const res = await GET();
+    expect(res.status).toBe(400);
+  });
+
+  it('returns the pending invites for the active org', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'u1' } },
+      error: null,
+    });
+    mockCookieStore.get.mockReturnValue({ value: 'org-1' });
+
+    const isNull = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'inv-1',
+          email: 'sarah@example.com',
+          role: 'admin',
+          expires_at: '2026-05-01T00:00:00Z',
+          created_at: '2026-04-20T00:00:00Z',
+        },
+      ],
+      error: null,
+    });
+    const eq = vi.fn().mockReturnValue({ is: isNull });
+    const select = vi.fn().mockReturnValue({ eq });
+    mockSupabase.from.mockReturnValue({ select });
+
+    const { GET } = await import('@/app/api/org/invites/route');
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.invites).toHaveLength(1);
+    expect(json.invites[0].email).toBe('sarah@example.com');
+  });
+});
