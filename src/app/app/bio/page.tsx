@@ -79,8 +79,8 @@ export default function BioPage() {
       {/* Header — stacks on mobile */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold">your bio pages</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-50">Your bio pages</h1>
+          <p className="text-sm text-zinc-400 mt-1">
             Only one can be live at a time
           </p>
         </div>
@@ -242,12 +242,12 @@ function BioPageCard({
                 relative inline-flex h-7 w-12 items-center rounded-full transition-colors
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
                 disabled:opacity-50 disabled:cursor-not-allowed
-                ${page.is_active ? 'bg-green-600' : 'bg-muted'}
+                ${page.is_active ? 'bg-lynx-500' : 'bg-zinc-800'}
               `}
             >
               <span
                 className={`
-                  inline-block h-5 w-5 rounded-full bg-white transition-transform shadow-sm
+                  inline-block h-5 w-5 rounded-full bg-zinc-50 transition-transform shadow-sm
                   ${page.is_active ? 'translate-x-6' : 'translate-x-1'}
                 `}
               />
