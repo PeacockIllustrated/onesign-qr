@@ -66,14 +66,24 @@ export default async function AdminHomePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">Overview</h1>
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Overview</h1>
+        <p className="text-sm text-zinc-400 mt-1">
+          Platform-wide metrics. Refreshed on each page load.
+        </p>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {tiles.map((t) => (
-          <div key={t.label} className="bg-white border rounded p-4">
-            <div className="text-xs text-gray-500 uppercase tracking-wide">
+          <div
+            key={t.label}
+            className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-lynx-400/30 transition-colors"
+          >
+            <div className="text-xs text-zinc-500 uppercase tracking-widest font-medium">
               {t.label}
             </div>
-            <div className="text-3xl font-semibold mt-1">{t.value}</div>
+            <div className="text-3xl font-semibold mt-2 tabular-nums text-zinc-50">
+              {t.value.toLocaleString('en-GB')}
+            </div>
           </div>
         ))}
       </div>
