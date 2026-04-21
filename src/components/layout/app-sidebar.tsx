@@ -52,10 +52,11 @@ export function AppSidebar({ userEmail, children }: AppSidebarProps) {
               href={item.href}
               onClick={closeSidebar}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors border',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lynx-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900',
                 isActive
-                  ? 'bg-lynx-500/15 text-lynx-400 font-medium border border-lynx-400/20'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 border border-transparent'
+                  ? 'bg-lynx-500/15 text-lynx-400 font-medium border-lynx-400/20'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 border-transparent'
               )}
             >
               <item.icon className="h-[18px] w-[18px]" />
