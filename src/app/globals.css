@@ -5,34 +5,43 @@
 
 @layer base {
   :root {
-    /* OneSign Brand - Monochrome base */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    /* OneSign – Lynx dark aesthetic.
+     * Tokens are HSL triples (H S% L%) expected by shadcn primitives.
+     * Palette anchored on Tailwind zinc + lynx brand accent (#58a386).
+     *
+     * Marketing surfaces set their own backgrounds explicitly (bg-zinc-950
+     * via DarkShell), so these tokens drive the authenticated /app chrome
+     * and any shadcn primitive that reads bg-background / bg-card etc.
+     */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --background: 240 10% 4%;         /* zinc-950 */
+    --foreground: 240 5% 96%;         /* zinc-50  */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --card: 240 6% 10%;               /* zinc-900 */
+    --card-foreground: 240 5% 96%;
 
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 240 5% 96%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 0%;
+    /* Primary = lynx brand accent. Use for CTAs. */
+    --primary: 158 30% 49%;           /* lynx-500 (#58a386) */
+    --primary-foreground: 240 10% 4%; /* zinc-950 — dark text on bright button */
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --secondary: 240 4% 16%;          /* zinc-800 */
+    --secondary-foreground: 240 5% 96%;
 
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 0%;
+    --muted: 240 6% 10%;              /* zinc-900 */
+    --muted-foreground: 240 5% 60%;   /* between zinc-400 and zinc-500 */
+
+    --accent: 240 4% 16%;             /* zinc-800 */
+    --accent-foreground: 240 5% 96%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 240 10% 4%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 0%;
+    --border: 240 4% 16%;             /* zinc-800 */
+    --input: 240 4% 16%;
+    --ring: 158 30% 49%;              /* lynx-500 — matches primary */
 
     --radius: 0.5rem;
   }
