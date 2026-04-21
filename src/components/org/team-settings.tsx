@@ -17,6 +17,16 @@ interface Invite {
   created_at: string;
 }
 
+function roleBadgeClass(role: Member['role'] | Invite['role']) {
+  if (role === 'owner') {
+    return 'bg-lynx-500/15 text-lynx-400 border border-lynx-400/30';
+  }
+  if (role === 'admin') {
+    return 'bg-zinc-800 text-zinc-200 border border-zinc-700';
+  }
+  return 'bg-zinc-800/60 text-zinc-400 border border-zinc-800';
+}
+
 export function TeamSettings({
   myRole,
   members,
@@ -38,21 +48,32 @@ export function TeamSettings({
   }
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-3xl space-y-10">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Team</h1>
+        <p className="text-sm text-zinc-400 mt-1">
+          Manage members, invites, and roles for this organisation.
+        </p>
+      </div>
+
       <section>
-        <h2 className="text-xl font-semibold mb-3">
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-3">
           Members ({members.length})
         </h2>
-        <ul className="divide-y border rounded">
+        <ul className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
           {members.map((m) => (
             <li
               key={m.user_id}
-              className="p-3 text-sm flex justify-between"
+              className="p-4 text-sm flex items-center justify-between gap-4"
             >
-              <span className="font-mono text-xs text-gray-600 truncate">
+              <span className="font-mono text-xs text-zinc-400 truncate">
                 {m.user_id}
               </span>
-              <span className="text-gray-600">{m.role}</span>
+              <span
+                className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium capitalize ${roleBadgeClass(m.role)}`}
+              >
+                {m.role}
+              </span>
             </li>
           ))}
         </ul>
@@ -60,36 +81,49 @@ export function TeamSettings({
 
       {canManage && (
         <section>
-          <h2 className="text-xl font-semibold mb-3">Invite a teammate</h2>
-          <InviteMemberForm onSent={() => router.refresh()} />
+          <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-3">
+            Invite a teammate
+          </h2>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+            <InviteMemberForm onSent={() => router.refresh()} />
+          </div>
         </section>
       )}
 
       <section>
-        <h2 className="text-xl font-semibold mb-3">
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-3">
           Pending invites ({invites.length})
         </h2>
         {invites.length === 0 ? (
-          <p className="text-sm text-gray-500">No pending invites.</p>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 text-center">
+            <p className="text-sm text-zinc-500">No pending invites.</p>
+          </div>
         ) : (
-          <ul className="divide-y border rounded">
+          <ul className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
             {invites.map((inv) => (
               <li
                 key={inv.id}
-                className="p-3 text-sm flex justify-between items-center"
+                className="p-4 text-sm flex items-center justify-between gap-4"
               >
-                <div>
-                  <div>{inv.email}</div>
-                  <div className="text-xs text-gray-500">
-                    {inv.role} · expires{' '}
-                    {new Date(inv.expires_at).toLocaleDateString()}
+                <div className="min-w-0">
+                  <div className="text-zinc-100 truncate">{inv.email}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium capitalize ${roleBadgeClass(inv.role)}`}
+                    >
+                      {inv.role}
+                    </span>
+                    <span>
+                      expires{' '}
+                      {new Date(inv.expires_at).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
                 {canManage && (
                   <button
                     type="button"
                     onClick={() => handleCancel(inv.id)}
-                    className="text-xs text-red-600 hover:underline"
+                    className="text-xs font-semibold text-destructive hover:text-destructive/80 transition-colors"
                   >
                     Cancel
                   </button>

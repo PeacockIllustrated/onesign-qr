@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button, Input, Label, Select } from '@/components/ui';
 
 export function InviteMemberForm({ onSent }: { onSent: () => void }) {
   const [email, setEmail] = useState('');
@@ -43,49 +44,37 @@ export function InviteMemberForm({ onSent }: { onSent: () => void }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium" htmlFor="invite-email">
-          Email
-        </label>
-        <input
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="invite-email">Email</Label>
+        <Input
           id="invite-email"
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm"
           placeholder="sarah@example.com"
         />
       </div>
-      <div>
-        <label className="block text-sm font-medium" htmlFor="invite-role">
-          Role
-        </label>
-        <select
+      <div className="space-y-2">
+        <Label htmlFor="invite-role">Role</Label>
+        <Select
           id="invite-role"
           value={role}
           onChange={(e) => setRole(e.target.value as 'admin' | 'member')}
-          className="w-full border rounded px-3 py-2 text-sm"
         >
           <option value="member">Member</option>
           <option value="admin">Admin</option>
-        </select>
+        </Select>
       </div>
-      <button
-        type="submit"
-        disabled={busy}
-        className="bg-black text-white px-4 py-2 rounded text-sm disabled:opacity-50"
-      >
+      <Button type="submit" disabled={busy}>
         {busy ? 'Sending…' : 'Send invite'}
-      </button>
+      </Button>
       {message && (
         <p
-          className={
-            message.type === 'error'
-              ? 'text-sm text-red-600'
-              : 'text-sm text-green-600'
-          }
+          className={`text-sm ${
+            message.type === 'error' ? 'text-destructive' : 'text-lynx-400'
+          }`}
           role="status"
         >
           {message.text}
