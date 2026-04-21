@@ -16,7 +16,7 @@ import { CtaButton } from '@/components/design';
 const NAV_LINKS = [
   { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'Shop', href: '/app/shop' },
+  { label: 'Shop', href: '/shop' },
 ] as const;
 
 export function MarketingNav() {
