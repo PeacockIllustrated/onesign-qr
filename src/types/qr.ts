@@ -10,6 +10,9 @@ export type ErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
 // QR mode
 export type QRMode = 'managed' | 'direct';
 
+// QR carrier — user intent about physical delivery. Only meaningful when mode='managed'.
+export type QRCarrier = 'qr' | 'nfc' | 'both';
+
 // Asset format
 export type AssetFormat = 'svg' | 'png' | 'pdf';
 
@@ -60,6 +63,7 @@ export interface QRCode {
   name: string;
   mode: QRMode;
   slug: string | null;
+  carrier: QRCarrier;
   destination_url: string;
   is_active: boolean;
   analytics_enabled: boolean;
@@ -147,6 +151,7 @@ export interface CreateQRRequest {
   mode: QRMode;
   destination_url: string;
   slug?: string;
+  carrier?: QRCarrier;
   analytics_enabled?: boolean;
   style?: Partial<QRStyleConfig>;
 }
@@ -159,6 +164,7 @@ export interface UpdateQRRequest {
   destination_url?: string;
   is_active?: boolean;
   analytics_enabled?: boolean;
+  carrier?: QRCarrier;
 }
 
 /**
