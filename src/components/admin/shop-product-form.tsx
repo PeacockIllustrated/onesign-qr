@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button, Input, Label, Select } from '@/components/ui';
 import type {
   ShopProductCategory,
   ShopProductRecord,
@@ -134,125 +135,128 @@ export function ShopProductForm({
   ];
 
   return (
-    <form onSubmit={onSubmit} className="max-w-xl space-y-4 bg-white border rounded p-6">
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="f-slug">
-          Slug {mode === 'edit' && <span className="text-xs text-gray-500">(read-only)</span>}
-        </label>
-        <input
+    <form
+      onSubmit={onSubmit}
+      className="max-w-xl space-y-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-6"
+    >
+      <div className="space-y-2">
+        <Label htmlFor="f-slug">
+          Slug{' '}
+          {mode === 'edit' && (
+            <span className="text-xs text-zinc-500 font-normal">(read-only)</span>
+          )}
+        </Label>
+        <Input
           id="f-slug"
           type="text"
           required
           disabled={mode === 'edit'}
           value={form.slug}
           onChange={(e) => setForm({ ...form, slug: e.target.value })}
-          className="w-full border rounded px-3 py-2 text-sm disabled:bg-gray-50"
           placeholder="standard-nfc-card"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="f-name">Name</label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="f-name">Name</Label>
+        <Input
           id="f-name"
           type="text"
           required
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="w-full border rounded px-3 py-2 text-sm"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="f-desc">Description</label>
+      <div className="space-y-2">
+        <Label htmlFor="f-desc">Description</Label>
         <textarea
           id="f-desc"
           rows={4}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="w-full border rounded px-3 py-2 text-sm"
+          className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-150 resize-y"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="f-cat">Category</label>
-          <select
+        <div className="space-y-2">
+          <Label htmlFor="f-cat">Category</Label>
+          <Select
             id="f-cat"
             value={form.category}
             onChange={(e) =>
               setForm({ ...form, category: e.target.value as ShopProductCategory })
             }
-            className="w-full border rounded px-3 py-2 text-sm"
           >
             {categories.map((c) => (
               <option key={c} value={c}>
                 {SHOP_CATEGORY_LABELS[c]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="f-price">Price (£)</label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="f-price">Price (£)</Label>
+          <Input
             id="f-price"
             type="number"
             step="0.01"
             min="0"
             required
             value={form.base_price_pounds}
-            onChange={(e) => setForm({ ...form, base_price_pounds: e.target.value })}
-            className="w-full border rounded px-3 py-2 text-sm"
+            onChange={(e) =>
+              setForm({ ...form, base_price_pounds: e.target.value })
+            }
           />
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="f-img">Primary image URL</label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="f-img">Primary image URL</Label>
+        <Input
           id="f-img"
           type="url"
           value={form.primary_image_url}
-          onChange={(e) => setForm({ ...form, primary_image_url: e.target.value })}
-          className="w-full border rounded px-3 py-2 text-sm"
+          onChange={(e) =>
+            setForm({ ...form, primary_image_url: e.target.value })
+          }
           placeholder="https://..."
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-zinc-500">
           For now, paste a URL. Storage-bucket upload UI is a follow-up.
         </p>
       </div>
 
-      <div>
-        <label className="inline-flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={form.is_active}
-            onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-          />
-          Active (visible to customers)
-        </label>
-      </div>
+      <label className="inline-flex items-center gap-2 text-sm text-zinc-200 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={form.is_active}
+          onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+          className="h-4 w-4 rounded border-zinc-700 bg-zinc-950 accent-lynx-500"
+        />
+        Active (visible to customers)
+      </label>
 
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p
+          className="p-3 rounded-lg text-sm bg-destructive/15 text-destructive border border-destructive/30"
+          role="alert"
+        >
           {error}
         </p>
       )}
 
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={busy}
-          className="bg-black text-white px-4 py-2 rounded text-sm disabled:opacity-50"
-        >
+      <div className="flex items-center gap-3 pt-2">
+        <Button type="submit" disabled={busy}>
           {busy ? 'Saving…' : mode === 'new' ? 'Create product' : 'Save changes'}
-        </button>
+        </Button>
         {mode === 'edit' && (
           <button
             type="button"
             onClick={onDelete}
             disabled={busy}
-            className="text-sm text-red-600 hover:underline ml-auto"
+            className="ml-auto text-sm font-semibold text-destructive hover:text-destructive/80 transition-colors"
           >
             Delete
           </button>

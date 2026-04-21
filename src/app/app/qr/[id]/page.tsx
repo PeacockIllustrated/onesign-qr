@@ -56,14 +56,14 @@ export default async function QRDetailPage({ params }: PageProps) {
 
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">{qr.name}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">{qr.name}</h1>
             <div className="flex items-center gap-3 mt-2">
               <Badge variant={qr.is_active ? 'success' : 'secondary'}>
-                {qr.is_active ? 'active' : 'inactive'}
+                {qr.is_active ? 'Active' : 'Inactive'}
               </Badge>
               <Badge variant="outline">{qr.mode}</Badge>
               {qr.analytics_enabled && (
-                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1 text-sm text-zinc-400">
                   <BarChart3 className="h-4 w-4" />
                   {formatNumber(qr.total_scans)} total scans
                 </span>

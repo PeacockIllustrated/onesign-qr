@@ -11,14 +11,12 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch QR codes
-  const { data: qrCodes, error } = await supabase
+  const { data: qrCodes } = await supabase
     .from('qr_codes')
     .select('*, qr_styles(*)')
     .eq('owner_id', user!.id)
     .order('created_at', { ascending: false });
 
-  // Fetch bio pages
   const { data: bioPages } = await supabase
     .from('bio_link_pages')
     .select('*')
@@ -30,14 +28,15 @@ export default async function DashboardPage() {
   const totalScans = qrCodes?.reduce((sum, qr) => sum + (qr.total_scans || 0), 0) ?? 0;
   const activeCount = qrCodes?.filter(qr => qr.is_active).length ?? 0;
   const totalCodes = qrCodes?.length ?? 0;
+  const totalBioViews = bioPages?.reduce((sum, p) => sum + (p.total_views || 0), 0) ?? 0;
 
   return (
     <div className="p-5 md:p-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Dashboard</h1>
+          <p className="text-sm text-zinc-400 mt-1">
             Manage and track your QR codes
           </p>
         </div>
@@ -51,64 +50,16 @@ export default async function DashboardPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <Card className="rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Scans</p>
-                <p className="text-2xl font-semibold mt-1">{formatNumber(totalScans)}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                <BarChart3 className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Codes</p>
-                <p className="text-2xl font-semibold mt-1">{activeCount}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                <Activity className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Codes</p>
-                <p className="text-2xl font-semibold mt-1">{totalCodes}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                <Hash className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Bio Views</p>
-                <p className="text-2xl font-semibold mt-1">{formatNumber(bioPages?.reduce((sum, p) => sum + (p.total_views || 0), 0) ?? 0)}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                <Eye className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard label="Total Scans" value={formatNumber(totalScans)} icon={<BarChart3 className="h-5 w-5" />} />
+        <StatCard label="Active Codes" value={String(activeCount)} icon={<Activity className="h-5 w-5" />} />
+        <StatCard label="Total Codes" value={String(totalCodes)} icon={<Hash className="h-5 w-5" />} />
+        <StatCard label="Bio Views" value={formatNumber(totalBioViews)} icon={<Eye className="h-5 w-5" />} />
       </div>
 
       {/* Bio Pages Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium tracking-tight">Bio Pages</h2>
+          <h2 className="text-lg font-medium tracking-tight text-zinc-100">Bio Pages</h2>
           <Link href="/app/bio">
             <Button variant="outline" size="sm" className="rounded-lg">
               {bioPages && bioPages.length > 0 ? 'Manage' : (
@@ -126,10 +77,10 @@ export default async function DashboardPage() {
         ) : (
           <Card className="rounded-xl">
             <CardContent className="p-8 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-muted mb-3">
-                <Link2 className="h-6 w-6 text-muted-foreground" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-800 text-lynx-400 mb-3">
+                <Link2 className="h-6 w-6" />
               </div>
-              <p className="text-sm text-muted-foreground">No bio page yet. Create one to share all your links in one place.</p>
+              <p className="text-sm text-zinc-400">No bio page yet. Create one to share all your links in one place.</p>
             </CardContent>
           </Card>
         )}
@@ -137,7 +88,7 @@ export default async function DashboardPage() {
 
       {/* QR Code Grid */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium tracking-tight">QR Codes</h2>
+        <h2 className="text-lg font-medium tracking-tight text-zinc-100">QR Codes</h2>
       </div>
       {!qrCodes || qrCodes.length === 0 ? (
         <EmptyState />
@@ -152,15 +103,33 @@ export default async function DashboardPage() {
   );
 }
 
+function StatCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  return (
+    <Card className="rounded-xl">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{label}</p>
+            <p className="text-2xl font-semibold mt-1 text-zinc-50 tabular-nums">{value}</p>
+          </div>
+          <div className="h-10 w-10 rounded-lg bg-zinc-800 text-lynx-400 flex items-center justify-center">
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function EmptyState() {
   return (
     <Card className="p-12 rounded-xl">
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
-          <OneSignIcon size={38} variant="on-light" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-800 mb-4">
+          <OneSignIcon size={38} variant="on-dark" />
         </div>
-        <h2 className="text-lg font-medium mb-2">No QR codes yet</h2>
-        <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+        <h2 className="text-lg font-medium mb-2 text-zinc-100">No QR codes yet</h2>
+        <p className="text-zinc-400 mb-6 max-w-sm mx-auto">
           Create your first QR code to get started. Managed QR codes can be
           updated without reprinting.
         </p>
@@ -181,12 +150,12 @@ function BioPageCard({ page }: { page: any }) {
 
   return (
     <Card
-      className="rounded-xl overflow-hidden hover:border-foreground/20 transition-colors"
+      className="rounded-xl overflow-hidden hover:border-lynx-400/30 transition-colors"
       style={{ borderLeftWidth: 4, borderLeftColor: themeConfig.colors.accent }}
     >
       {/* Theme banner — mobile only */}
       <div
-        className="flex sm:hidden items-center gap-2.5 px-4 py-2 border-b border-border/50"
+        className="flex sm:hidden items-center gap-2.5 px-4 py-2 border-b border-zinc-800"
         style={{ background: themeConfig.background.css }}
       >
         <div
@@ -210,7 +179,7 @@ function BioPageCard({ page }: { page: any }) {
           <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
             {/* Theme swatch — desktop only */}
             <div
-              className="hidden sm:flex h-12 w-12 rounded-xl items-center justify-center shrink-0"
+              className="hidden sm:flex h-12 w-12 rounded-xl items-center justify-center shrink-0 ring-1 ring-inset ring-zinc-800"
               style={{ background: themeConfig.background.css }}
             >
               <div
@@ -220,18 +189,18 @@ function BioPageCard({ page }: { page: any }) {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-medium truncate">{page.title}</h3>
+                <h3 className="font-medium truncate text-zinc-50">{page.title}</h3>
                 <Badge variant={page.is_active ? 'success' : 'secondary'} className="rounded-md shrink-0">
                   {page.is_active ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
-              <div className="flex items-center gap-3 mt-1 text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-3 mt-1 text-zinc-400 flex-wrap">
                 {/* Theme dots — desktop only */}
                 <span className="hidden sm:flex items-center gap-1.5">
                   {themeConfig.previewColors.map((color, i) => (
                     <span
                       key={i}
-                      className="inline-block h-2.5 w-2.5 rounded-full border border-border/50"
+                      className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-700"
                       style={{ backgroundColor: color }}
                     />
                   ))}
@@ -241,7 +210,7 @@ function BioPageCard({ page }: { page: any }) {
                   <Eye className="h-3.5 w-3.5" />
                   {formatNumber(page.total_views)} views
                 </span>
-                <span className="font-mono text-xs">/p/{page.slug}</span>
+                <span className="font-mono text-xs text-zinc-500">/p/{page.slug}</span>
               </div>
             </div>
           </div>
@@ -271,17 +240,17 @@ function QRCard({ qr }: { qr: any }) {
 
   return (
     <Link href={`/app/qr/${qr.id}`}>
-      <Card className="hover:border-foreground/20 hover:shadow-sm transition-all cursor-pointer rounded-xl group">
+      <Card className="hover:border-lynx-400/30 hover:shadow-[0_8px_32px_-8px_rgba(88,163,134,0.15)] transition-all cursor-pointer rounded-xl group">
         <CardContent className="p-5">
           {/* Preview placeholder */}
-          <div className="aspect-square bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-            <OneSignIcon size={58} variant="on-light" className="opacity-20" />
+          <div className="aspect-square bg-zinc-800 rounded-lg mb-4 flex items-center justify-center group-hover:bg-zinc-800/80 transition-colors">
+            <OneSignIcon size={58} variant="on-dark" className="opacity-25" />
           </div>
 
           {/* Info */}
           <div className="space-y-2.5">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium truncate">{qr.name}</h3>
+              <h3 className="font-medium truncate text-zinc-50">{qr.name}</h3>
               <div className="flex items-center gap-1.5 shrink-0">
                 <Badge variant={qr.is_active ? 'success' : 'secondary'} className="rounded-md">
                   {qr.is_active ? 'Active' : 'Inactive'}
@@ -290,7 +259,7 @@ function QRCard({ qr }: { qr: any }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-zinc-400">
               <Badge variant="outline" className="rounded-md">
                 {qr.mode}
               </Badge>
@@ -303,13 +272,13 @@ function QRCard({ qr }: { qr: any }) {
             </div>
 
             {redirectUrl && (
-              <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+              <p className="text-xs text-zinc-500 truncate flex items-center gap-1">
                 <ExternalLink className="h-3 w-3 shrink-0" />
                 {redirectUrl}
               </p>
             )}
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-zinc-500">
               Created {formatDate(qr.created_at)}
             </p>
           </div>

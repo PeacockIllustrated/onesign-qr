@@ -67,20 +67,25 @@ export default async function OrgPreviewPage({ params }: Props) {
     <div className="-mx-6 -my-8">
       <ViewAsBanner orgName={org.name} orgId={id} />
       <div className="max-w-4xl mx-auto p-6 space-y-8">
-        <h1 className="text-2xl font-semibold">{org.name} · Preview</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+          {org.name} · Preview
+        </h1>
 
         <section>
-          <h2 className="text-lg font-semibold mb-2">
+          <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-3">
             Bio pages ({(pages ?? []).length})
           </h2>
-          <ul className="bg-white border rounded divide-y">
+          <ul className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800 overflow-hidden">
             {(pages ?? []).map((p) => (
-              <li key={p.id} className="p-3 text-sm flex justify-between">
-                <span>
+              <li
+                key={p.id}
+                className="p-3 text-sm flex justify-between items-center gap-3"
+              >
+                <span className="text-zinc-100 truncate">
                   {p.title}
-                  <span className="ml-2 text-xs text-gray-500">/p/{p.slug}</span>
+                  <span className="ml-2 text-xs text-zinc-500 font-mono">/p/{p.slug}</span>
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-zinc-500 shrink-0">
                   {p.theme ?? '—'} · {p.is_active ? 'active' : 'draft'}
                 </span>
               </li>
@@ -89,25 +94,25 @@ export default async function OrgPreviewPage({ params }: Props) {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-2">
+          <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-3">
             QR codes ({(qrs ?? []).length})
           </h2>
-          <ul className="bg-white border rounded divide-y">
+          <ul className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800 overflow-hidden">
             {(qrs ?? []).map((q) => (
               <li key={q.id} className="p-3 text-sm">
-                <div className="flex justify-between">
-                  <span>
+                <div className="flex justify-between items-center gap-3">
+                  <span className="text-zinc-100 truncate">
                     {q.name}
-                    <span className="ml-2 text-xs text-gray-500">
+                    <span className="ml-2 text-xs text-zinc-500 font-mono">
                       /r/{q.slug}
                     </span>
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-zinc-500 shrink-0">
                     {q.mode} · {q.is_active ? 'active' : 'disabled'}
                   </span>
                 </div>
                 {q.destination_url && (
-                  <div className="text-xs text-gray-400 truncate mt-1">
+                  <div className="text-xs text-zinc-500 truncate mt-1 font-mono">
                     → {q.destination_url}
                   </div>
                 )}
@@ -117,18 +122,26 @@ export default async function OrgPreviewPage({ params }: Props) {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-2">
+          <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-3">
             Recent form submissions ({(submissions ?? []).length})
           </h2>
-          <ul className="bg-white border rounded divide-y">
+          <ul className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800 overflow-hidden">
             {(submissions ?? []).map((s) => (
-              <li key={s.id} className="p-3 text-sm flex justify-between">
-                <span>
-                  <strong>{s.name}</strong> · {s.email}
-                  {s.subject ? ` · ${s.subject}` : ''}
+              <li
+                key={s.id}
+                className="p-3 text-sm flex justify-between items-center gap-3"
+              >
+                <span className="text-zinc-100 truncate">
+                  <strong>{s.name}</strong>{' '}
+                  <span className="text-zinc-400">· {s.email}</span>
+                  {s.subject ? (
+                    <span className="text-zinc-400"> · {s.subject}</span>
+                  ) : (
+                    ''
+                  )}
                 </span>
-                <span className="text-xs text-gray-500">
-                  {new Date(s.submitted_at).toLocaleString()}
+                <span className="text-xs text-zinc-500 tabular-nums shrink-0">
+                  {new Date(s.submitted_at).toLocaleString('en-GB')}
                   {s.is_read ? '' : ' · unread'}
                 </span>
               </li>

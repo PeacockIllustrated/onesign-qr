@@ -197,7 +197,7 @@ export default function NewBioPage() {
             <ArrowLeft className="h-4 w-4" />
             back
           </Link>
-          <h1 className="text-xl sm:text-2xl font-semibold">create a new bio page</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-50">Create a new bio page</h1>
         </div>
 
         {/* Step indicator */}
@@ -210,10 +210,10 @@ export default function NewBioPage() {
                 className={`
                   flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-full text-xs font-semibold transition-colors
                   ${i < stepIndex
-                    ? 'bg-foreground text-background cursor-pointer'
+                    ? 'bg-lynx-500/20 text-lynx-400 border border-lynx-400/30 cursor-pointer'
                     : i === stepIndex
-                      ? 'bg-foreground text-background'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-lynx-500 text-zinc-950'
+                      : 'bg-zinc-800 text-zinc-500'
                   }
                 `}
               >

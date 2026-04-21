@@ -2,6 +2,8 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ShieldCheck } from 'lucide-react';
+import { Button, Input, Label } from '@/components/ui';
 
 function LoginInner() {
   const router = useRouter();
@@ -39,39 +41,47 @@ function LoginInner() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+    <main className="min-h-screen flex items-center justify-center bg-zinc-950 p-6">
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-sm bg-white rounded-lg shadow p-6 space-y-4"
+        className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-5 shadow-2xl"
       >
-        <h1 className="text-lg font-semibold">Admin step-up</h1>
-        <p className="text-sm text-gray-600">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center justify-center h-10 w-10 rounded-xl bg-lynx-500/15 border border-lynx-400/30 text-lynx-400">
+            <ShieldCheck className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-base font-semibold tracking-tight text-zinc-50">
+              Admin step-up
+            </h1>
+            <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+              OneSign · Lynx
+            </p>
+          </div>
+        </div>
+        <p className="text-sm text-zinc-400 leading-relaxed">
           Re-enter your password to start an admin session. Sessions expire
           after 30 minutes of inactivity.
         </p>
-        <div>
-          <label className="block text-sm font-medium" htmlFor="admin-password">
-            Password
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="admin-password">Password</Label>
+          <Input
             id="admin-password"
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
             autoFocus
           />
         </div>
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full bg-black text-white py-2 px-4 rounded text-sm disabled:opacity-50"
-        >
+        <Button type="submit" disabled={busy} className="w-full">
           {busy ? 'Verifying…' : 'Start admin session'}
-        </button>
+        </Button>
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <p
+            className="p-3 rounded-lg text-sm bg-destructive/15 text-destructive border border-destructive/30"
+            role="alert"
+          >
             {error}
           </p>
         )}

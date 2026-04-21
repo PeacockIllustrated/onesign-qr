@@ -26,11 +26,13 @@ export default async function EditShopProductPage({ params }: Props) {
     <div>
       <Link
         href="/admin/shop/products"
-        className="text-sm text-gray-500 hover:underline"
+        className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-lynx-400 transition-colors"
       >
         ← Back to products
       </Link>
-      <h1 className="text-2xl font-semibold my-4">{product.name}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50 mt-3 mb-6">
+        {product.name}
+      </h1>
       <ShopProductForm mode="edit" product={product} />
     </div>
   );

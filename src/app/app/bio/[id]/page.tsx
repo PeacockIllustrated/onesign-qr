@@ -63,10 +63,10 @@ export default async function BioDetailPage({ params }: PageProps) {
 
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">{bioPage.title}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">{bioPage.title}</h1>
             <div className="flex items-center gap-3 mt-2">
               <Badge variant={bioPage.is_active ? 'success' : 'secondary'}>
-                {bioPage.is_active ? 'active' : 'inactive'}
+                {bioPage.is_active ? 'Active' : 'Inactive'}
               </Badge>
             </div>
           </div>

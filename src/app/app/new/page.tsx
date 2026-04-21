@@ -157,8 +157,8 @@ export default function NewQRPage() {
           <ArrowLeft className="h-4 w-4" />
           back to dashboard
         </Link>
-        <h1 className="text-2xl font-semibold">create new qr code</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Create new QR code</h1>
+        <p className="text-sm text-zinc-400 mt-1">
           Configure your QR code settings and style
         </p>
       </div>
