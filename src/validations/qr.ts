@@ -24,6 +24,9 @@ const slug = z
   .regex(SLUG_CONFIG.PATTERN, 'Slug must be lowercase alphanumeric with hyphens')
   .optional();
 
+// Carrier validation
+const carrier = z.enum(['qr', 'nfc', 'both']);
+
 // QR style schema
 export const qrStyleSchema = z.object({
   foreground_color: hexColor.default('#000000'),
@@ -57,6 +60,7 @@ export const createQRSchema = z.object({
     .min(1, 'URL is required')
     .max(2048, 'URL is too long'),
   slug: slug,
+  carrier: carrier.default('qr'),
   analytics_enabled: z.boolean().default(true),
   style: qrStyleSchema.partial().optional(),
 });
@@ -76,6 +80,7 @@ export const updateQRSchema = z.object({
     .optional(),
   is_active: z.boolean().optional(),
   analytics_enabled: z.boolean().optional(),
+  carrier: carrier.optional(),
 });
 
 // Update style request schema
