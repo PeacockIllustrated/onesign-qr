@@ -65,7 +65,7 @@ export function OrgSwitcher() {
 
   if (!orgs) {
     return (
-      <div className="px-3 py-2 text-sm text-gray-500" aria-label="Loading organisation">
+      <div className="px-3 py-2 text-sm text-zinc-500" aria-label="Loading organisation">
         Loading…
       </div>
     );
@@ -74,7 +74,7 @@ export function OrgSwitcher() {
   const active = orgs.find((o) => o.id === activeOrgId) ?? orgs[0];
   if (!active) {
     return (
-      <div className="px-3 py-2 text-sm text-red-600">
+      <div className="px-3 py-2 text-sm text-destructive">
         No organisation available.
       </div>
     );
@@ -86,12 +86,12 @@ export function OrgSwitcher() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={busy}
-        className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+        className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md bg-zinc-800/60 border border-zinc-800 text-zinc-100 hover:bg-zinc-800 disabled:opacity-50"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
         <span className="truncate">{active.name}</span>
-        <span className="ml-2 text-xs text-gray-500">
+        <span className="ml-2 text-xs text-zinc-500">
           {active.role}
           {active.plan === 'pro' ? ' · Pro' : ''}
         </span>
@@ -99,7 +99,7 @@ export function OrgSwitcher() {
       {open && orgs.length > 1 && (
         <ul
           role="listbox"
-          className="absolute left-0 right-0 mt-1 z-10 bg-white border border-gray-200 rounded-md shadow-md text-sm"
+          className="absolute left-0 right-0 mt-1 z-10 bg-zinc-900 border border-zinc-800 rounded-md shadow-xl text-sm"
         >
           {orgs.map((o) => (
             <li key={o.id}>
@@ -107,12 +107,12 @@ export function OrgSwitcher() {
                 type="button"
                 onClick={() => handleSwitch(o.id)}
                 className={
-                  'w-full text-left px-3 py-2 hover:bg-gray-50 ' +
-                  (o.id === activeOrgId ? 'font-semibold text-blue-700' : '')
+                  'w-full text-left px-3 py-2 hover:bg-zinc-800 ' +
+                  (o.id === activeOrgId ? 'font-semibold text-lynx-400' : 'text-zinc-200')
                 }
               >
                 <span className="truncate block">{o.name}</span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-zinc-500">
                   {o.role}
                   {o.plan === 'pro' ? ' · Pro' : ''}
                 </span>
@@ -122,7 +122,7 @@ export function OrgSwitcher() {
         </ul>
       )}
       {error && (
-        <p className="mt-1 px-3 text-xs text-red-600" role="alert">
+        <p className="mt-1 px-3 text-xs text-destructive" role="alert">
           {error}
         </p>
       )}
