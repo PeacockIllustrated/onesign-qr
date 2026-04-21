@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Link2, AlertCircle } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import {
   Button,
   Input,
@@ -26,7 +25,6 @@ export default function CreateLinkPage() {
   const router = useRouter();
   const search = useSearchParams();
   const { addToast } = useToast();
-  const supabase = createClient();
 
   // Prefill destination URL if passed from the direct-qr page
   const prefilledUrl = search.get('url') ?? '';
