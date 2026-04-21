@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowUpRight, PackageSearch, Lock } from 'lucide-react';
+import { ShopImage } from '@/components/shop/shop-image';
 import { SHOP_CATEGORY_LABELS } from '@/types/shop';
 import type { ShopProductCategory, ShopProductRecord } from '@/types/shop';
 
@@ -124,23 +124,7 @@ function PublicProductCard({ product }: { product: PublicProduct }) {
     >
       {/* Image */}
       <div className="relative aspect-[4/3] bg-zinc-950 overflow-hidden">
-        {product.primary_image_url ? (
-          <Image
-            src={product.primary_image_url}
-            alt={product.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-zinc-900 to-zinc-950">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 border-2 border-zinc-700 rounded-lg rotate-6" />
-              <div className="absolute inset-0 border-2 border-zinc-600 rounded-lg -rotate-3" />
-              <div className="absolute inset-0 border-2 border-lynx-400/50 rounded-lg" />
-            </div>
-          </div>
-        )}
+        <ShopImage src={product.primary_image_url ?? null} alt={product.name} />
 
         {/* Price badge */}
         <div className="absolute top-3 right-3 bg-zinc-950/90 backdrop-blur-sm border border-zinc-800 px-2.5 py-1 rounded-full text-xs font-semibold text-zinc-100 tabular-nums">

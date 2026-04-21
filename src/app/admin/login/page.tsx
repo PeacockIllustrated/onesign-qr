@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import { Button, Input, Label } from '@/components/ui';
 
 function LoginInner() {
-  const router = useRouter();
   const params = useSearchParams();
   const next = params.get('next') || '/admin';
 
@@ -30,12 +29,16 @@ function LoginInner() {
           error?: string;
         };
         setError(json.error ?? 'Failed to start admin session');
+        setBusy(false);
         return;
       }
-      router.push(next);
+      // Hard navigation — a client-side router.push would race with the
+      // HttpOnly admin session cookie the POST just set, leaving the user
+      // on /admin/login. window.location forces a full request that
+      // carries the new cookie through middleware.
+      window.location.href = next;
     } catch {
       setError('Failed to start admin session');
-    } finally {
       setBusy(false);
     }
   }

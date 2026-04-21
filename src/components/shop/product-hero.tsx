@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { type ReactNode } from 'react';
+import { ShopImage } from '@/components/shop/shop-image';
 import { SHOP_CATEGORY_LABELS } from '@/types/shop';
 import type { ShopProductCategory } from '@/types/shop';
 
@@ -204,13 +204,10 @@ export function ProductHero({
               {/* Primary image */}
               <div className="relative aspect-[4/5] bg-zinc-800 rounded-2xl overflow-hidden border border-zinc-700/50 ring-1 ring-inset ring-white/5">
                 {activeImage ? (
-                  <Image
+                  <ShopImage
                     src={activeImage}
                     alt={name}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 55vw"
-                    className="object-cover"
-                    priority
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 ) : (
                   <ImagePlaceholder />
@@ -238,12 +235,10 @@ export function ProductHero({
                           : 'border-zinc-700 hover:border-zinc-500',
                       ].join(' ')}
                     >
-                      <Image
+                      <ShopImage
                         src={url}
                         alt={`${name}, image ${idx + 1}`}
-                        fill
-                        sizes="64px"
-                        className="object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                     </button>
                   ))}
