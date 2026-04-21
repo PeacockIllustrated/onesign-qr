@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <OneSignIcon size={48} variant="on-light" />
+            <OneSignIcon size={48} variant="on-dark" />
           </div>
           <CardTitle>Set new password</CardTitle>
           <CardDescription>
@@ -150,8 +150,8 @@ export default function ResetPasswordPage() {
               <div
                 className={`p-3 rounded-lg text-sm ${
                   message.type === 'success'
-                    ? 'bg-green-50 text-green-800 border border-green-200'
-                    : 'bg-red-50 text-red-800 border border-red-200'
+                    ? 'bg-lynx-500/10 text-lynx-400 border border-lynx-400/30'
+                    : 'bg-destructive/15 text-destructive border border-destructive/30'
                 }`}
               >
                 {message.text}
