@@ -14,7 +14,9 @@ import {
   TabsContent,
 } from '@/components/ui';
 import { QRDetailClient } from '@/components/qr/qr-detail-client';
+import { CarrierBadge } from '@/components/qr/carrier-badge';
 import { formatDate, formatNumber } from '@/lib/utils';
+import type { QRCarrier } from '@/types/qr';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -61,7 +63,7 @@ export default async function QRDetailPage({ params }: PageProps) {
               <Badge variant={qr.is_active ? 'success' : 'secondary'}>
                 {qr.is_active ? 'Active' : 'Inactive'}
               </Badge>
-              <Badge variant="outline">{qr.mode}</Badge>
+              <CarrierBadge mode={qr.mode} carrier={(qr.carrier ?? 'qr') as QRCarrier} />
               {qr.analytics_enabled && (
                 <span className="flex items-center gap-1 text-sm text-zinc-400">
                   <BarChart3 className="h-4 w-4" />
