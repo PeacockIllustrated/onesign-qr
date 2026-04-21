@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Link2, AlertCircle } from 'lucide-react';
@@ -21,7 +21,7 @@ import { validateUrl } from '@/lib/security/url-validator';
 import { QR_DEFAULTS } from '@/lib/constants';
 import type { QRStyleConfig, QRCarrier } from '@/types/qr';
 
-export default function CreateLinkPage() {
+function CreateLinkForm() {
   const router = useRouter();
   const search = useSearchParams();
   const { addToast } = useToast();
@@ -306,5 +306,13 @@ export default function CreateLinkPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function CreateLinkPage() {
+  return (
+    <Suspense>
+      <CreateLinkForm />
+    </Suspense>
   );
 }
