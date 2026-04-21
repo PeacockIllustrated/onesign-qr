@@ -299,34 +299,36 @@ export default function PricingPage() {
         </div>
       </Section>
 
-      {/* ── FAQ ─────────────────────────────────────────────────── */}
-      <Section topRule>
-        <div className="max-w-3xl">
-          <Eyebrow className="mb-4">FAQ</Eyebrow>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-50 mb-12">
-            Common questions.
-          </h2>
+      {/* ── FAQ (light section) ─────────────────────────────────── */}
+      <section className="bg-zinc-50 border-y border-zinc-200 py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-5 md:px-8">
+          <div className="max-w-3xl">
+            <Eyebrow tone="light" className="mb-4">FAQ</Eyebrow>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 mb-12">
+              Common questions.
+            </h2>
 
-          <dl className="space-y-8">
-            {FAQ.map((item) => (
-              <div
-                key={item.q}
-                className="border-b border-zinc-800 pb-8 last:border-0 last:pb-0"
-              >
-                <dt className="text-lg font-semibold text-zinc-100 mb-3">
-                  {item.q}
-                </dt>
-                <dd className="text-sm md:text-base text-zinc-400 leading-relaxed">
-                  {item.a}
-                </dd>
-              </div>
-            ))}
-          </dl>
+            <dl className="space-y-8">
+              {FAQ.map((item) => (
+                <div
+                  key={item.q}
+                  className="border-b border-zinc-200 pb-8 last:border-0 last:pb-0"
+                >
+                  <dt className="text-lg font-semibold text-zinc-900 mb-3">
+                    {item.q}
+                  </dt>
+                  <dd className="text-sm md:text-base text-zinc-600 leading-relaxed">
+                    {item.a}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </div>
-      </Section>
+      </section>
 
       {/* ── Closing CTA ─────────────────────────────────────────── */}
-      <Section topRule paddingClass="py-20 md:py-28">
+      <Section paddingClass="py-20 md:py-28">
         <div className="text-center max-w-2xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-50 mb-6">
             Start free today. Upgrade when you&apos;re ready.

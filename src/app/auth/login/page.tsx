@@ -109,7 +109,7 @@ function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <OneSignIcon size={48} variant="light" />
+            <OneSignIcon size={48} variant="on-light" />
           </div>
           <CardTitle>Welcome back</CardTitle>
           <CardDescription>

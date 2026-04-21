@@ -157,7 +157,7 @@ function EmptyState() {
     <Card className="p-12 rounded-xl">
       <div className="text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
-          <OneSignIcon size={38} variant="light" />
+          <OneSignIcon size={38} variant="on-light" />
         </div>
         <h2 className="text-lg font-medium mb-2">No QR codes yet</h2>
         <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
@@ -275,7 +275,7 @@ function QRCard({ qr }: { qr: any }) {
         <CardContent className="p-5">
           {/* Preview placeholder */}
           <div className="aspect-square bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-            <OneSignIcon size={58} variant="light" className="opacity-20" />
+            <OneSignIcon size={58} variant="on-light" className="opacity-20" />
           </div>
 
           {/* Info */}

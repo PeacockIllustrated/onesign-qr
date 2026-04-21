@@ -5,7 +5,7 @@
 // Mobile: burger icon opens a slide-down drawer with focus trap + Escape close.
 //
 // Imports:
-//   OneSignWordmark from @/components/ui (default 'white' variant — light-on-dark)
+//   OneSignWordmark from @/components/ui (default 'on-dark' variant — white ink on dark bg)
 //   CtaButton from @/components/design
 
 import { useState, useEffect, useRef, useCallback } from 'react';

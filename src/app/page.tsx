@@ -70,44 +70,49 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── What you get ────────────────────────────────────────── */}
-      <Section>
-        <Eyebrow className="mb-4">What you get</Eyebrow>
-        <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-50 mb-3">
-          Everything in one place.
-        </h2>
-        <p className="text-zinc-400 max-w-xl mb-12">
-          No five separate tools. No duct-tape integrations. One platform that
-          handles every customer touchpoint.
-        </p>
+      {/* ── What you get (light section) ────────────────────────── */}
+      <section className="bg-zinc-50 border-y border-zinc-200 py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-5 md:px-8">
+          <Eyebrow tone="light" className="mb-4">What you get</Eyebrow>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 mb-3">
+            Everything in one place.
+          </h2>
+          <p className="text-zinc-600 max-w-xl mb-12">
+            No five separate tools. No duct-tape integrations. One platform that
+            handles every customer touchpoint.
+          </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <FeatureCard
-            icon={<Link className="h-5 w-5" aria-hidden="true" />}
-            title="Bio Pages"
-            body="Multi-page link-in-bio with a block editor, ready-made templates, contact forms, galleries, and embeds."
-            href="/features#bio-pages"
-            linkLabel="Explore bio pages"
-          />
-          <FeatureCard
-            icon={<QrCode className="h-5 w-5" aria-hidden="true" />}
-            title="Managed QR Codes"
-            body="Print once, redirect anywhere. Change destinations without reprinting. SVG/PNG/PDF export, scan analytics built-in."
-            href="/features#qr-codes"
-            linkLabel="See QR features"
-          />
-          <FeatureCard
-            icon={<Users2 className="h-5 w-5" aria-hidden="true" />}
-            title="Teams & Review Funnels"
-            body="Invite your team with role-based access. Turn 5★ customers into Google reviews and catch 1–3★ feedback privately."
-            href="/features#teams"
-            linkLabel="Team accounts"
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <FeatureCard
+              tone="light"
+              icon={<Link className="h-5 w-5" aria-hidden="true" />}
+              title="Bio Pages"
+              body="Multi-page link-in-bio with a block editor, ready-made templates, contact forms, galleries, and embeds."
+              href="/features#bio-pages"
+              linkLabel="Explore bio pages"
+            />
+            <FeatureCard
+              tone="light"
+              icon={<QrCode className="h-5 w-5" aria-hidden="true" />}
+              title="Managed QR Codes"
+              body="Print once, redirect anywhere. Change destinations without reprinting. SVG/PNG/PDF export, scan analytics built-in."
+              href="/features#qr-codes"
+              linkLabel="See QR features"
+            />
+            <FeatureCard
+              tone="light"
+              icon={<Users2 className="h-5 w-5" aria-hidden="true" />}
+              title="Teams & Review Funnels"
+              body="Invite your team with role-based access. Turn 5★ customers into Google reviews and catch 1–3★ feedback privately."
+              href="/features#teams"
+              linkLabel="Team accounts"
+            />
+          </div>
         </div>
-      </Section>
+      </section>
 
       {/* ── Shop teaser ─────────────────────────────────────────── */}
-      <Section widthClass="max-w-5xl" topRule>
+      <Section widthClass="max-w-5xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
           {/* Left — pitch */}
           <div>

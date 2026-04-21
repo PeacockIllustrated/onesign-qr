@@ -1,37 +1,37 @@
 import Image from 'next/image';
 
-// OneSign – Lynx brand assets live at /public:
-//   onesign-lynx-icon-dark.svg    — icon for dark backgrounds (light content) — DEFAULT
-//   onesign-lynx-icon-light.svg   — icon for light backgrounds (dark content)
-//   onesign-lynx-dark.svg         — full wordmark for dark backgrounds — DEFAULT
-//   onesign-lynx-light.svg        — full wordmark for light backgrounds
+// OneSign – Lynx brand assets live at /public.
+// File names follow the INK COLOUR of the artwork itself, not the background:
+//   onesign-lynx-dark.svg        — dark ink (#393839 + lynx) → use on LIGHT backgrounds
+//   onesign-lynx-light.svg       — white ink + lynx           → use on DARK backgrounds
+//   onesign-lynx-icon-dark.svg   — dark-ink icon              → use on LIGHT backgrounds
+//   onesign-lynx-icon-light.svg  — white-ink icon             → use on DARK backgrounds
 //
-// Defaults target the dark aesthetic the app is converging on. Callers on
-// legacy light-background surfaces can explicitly opt into the dark-content
-// variant via `variant="black"` (wordmark) or `variant="light"` (icon).
+// Callers specify the BACKGROUND the logo sits on via the `variant` prop:
+//   variant="on-dark"  → renders the light-ink file  (default; marketing-first)
+//   variant="on-light" → renders the dark-ink file
 
 const ICON_ASPECT = 468.2 / 422.16; // ~1.109
 const WORDMARK_ASPECT = 2335.32 / 606.17; // ~3.853
 
+type LogoVariant = 'on-dark' | 'on-light';
+
 interface OneSignIconProps {
-  /**
-   * 'dark' = light-content icon for dark backgrounds (default).
-   * 'light' = dark-content icon for light backgrounds.
-   */
+  /** The background the icon sits on. Default: 'on-dark'. */
+  variant?: LogoVariant;
   size?: number;
-  variant?: 'dark' | 'light';
   className?: string;
 }
 
 export function OneSignIcon({
   size = 29,
-  variant = 'dark',
+  variant = 'on-dark',
   className,
 }: OneSignIconProps) {
   const src =
-    variant === 'light'
-      ? '/onesign-lynx-icon-light.svg'
-      : '/onesign-lynx-icon-dark.svg';
+    variant === 'on-light'
+      ? '/onesign-lynx-icon-dark.svg' // dark ink, for light bg
+      : '/onesign-lynx-icon-light.svg'; // white ink, for dark bg
   return (
     <Image
       src={src}
@@ -44,22 +44,21 @@ export function OneSignIcon({
 }
 
 interface OneSignWordmarkProps {
-  /**
-   * 'white' = light wordmark for dark backgrounds (default).
-   * 'black' = dark wordmark for light backgrounds.
-   */
-  variant?: 'white' | 'black';
+  /** The background the wordmark sits on. Default: 'on-dark'. */
+  variant?: LogoVariant;
   height?: number;
   className?: string;
 }
 
 export function OneSignWordmark({
-  variant = 'white',
+  variant = 'on-dark',
   height = 34,
   className,
 }: OneSignWordmarkProps) {
   const src =
-    variant === 'black' ? '/onesign-lynx-light.svg' : '/onesign-lynx-dark.svg';
+    variant === 'on-light'
+      ? '/onesign-lynx-dark.svg' // dark ink, for light bg
+      : '/onesign-lynx-light.svg'; // white ink, for dark bg
   return (
     <Image
       src={src}
