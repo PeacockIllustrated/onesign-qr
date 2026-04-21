@@ -197,7 +197,7 @@ The largest H2 work area. Three sides: customer-facing (the org buying merchandi
 
 Inside the dashboard, browsed and purchased by the active org:
 
-- Category filter (NFC cards, review boards, table talkers, window decals, badges).
+- Category filter (NFC cards, review boards, table talkers, window decals, badges, business cards).
 - Product detail with variants (size, colour, quantity) and a **live preview** showing the product with the org's logo and a selected bio page's URL or QR baked in.
 - Checkout via **Stripe Checkout** (hosted, not custom). OneSign is the seller of record; no Stripe Connect.
 - **Stripe Tax** for automatic tax calculation. Shipping rates configurable per product.
@@ -223,7 +223,38 @@ Inside the dashboard, browsed and purchased by the active org:
 - No subscription-billed shop products. One-off purchases only. (Subscription billing for the Lynx app tier system is a separate feature, implemented alongside Stripe integration.)
 - No product reviews / UGC ratings on shop products.
 
-### 4.4 Super-admin dashboard (`/admin`)
+#### 4.3.4 Business card generator
+
+A lightweight customization flow within the shopfront for designing and ordering business cards.
+
+**Designer component (part of product detail):**
+- Real-time live preview showing the business card front and back.
+- Customizable fields: organisation logo (from org profile), member name (from user profile), title, direct email, phone, website, QR code or NFC link (optional, with size slider).
+- Layout templates (horizontal, vertical, stacked, compact, minimal).
+- Colour picker for card background, text, accents; branding template pre-fills from org's colour scheme.
+- Font selection (limited set: 3–4 professional fonts).
+
+**Ordering:**
+- Quantity variants (250, 500, 1000, 2500).
+- Finish options (gloss, matte, velvet).
+- Stock variants per org (bulk delivery to org address, stored; not individual student/employee handoff).
+- Same Stripe Checkout flow as other shopfront items.
+
+**Customization model integration:**
+- `shop_product_customizations` entries for: `logo` (org profile), `member_name`, `title`, `email`, `phone`, `website`, `qr_code_url` (optional managed link), `layout_template`, `color_scheme`, `finish_option`.
+- Live preview rendering uses the same data to generate a front-and-back card SVG in real-time.
+
+**Order fulfillment:**
+- Business cards follow the same kanban fulfilment flow as other merchandise: new → in production → shipped → delivered.
+- Physical supplier relationship required (print-on-demand or bulk printer) before Release 2.0.
+- Post-purchase: org receives an order confirmation email; when marked shipped, a delivery email with a tracking number (if applicable).
+
+**Non-goals for initial launch:**
+- No variable data per individual (e.g., each employee's name auto-filled across a bulk order) — static design per order in H2. Revisit in H3.
+- No file upload formats other than logo-from-org-profile.
+- No digital proofing workflow (org orders, proofs are auto-approved; manual review is a future SLA upgrade).
+
+### 4.5 Super-admin dashboard (`/admin`)
 
 A separate area of the application, only accessible to users whose `user_id` exists in `platform_admins`. Completely different information architecture from the org-facing app.
 
@@ -282,6 +313,7 @@ Phase 2 — H2 (shopfront depends on super-admin shell)
         ├─ Customer-side /app/shop + product detail + live preview
         ├─ Stripe Checkout + Stripe Tax (one-off shop purchases)
         ├─ Stripe Billing subscription for Lynx app tier (Free → Pro upgrade flow)
+        ├─ Business card generator (real-time preview, layout templates, customization flow)
         ├─ Post-purchase emails
         └─ Fulfilment kanban in super-admin
 ```
