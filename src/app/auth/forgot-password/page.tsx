@@ -108,7 +108,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <OneSignIcon size={40} />
+            <OneSignIcon size={48} variant="light" />
           </div>
           <CardTitle>Forgot password</CardTitle>
           <CardDescription>

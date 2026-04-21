@@ -33,7 +33,7 @@ export function AppSidebar({ userEmail, children }: AppSidebarProps) {
       {/* Logo */}
       <div className="h-16 flex items-center px-5 border-b border-border">
         <Link href="/app" className="flex items-center" onClick={closeSidebar}>
-          <OneSignWordmark variant="black" height={22} />
+          <OneSignWordmark variant="black" height={26} />
         </Link>
       </div>
 
@@ -90,7 +90,7 @@ export function AppSidebar({ userEmail, children }: AppSidebarProps) {
           <Menu className="h-5 w-5" />
         </button>
         <Link href="/app" className="flex items-center ml-3">
-          <OneSignWordmark variant="black" height={18} />
+          <OneSignWordmark variant="black" height={22} />
         </Link>
       </div>
 

@@ -8,7 +8,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <OneSignWordmark height={24} />
+          <OneSignWordmark variant="black" height={29} />
           <nav className="flex items-center gap-4">
             <Link
               href="/auth/login"
@@ -60,7 +60,7 @@ export default function LandingPage() {
                 description="Change where your QR points without reprinting. Perfect for campaigns and seasonal content."
               />
               <FeatureCard
-                icon={<OneSignIcon size={20} />}
+                icon={<OneSignIcon size={24} variant="light" />}
                 title="Print ready"
                 description="Export as SVG, PNG, or PDF. Multiple sizes with proper quiet zones for reliable scanning."
               />
@@ -102,7 +102,7 @@ export default function LandingPage() {
       <footer className="border-t border-border">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <OneSignWordmark height={18} />
+            <OneSignWordmark variant="black" height={22} />
             <p className="text-sm text-muted-foreground">
               Built for durability. QR codes that work years from now.
             </p>
