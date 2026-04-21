@@ -1,43 +1,45 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Link2, QrCode, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Link2, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
   Button,
   Input,
   Label,
-  Select,
   Card,
   CardHeader,
   CardTitle,
   CardContent,
   useToast,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
 } from '@/components/ui';
+import { CarrierCard } from '@/components/qr/carrier-card';
 import { QRPreview } from '@/components/qr/qr-preview';
 import { StylePanel } from '@/components/qr/style-panel';
 import { validateUrl } from '@/lib/security/url-validator';
-import { QR_DEFAULTS, ERROR_CORRECTION_LEVELS } from '@/lib/constants';
-import type { QRStyleConfig, ErrorCorrectionLevel } from '@/types/qr';
-import type { ModuleShape, EyeShape } from '@/lib/qr/shapes';
+import { QR_DEFAULTS } from '@/lib/constants';
+import type { QRStyleConfig, QRCarrier } from '@/types/qr';
 
-export default function NewQRPage() {
+export default function CreateLinkPage() {
   const router = useRouter();
+  const search = useSearchParams();
   const { addToast } = useToast();
   const supabase = createClient();
 
+  // Prefill destination URL if passed from the direct-qr page
+  const prefilledUrl = search.get('url') ?? '';
+
   // Form state
   const [name, setName] = useState('');
-  const [mode, setMode] = useState<'managed' | 'direct'>('managed');
-  const [destinationUrl, setDestinationUrl] = useState('');
+  const [destinationUrl, setDestinationUrl] = useState(prefilledUrl);
   const [slug, setSlug] = useState('');
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
+  const [nfcEnabled, setNfcEnabled] = useState(false);
+
+  // Plan state (fetched on mount)
+  const [plan, setPlan] = useState<'free' | 'pro'>('free');
 
   // Style state
   const [style, setStyle] = useState<QRStyleConfig>({
@@ -52,9 +54,20 @@ export default function NewQRPage() {
     logoSizeRatio: QR_DEFAULTS.DEFAULT_LOGO_RATIO,
   });
 
-  // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
+
+  // Fetch current org plan on mount
+  useEffect(() => {
+    fetch('/api/org/current-plan')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.plan === 'pro') setPlan('pro');
+      })
+      .catch(() => {
+        // Leave plan as 'free' on error — Pro features stay gated
+      });
+  }, []);
 
   // Validate URL on change
   useEffect(() => {
@@ -62,15 +75,15 @@ export default function NewQRPage() {
       setUrlError(null);
       return;
     }
-
     const result = validateUrl(destinationUrl);
     setUrlError(result.isValid ? null : result.error || 'Invalid URL');
   }, [destinationUrl]);
 
-  // Generate preview URL
-  const previewUrl = mode === 'managed'
-    ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://example.com'}/r/${slug || 'preview'}`
-    : destinationUrl;
+  const previewUrl =
+    `${process.env.NEXT_PUBLIC_APP_URL || 'https://example.com'}/r/${slug || 'preview'}`;
+
+  // Derive carrier intent from toggled sections
+  const carrier: QRCarrier = nfcEnabled && plan === 'pro' ? 'both' : 'qr';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,65 +92,58 @@ export default function NewQRPage() {
       addToast({ title: 'Please fill in all required fields', variant: 'error' });
       return;
     }
-
     if (urlError) {
       addToast({ title: 'Please fix the URL error', variant: 'error' });
       return;
     }
 
     setIsLoading(true);
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const res = await fetch('/api/qr', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          mode: 'managed',
+          destination_url: destinationUrl,
+          slug: slug || undefined,
+          carrier,
+          analytics_enabled: analyticsEnabled,
+          style: {
+            foreground_color: style.foregroundColor,
+            background_color: style.backgroundColor,
+            error_correction: style.errorCorrection,
+            quiet_zone: style.quietZone,
+            module_shape: style.moduleShape,
+            eye_shape: style.eyeShape,
+          },
+        }),
+      });
 
-      // Generate slug if managed mode and not provided
-      let finalSlug = slug;
-      if (mode === 'managed' && !finalSlug) {
-        // Generate a random 8-character slug
-        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-        finalSlug = Array.from({ length: 8 }, () =>
-          chars.charAt(Math.floor(Math.random() * chars.length))
-        ).join('');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (body.error === 'pro_plan_required') {
+          addToast({
+            title: 'NFC chips require a Pro plan',
+            description: 'Upgrade at /pricing to enable NFC carriers.',
+            variant: 'error',
+          });
+        } else {
+          addToast({
+            title: 'Failed to create Link',
+            description: body.error || 'Unknown error',
+            variant: 'error',
+          });
+        }
+        return;
       }
 
-      // Create QR code
-      const { data: qr, error: createError } = await supabase
-        .from('qr_codes')
-        .insert({
-          owner_id: user.id,
-          name,
-          mode,
-          slug: mode === 'managed' ? finalSlug : null,
-          destination_url: destinationUrl,
-          analytics_enabled: mode === 'managed' ? analyticsEnabled : false,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      // Update style
-      const { error: styleError } = await supabase
-        .from('qr_styles')
-        .update({
-          foreground_color: style.foregroundColor,
-          background_color: style.backgroundColor,
-          error_correction: style.errorCorrection,
-          quiet_zone: style.quietZone,
-          module_shape: style.moduleShape,
-          eye_shape: style.eyeShape,
-        })
-        .eq('qr_id', qr.id);
-
-      if (styleError) throw styleError;
-
-      addToast({ title: 'QR code created!', variant: 'success' });
-      router.push(`/app/qr/${qr.id}`);
+      const { id } = await res.json();
+      addToast({ title: 'Link created!', variant: 'success' });
+      router.push(`/app/qr/${id}`);
     } catch (error: any) {
-      console.error('Error creating QR:', error);
       addToast({
-        title: 'Failed to create QR code',
+        title: 'Failed to create Link',
         description: error.message,
         variant: 'error',
       });
@@ -148,7 +154,6 @@ export default function NewQRPage() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      {/* Header */}
       <div className="mb-8">
         <Link
           href="/app"
@@ -157,27 +162,26 @@ export default function NewQRPage() {
           <ArrowLeft className="h-4 w-4" />
           back to dashboard
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Create new QR code</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Create a Link</h1>
         <p className="text-sm text-zinc-400 mt-1">
-          Configure your QR code settings and style
+          Manage one destination across QR codes, NFC chips, and more.
         </p>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left column - Form */}
           <div className="space-y-6">
-            {/* Basic Info */}
+            {/* Link details */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">basic info</CardTitle>
+                <CardTitle className="text-base">Link details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">name *</Label>
+                  <Label htmlFor="name">Name *</Label>
                   <Input
                     id="name"
-                    placeholder="e.g., Menu QR, Store Window"
+                    placeholder="e.g., Spring Menu, Counter Card"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -185,32 +189,7 @@ export default function NewQRPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="mode">qr type</Label>
-                  <Select
-                    id="mode"
-                    value={mode}
-                    onChange={(e) => setMode(e.target.value as 'managed' | 'direct')}
-                  >
-                    <option value="managed">Managed Link (recommended)</option>
-                    <option value="direct">Direct URL</option>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {mode === 'managed'
-                      ? 'QR points to our redirect service. You can change the destination anytime.'
-                      : 'QR encodes the full URL directly. Cannot be changed after printing.'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Destination */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">destination</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="url">destination url *</Label>
+                  <Label htmlFor="url">Destination URL *</Label>
                   <div className="relative">
                     <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -232,81 +211,97 @@ export default function NewQRPage() {
                   )}
                 </div>
 
-                {mode === 'managed' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">custom slug (optional)</Label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground shrink-0">
-                        /r/
-                      </span>
-                      <Input
-                        id="slug"
-                        placeholder="auto-generated"
-                        value={slug}
-                        onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                        pattern="^[a-z0-9]+(-[a-z0-9]+)*$"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Leave empty to auto-generate. Use lowercase letters, numbers, and hyphens.
-                    </p>
-                  </div>
-                )}
-
-                {mode === 'managed' && (
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Custom slug (optional)</Label>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="analytics"
-                      checked={analyticsEnabled}
-                      onChange={(e) => setAnalyticsEnabled(e.target.checked)}
-                      className="rounded border-input"
+                    <span className="text-sm text-muted-foreground shrink-0">/r/</span>
+                    <Input
+                      id="slug"
+                      placeholder="auto-generated"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                      pattern="^[a-z0-9]+(-[a-z0-9]+)*$"
                     />
-                    <Label htmlFor="analytics" className="text-sm font-normal cursor-pointer">
-                      Enable scan analytics
-                    </Label>
                   </div>
-                )}
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty to auto-generate. Lowercase letters, numbers, and hyphens only.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="analytics"
+                    checked={analyticsEnabled}
+                    onChange={(e) => setAnalyticsEnabled(e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  <Label htmlFor="analytics" className="text-sm font-normal cursor-pointer">
+                    Enable scan analytics
+                  </Label>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Style */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">style</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <StylePanel style={style} onChange={setStyle} />
-              </CardContent>
-            </Card>
+            {/* QR carrier */}
+            <CarrierCard variant="qr">
+              <StylePanel style={style} onChange={setStyle} />
+            </CarrierCard>
+
+            {/* NFC carrier */}
+            <CarrierCard
+              variant="nfc"
+              plan={plan}
+              enabled={nfcEnabled}
+              onEnabledChange={setNfcEnabled}
+            >
+              <div className="space-y-3">
+                <p className="text-sm text-zinc-400">
+                  Order pre-programmed NFC chips for this Link. We&apos;ll print and programme
+                  them before dispatch — you change the destination from your dashboard, any time.
+                </p>
+                <Link
+                  href={`/app/shop?category=nfc_card`}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-lynx-400 hover:text-lynx-300"
+                >
+                  View NFC chip options
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
+            </CarrierCard>
+
+            <div className="pt-2 text-xs text-muted-foreground">
+              Need a one-off QR instead?{' '}
+              <Link
+                href={destinationUrl ? `/app/qr/direct/new?url=${encodeURIComponent(destinationUrl)}` : `/app/qr/direct/new`}
+                className="text-lynx-400 hover:text-lynx-300 underline"
+              >
+                Generate a direct QR
+              </Link>
+            </div>
           </div>
 
-          {/* Right column - Preview */}
           <div className="lg:sticky lg:top-8 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">preview</CardTitle>
+                <CardTitle className="text-base">Preview</CardTitle>
               </CardHeader>
               <CardContent>
-                <QRPreview
-                  data={previewUrl || 'https://example.com'}
-                  style={style}
-                />
+                <QRPreview data={previewUrl || 'https://example.com'} style={style} />
                 <p className="mt-4 text-xs text-center text-muted-foreground">
-                  {mode === 'managed' ? 'QR encodes your managed link' : 'QR encodes the destination URL directly'}
+                  Encodes your managed Link URL
                 </p>
               </CardContent>
             </Card>
 
-            {/* Submit */}
             <div className="flex gap-4">
               <Link href="/app" className="flex-1">
                 <Button type="button" variant="outline" className="w-full">
-                  cancel
+                  Cancel
                 </Button>
               </Link>
               <Button type="submit" className="flex-1" disabled={isLoading || !!urlError}>
-                {isLoading ? 'creating...' : 'create qr code'}
+                {isLoading ? 'Creating…' : 'Create Link'}
               </Button>
             </div>
           </div>
