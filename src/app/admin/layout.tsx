@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isPlatformAdmin } from '@/lib/admin/is-platform-admin';
-import { AdminNav } from '@/components/admin/admin-nav';
+import { AdminSidebar } from '@/components/admin/admin-sidebar';
 
 export default async function AdminLayout({
   children,
@@ -32,13 +32,11 @@ export default async function AdminLayout({
   // Next.js only allows cookie writes from Route Handlers and Server Actions.
   // The admin session cookie gets its 30-minute window from when POST
   // /api/admin/session issues it; it does not roll forward on activity in
-  // this iteration. A future change can add rolling refresh from middleware
-  // (which CAN write response cookies) if needed.
+  // this iteration.
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav userEmail={user.email ?? ''} />
-      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
-    </div>
+    <AdminSidebar userEmail={user.email ?? ''}>
+      <div className="max-w-6xl mx-auto px-6 py-8">{children}</div>
+    </AdminSidebar>
   );
 }
