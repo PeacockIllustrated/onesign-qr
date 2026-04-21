@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { Plus, ExternalLink, BarChart3, Activity, Hash, Link2, Eye } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { Button, Card, CardContent, Badge, OneSignIcon } from '@/components/ui';
+import { Button, Card, CardContent, Badge } from '@/components/ui';
 import { formatDate, formatNumber } from '@/lib/utils';
-import { QRDeleteButton } from '@/components/qr/qr-delete-button';
 import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
 import type { BioLinkTheme } from '@/types/bio';
+import { QRListSection } from './qr-list-section';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -37,13 +37,13 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Dashboard</h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Manage and track your QR codes
+            Manage and track your Links
           </p>
         </div>
         <Link href="/app/new">
           <Button className="rounded-lg">
             <Plus className="h-4 w-4 mr-2" />
-            Create QR
+            Create Link
           </Button>
         </Link>
       </div>
@@ -86,19 +86,23 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* QR Code Grid */}
+      {/* Links Grid */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium tracking-tight text-zinc-100">QR Codes</h2>
+        <h2 className="text-lg font-medium tracking-tight text-zinc-100">Your Links</h2>
       </div>
-      {!qrCodes || qrCodes.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {qrCodes.map((qr) => (
-            <QRCard key={qr.id} qr={qr} />
-          ))}
-        </div>
-      )}
+      <QRListSection
+        qrCodes={(qrCodes ?? []).map((qr: any) => ({
+          id: qr.id,
+          name: qr.name,
+          mode: qr.mode,
+          carrier: qr.carrier ?? 'qr',
+          slug: qr.slug,
+          destination_url: qr.destination_url,
+          is_active: qr.is_active,
+          total_scans: qr.total_scans ?? 0,
+          created_at: qr.created_at,
+        }))}
+      />
     </div>
   );
 }
@@ -117,29 +121,6 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
-}
-
-function EmptyState() {
-  return (
-    <Card className="p-12 rounded-xl">
-      <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-800 mb-4">
-          <OneSignIcon size={38} variant="on-dark" />
-        </div>
-        <h2 className="text-lg font-medium mb-2 text-zinc-100">No QR codes yet</h2>
-        <p className="text-zinc-400 mb-6 max-w-sm mx-auto">
-          Create your first QR code to get started. Managed QR codes can be
-          updated without reprinting.
-        </p>
-        <Link href="/app/new">
-          <Button className="rounded-lg">
-            <Plus className="h-4 w-4 mr-2" />
-            Create your first QR
-          </Button>
-        </Link>
-      </div>
     </Card>
   );
 }
@@ -233,57 +214,3 @@ function BioPageCard({ page }: { page: any }) {
   );
 }
 
-function QRCard({ qr }: { qr: any }) {
-  const redirectUrl = qr.mode === 'managed'
-    ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/r/${qr.slug}`
-    : null;
-
-  return (
-    <Link href={`/app/qr/${qr.id}`}>
-      <Card className="hover:border-lynx-400/30 hover:shadow-[0_8px_32px_-8px_rgba(88,163,134,0.15)] transition-all cursor-pointer rounded-xl group">
-        <CardContent className="p-5">
-          {/* Preview placeholder */}
-          <div className="aspect-square bg-zinc-800 rounded-lg mb-4 flex items-center justify-center group-hover:bg-zinc-800/80 transition-colors">
-            <OneSignIcon size={58} variant="on-dark" className="opacity-25" />
-          </div>
-
-          {/* Info */}
-          <div className="space-y-2.5">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium truncate text-zinc-50">{qr.name}</h3>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Badge variant={qr.is_active ? 'success' : 'secondary'} className="rounded-md">
-                  {qr.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-                <QRDeleteButton qrId={qr.id} qrName={qr.name} />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <Badge variant="outline" className="rounded-md">
-                {qr.mode}
-              </Badge>
-              {qr.analytics_enabled && (
-                <span className="flex items-center gap-1">
-                  <BarChart3 className="h-3 w-3" />
-                  {formatNumber(qr.total_scans)} scans
-                </span>
-              )}
-            </div>
-
-            {redirectUrl && (
-              <p className="text-xs text-zinc-500 truncate flex items-center gap-1">
-                <ExternalLink className="h-3 w-3 shrink-0" />
-                {redirectUrl}
-              </p>
-            )}
-
-            <p className="text-xs text-zinc-500">
-              Created {formatDate(qr.created_at)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
