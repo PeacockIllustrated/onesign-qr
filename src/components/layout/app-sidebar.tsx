@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Plus, Link2, Menu, X, Users, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Plus, Link2, Menu, X, Users, ShoppingBag, QrCode } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { OneSignWordmark } from '@/components/ui';
 import { OrgSwitcher } from '@/components/org/org-switcher';
@@ -11,7 +11,8 @@ import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/app', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/app/new', icon: Plus, label: 'Create QR' },
+  { href: '/app/new', icon: Plus, label: 'Create Link' },
+  { href: '/app/qr/direct/new', icon: QrCode, label: 'One-off QR' },
   { href: '/app/bio', icon: Link2, label: 'Bio Pages' },
   { href: '/app/settings/team', icon: Users, label: 'Team' },
   { href: '/app/shop', icon: ShoppingBag, label: 'Shop' },
