@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Plus, ExternalLink, BarChart3, Activity, Hash, Link2, Eye } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { Button, Card, CardContent, Badge } from '@/components/ui';
-import { formatDate, formatNumber } from '@/lib/utils';
+import { formatNumber } from '@/lib/utils';
 import { THEME_CONFIGS } from '@/lib/bio/theme-definitions';
 import type { BioLinkTheme } from '@/types/bio';
 import { QRListSection } from './qr-list-section';

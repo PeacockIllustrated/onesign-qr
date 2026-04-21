@@ -1,17 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, Copy, Download, BarChart3, Clock, Globe } from 'lucide-react';
+import { ArrowLeft, BarChart3 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   Badge,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
 } from '@/components/ui';
 import { QRDetailClient } from '@/components/qr/qr-detail-client';
 import { CarrierBadge } from '@/components/qr/carrier-badge';
