@@ -4,6 +4,7 @@ import { validateUrl } from '@/lib/security/url-validator';
 import { checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { updateQRSchema, updateStyleSchema, isValidUUID } from '@/validations/qr';
 import { writeAuditLog, determineUpdateAction } from '@/lib/audit';
+import { getActiveOrgPlan } from '@/lib/org/get-active-org-plan';
 
 /**
  * GET /api/qr/[id] - Get a specific QR code
@@ -142,6 +143,20 @@ export async function PATCH(
       if (parsed.data.is_active !== undefined) qrUpdate.is_active = parsed.data.is_active;
       if (parsed.data.analytics_enabled !== undefined) {
         qrUpdate.analytics_enabled = parsed.data.analytics_enabled;
+      }
+
+      if (parsed.data.carrier !== undefined) {
+        // Pro-gate: only Pro orgs may set carrier != 'qr'
+        if (parsed.data.carrier !== 'qr') {
+          const plan = await getActiveOrgPlan(supabase, user.id);
+          if (plan !== 'pro') {
+            return NextResponse.json(
+              { error: 'pro_plan_required' },
+              { status: 403 }
+            );
+          }
+        }
+        qrUpdate.carrier = parsed.data.carrier;
       }
     }
 
