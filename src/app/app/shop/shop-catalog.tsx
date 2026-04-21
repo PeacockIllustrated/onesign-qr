@@ -48,7 +48,7 @@ export function ShopCatalog({ products }: ShopCatalogProps) {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="min-h-screen bg-zinc-950">
       {/* ─── HERO ─────────────────────────────────────────────── */}
       <section
         className="relative overflow-hidden bg-zinc-900"
@@ -68,7 +68,7 @@ export function ShopCatalog({ products }: ShopCatalogProps) {
           className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full opacity-20 blur-3xl"
           style={{
             background:
-              'radial-gradient(circle, rgba(251,191,36,0.6) 0%, transparent 70%)',
+              'radial-gradient(circle, rgba(88,163,134,0.6) 0%, transparent 70%)',
           }}
           aria-hidden="true"
         />
@@ -76,7 +76,7 @@ export function ShopCatalog({ products }: ShopCatalogProps) {
           className="absolute -bottom-20 right-0 w-[320px] h-[320px] rounded-full opacity-10 blur-3xl"
           style={{
             background:
-              'radial-gradient(circle, rgba(251,191,36,0.5) 0%, transparent 70%)',
+              'radial-gradient(circle, rgba(88,163,134,0.5) 0%, transparent 70%)',
           }}
           aria-hidden="true"
         />
@@ -197,19 +197,17 @@ function FilterChip({ label, active, onClick, count }: FilterChipProps) {
       onClick={onClick}
       aria-pressed={active}
       className={[
-        'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2',
+        'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lynx-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
         active
-          ? 'bg-zinc-900 text-white shadow-sm'
-          : 'bg-white text-zinc-600 border border-zinc-200 hover:border-zinc-400 hover:text-zinc-900',
+          ? 'bg-lynx-500 text-zinc-950'
+          : 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-lynx-400/40 hover:text-zinc-100',
       ].join(' ')}
     >
       {label}
       <span
         className={[
           'text-xs rounded-full px-1.5 py-0.5 font-semibold tabular-nums leading-none',
-          active
-            ? 'bg-white/20 text-white'
-            : 'bg-zinc-100 text-zinc-500',
+          active ? 'bg-zinc-950/20 text-zinc-950' : 'bg-zinc-800 text-zinc-500',
         ].join(' ')}
         aria-hidden="true"
       >
@@ -232,17 +230,17 @@ function EmptyState({ filtered, categoryLabel, onReset }: EmptyStateProps) {
     <div className="flex flex-col items-center justify-center py-20 md:py-28 text-center">
       {/* Icon */}
       <div className="relative mb-6">
-        <div className="w-20 h-20 rounded-2xl bg-white border border-zinc-200 shadow-sm flex items-center justify-center">
-          <PackageSearch className="h-9 w-9 text-zinc-300" aria-hidden="true" />
+        <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+          <PackageSearch className="h-9 w-9 text-zinc-700" aria-hidden="true" />
         </div>
         {/* Decorative dots */}
         <div className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-lynx-400" aria-hidden="true" />
-        <div className="absolute -bottom-1 -left-2 w-2 h-2 rounded-full bg-zinc-300" aria-hidden="true" />
+        <div className="absolute -bottom-1 -left-2 w-2 h-2 rounded-full bg-zinc-700" aria-hidden="true" />
       </div>
 
       {filtered ? (
         <>
-          <h2 className="text-lg font-semibold text-zinc-900 mb-2">
+          <h2 className="text-lg font-semibold text-zinc-100 mb-2">
             Nothing in {categoryLabel} yet
           </h2>
           <p className="text-sm text-zinc-500 max-w-xs leading-relaxed mb-6">
@@ -252,14 +250,14 @@ function EmptyState({ filtered, categoryLabel, onReset }: EmptyStateProps) {
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 text-white text-sm font-medium hover:bg-zinc-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-lynx-500 text-zinc-950 text-sm font-semibold hover:bg-lynx-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lynx-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           >
             Browse all products
           </button>
         </>
       ) : (
         <>
-          <h2 className="text-lg font-semibold text-zinc-900 mb-2">
+          <h2 className="text-lg font-semibold text-zinc-100 mb-2">
             The shop is being stocked
           </h2>
           <p className="text-sm text-zinc-500 max-w-xs leading-relaxed">
