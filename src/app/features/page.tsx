@@ -65,6 +65,23 @@ function Bullet({ icon, title, body }: BulletProps) {
   );
 }
 
+function LightBullet({ icon, title, body }: BulletProps) {
+  return (
+    <li className="flex gap-4">
+      <span
+        className="shrink-0 mt-0.5 flex items-center justify-center h-9 w-9 rounded-lg bg-white border border-zinc-200 text-lynx-600"
+        aria-hidden="true"
+      >
+        {icon}
+      </span>
+      <div>
+        <p className="text-zinc-900 font-medium">{title}</p>
+        <p className="text-sm text-zinc-600 leading-relaxed mt-0.5">{body}</p>
+      </div>
+    </li>
+  );
+}
+
 /* ─── Roadmap item ──────────────────────────────────────────────── */
 
 interface RoadmapItemProps {
@@ -326,46 +343,46 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* ── Teams ───────────────────────────────────────────────── */}
+      {/* ── Teams (light section) ───────────────────────────────── */}
       <section
         id="teams"
-        className="border-t border-zinc-800 bg-zinc-950 py-20 md:py-24 scroll-mt-20"
+        className="bg-zinc-50 border-y border-zinc-200 py-20 md:py-24 scroll-mt-20"
       >
         <div className="max-w-6xl mx-auto px-5 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
             <div>
-              <Eyebrow className="mb-4">
+              <Eyebrow tone="light" className="mb-4">
                 <Users2
                   className="h-3.5 w-3.5 inline mr-1.5 -mt-0.5"
                   aria-hidden="true"
                 />
                 Team Accounts
               </Eyebrow>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-50 mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 mb-4">
                 Run a business, not a shared password.
               </h2>
-              <p className="text-zinc-400 leading-relaxed">
+              <p className="text-zinc-600 leading-relaxed">
                 Multi-user organisations with role-based access. Invite
                 colleagues, set permissions, keep ownership tidy.
               </p>
 
               <ul className="mt-10 space-y-6">
-                <Bullet
+                <LightBullet
                   icon={<InfinityIcon className="h-5 w-5" aria-hidden="true" />}
                   title="Multi-user organisations"
                   body="Every customer has a personal org, plus as many team orgs as the business needs."
                 />
-                <Bullet
+                <LightBullet
                   icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />}
                   title="Role-based access"
                   body="Owner, admin, member. Permissions are enforced in the database with row-level security."
                 />
-                <Bullet
+                <LightBullet
                   icon={<UserPlus className="h-5 w-5" aria-hidden="true" />}
                   title="Email invitations"
                   body="Send token-based invites; accept on signup or from an existing account."
                 />
-                <Bullet
+                <LightBullet
                   icon={<CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
                   title="Review funnels (Pro)"
                   body="Route 5★ customers to Google, and catch 1–3★ feedback privately before it goes public."
@@ -373,10 +390,10 @@ export default function FeaturesPage() {
               </ul>
             </div>
 
-            {/* Team mock */}
+            {/* Team mock — light variant */}
             <div
               aria-hidden="true"
-              className="relative rounded-3xl border border-zinc-800 bg-zinc-900 p-6 md:p-8"
+              className="relative rounded-3xl border border-zinc-200 bg-white p-6 md:p-8 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.08)]"
             >
               <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">
                 Members
@@ -390,27 +407,27 @@ export default function FeaturesPage() {
                 ].map((m, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-zinc-800 bg-zinc-950"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-zinc-200 bg-zinc-50"
                   >
                     <div
                       className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold ${
                         m.tint === 'lynx'
-                          ? 'bg-lynx-500/20 text-lynx-400 border border-lynx-400/30'
+                          ? 'bg-lynx-100 text-lynx-700 border border-lynx-400/40'
                           : m.tint === 'muted'
-                            ? 'bg-zinc-900 text-zinc-600 border border-dashed border-zinc-700'
-                            : 'bg-zinc-800 text-zinc-300'
+                            ? 'bg-white text-zinc-400 border border-dashed border-zinc-300'
+                            : 'bg-zinc-100 text-zinc-700'
                       }`}
                     >
                       {m.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-200 font-medium truncate">
+                      <p className="text-sm text-zinc-900 font-medium truncate">
                         {m.name}
                       </p>
                       <p className="text-xs text-zinc-500">{m.role}</p>
                     </div>
                     {m.tint === 'muted' && (
-                      <span className="text-[10px] uppercase tracking-wide text-zinc-600 border border-zinc-800 rounded px-2 py-0.5">
+                      <span className="text-[10px] uppercase tracking-wide text-zinc-500 border border-zinc-300 rounded px-2 py-0.5">
                         Pending
                       </span>
                     )}
@@ -425,7 +442,7 @@ export default function FeaturesPage() {
       {/* ── Shop ────────────────────────────────────────────────── */}
       <section
         id="shop"
-        className="border-t border-zinc-800 bg-zinc-900/40 py-20 md:py-24 scroll-mt-20"
+        className="bg-zinc-900/40 py-20 md:py-24 scroll-mt-20"
       >
         <div className="max-w-6xl mx-auto px-5 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
