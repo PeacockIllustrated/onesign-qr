@@ -5,6 +5,7 @@ import { checkQrCreateLimit, checkApiLimit, getRateLimitHeaders } from '@/lib/se
 import { createQRSchema } from '@/validations/qr';
 import { writeAuditLog } from '@/lib/audit';
 import { getPersonalOrgId } from '@/lib/org/get-personal-org';
+import { getActiveOrgPlan } from '@/lib/org/get-active-org-plan';
 
 const MAX_SLUG_RETRIES = 3;
 
@@ -41,7 +42,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, mode, destination_url, slug, analytics_enabled, style } = parsed.data;
+    const { name, mode, destination_url, slug, carrier, analytics_enabled, style } = parsed.data;
+
+    // Pro-gate: only Pro orgs may set carrier != 'qr'
+    if (carrier !== 'qr') {
+      const plan = await getActiveOrgPlan(supabase, user.id);
+      if (plan !== 'pro') {
+        return NextResponse.json(
+          { error: 'pro_plan_required' },
+          { status: 403 }
+        );
+      }
+    }
 
     // Validate URL with DNS resolution (SSRF prevention)
     const urlValidation = await validateUrlStrict(destination_url);
@@ -82,6 +94,7 @@ export async function POST(request: NextRequest) {
           name,
           mode,
           slug: mode === 'managed' ? finalSlug : null,
+          carrier,
           destination_url: urlValidation.normalizedUrl,
           analytics_enabled: mode === 'managed' ? analytics_enabled : false,
         })
