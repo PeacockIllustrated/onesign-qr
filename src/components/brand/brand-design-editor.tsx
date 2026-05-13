@@ -15,7 +15,17 @@ import {
 import { renderTemplate, isDoubleSidedTemplate } from '@/components/brand/templates';
 import { FontLoader } from '@/components/brand/font-loader';
 import { Card3dViewer } from '@/components/brand/card-3d-viewer';
-import type { BrandDesignHydrated, BrandPerson, BrandDesignConfig, AvatarShape, CardBackStyle } from '@/types/brand';
+import { BRAND_TEMPLATES } from '@/lib/brand/templates';
+import type {
+  BrandDesignHydrated,
+  BrandPerson,
+  BrandDesignConfig,
+  AvatarShape,
+  CardBackStyle,
+  Density,
+  DividerStyle,
+  CornerStyle,
+} from '@/types/brand';
 
 interface Props {
   design: BrandDesignHydrated;
@@ -27,23 +37,33 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
   const { addToast } = useToast();
 
   const [name, setName] = useState(initial.name);
+  const [templateId, setTemplateId] = useState(initial.template_id);
   const [personId, setPersonId] = useState<string | null>(initial.person_id);
   const [config, setConfig] = useState<BrandDesignConfig>(initial.config ?? {});
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Live preview uses the latest config + person picked
+  const sameKindTemplates = BRAND_TEMPLATES.filter((t) => t.kind === initial.kind);
+
+  // Live preview uses the latest config + person picked.
+  // The photo URL is derived from the chosen person's storage path so swapping
+  // person in the dropdown updates the avatar immediately — without this the
+  // preview always showed initials or no image until a hard refresh.
   const previewDesign: BrandDesignHydrated = useMemo(() => {
     const newPerson = personId ? people.find((p) => p.id === personId) ?? null : null;
+    const newPhotoUrl = newPerson?.photo_storage_path
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/brand-assets/${newPerson.photo_storage_path}?t=${new Date(newPerson.updated_at).getTime()}`
+      : null;
     return {
       ...initial,
       name,
+      template_id: templateId,
       person_id: personId,
       person: newPerson,
-      person_photo_url: null,
+      person_photo_url: newPhotoUrl,
       config,
     };
-  }, [initial, name, personId, config, people]);
+  }, [initial, name, templateId, personId, config, people]);
 
   async function save() {
     setSaving(true);
@@ -51,7 +71,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
       const res = await fetch(`/api/brand/designs/${initial.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, person_id: personId, config }),
+        body: JSON.stringify({ name, template_id: templateId, person_id: personId, config }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
       addToast({ title: 'Saved', variant: 'success' });
@@ -71,7 +91,15 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ format: 'pdf' }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'PDF generation failed');
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        // Surface the route's phase + details so failures are diagnosable
+        // straight from the toast instead of needing the dev console.
+        const reason = body?.details
+          ? `${body.error ?? 'Export failed'} (${body.phase ?? 'unknown phase'}): ${body.details}`
+          : body?.error ?? `HTTP ${res.status}`;
+        throw new Error(reason);
+      }
       const blob = await res.blob();
       downloadBlob(blob, `${slugify(name)}.pdf`);
       addToast({ title: 'PDF downloaded', variant: 'success' });
@@ -125,9 +153,18 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
   }
 
   async function deleteDesign() {
-    if (!confirm('Delete this design?')) return;
-    const res = await fetch(`/api/brand/designs/${initial.id}`, { method: 'DELETE' });
-    if (res.ok) router.push(`/app/brand-kit/${initial.brand_profile_id}`);
+    if (!confirm(`Delete design "${name}"?`)) return;
+    try {
+      const res = await fetch(`/api/brand/designs/${initial.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.details ?? body?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Design deleted', variant: 'success' });
+      router.push(`/app/brand-kit/${initial.brand_profile_id}`);
+    } catch (err: any) {
+      addToast({ title: 'Delete failed', description: err.message, variant: 'error' });
+    }
   }
 
   return (
@@ -141,7 +178,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
             className="text-2xl font-semibold border-0 bg-transparent px-0 h-auto focus-visible:ring-0"
           />
           <p className="text-sm text-muted-foreground mt-1">
-            {initial.kind === 'business_card' ? 'Business card' : 'Email signature'} · template {initial.template_id}
+            {initial.kind === 'business_card' ? 'Business card' : 'Email signature'} · {sameKindTemplates.find((t) => t.id === templateId)?.name ?? templateId}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -157,6 +194,20 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardContent className="pt-6 space-y-4">
+              <div>
+                <Label className="text-xs">Template</Label>
+                <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+                  {sameKindTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </Select>
+                {sameKindTemplates.find((t) => t.id === templateId)?.description && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {sameKindTemplates.find((t) => t.id === templateId)?.description}
+                  </p>
+                )}
+              </div>
+
               <div>
                 <Label className="text-xs">Person</Label>
                 <Select value={personId ?? ''} onChange={(e) => setPersonId(e.target.value || null)}>
@@ -205,15 +256,15 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                 <Label htmlFor="show-logo" className="cursor-pointer">Show logo</Label>
               </div>
 
-              {/* Card-specific: avatar + back style */}
-              {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) && (
+              {/* Avatar — shown for cards and signatures that can host one */}
+              {(isDoubleSidedTemplate(templateId) || initial.kind === 'email_signature') && (
                 <div className="pt-2 mt-2 border-t border-border space-y-3">
-                  <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Card options</p>
+                  <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Avatar</p>
 
                   <div>
-                    <Label className="text-xs">Avatar shape</Label>
+                    <Label className="text-xs">Shape</Label>
                     <Select
-                      value={config.avatar_shape ?? 'none'}
+                      value={config.avatar_shape ?? (templateId === 'sig-photo-led' ? 'circle' : 'none')}
                       onChange={(e) => setConfig({ ...config, avatar_shape: e.target.value as AvatarShape })}
                     >
                       <option value="none">No avatar</option>
@@ -222,7 +273,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                     </Select>
                   </div>
 
-                  {(config.avatar_shape ?? 'none') !== 'none' && (
+                  {(config.avatar_shape ?? (templateId === 'sig-photo-led' ? 'circle' : 'none')) !== 'none' && (
                     <>
                       <div className="flex items-center gap-2">
                         <input
@@ -241,13 +292,25 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                           onChange={(v) => setConfig({ ...config, avatar_border_color: v })}
                         />
                       )}
+                      {initial.kind === 'email_signature' && !previewDesign.person_photo_url && (
+                        <p className="text-xs text-amber-400/80">
+                          Add a photo to this person on the People tab to populate the avatar.
+                        </p>
+                      )}
                     </>
                   )}
+                </div>
+              )}
+
+              {/* Card-specific: back style */}
+              {initial.kind === 'business_card' && isDoubleSidedTemplate(templateId) && (
+                <div className="pt-2 mt-2 border-t border-border space-y-3">
+                  <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Card back</p>
 
                   <div>
-                    <Label className="text-xs">Back style</Label>
+                    <Label className="text-xs">Style</Label>
                     <Select
-                      value={config.back_style ?? (initial.template_id === 'card-mono' ? 'solid-accent' : 'logo-centered')}
+                      value={config.back_style ?? (templateId === 'card-mono' ? 'solid-accent' : 'logo-centered')}
                       onChange={(e) => setConfig({ ...config, back_style: e.target.value as CardBackStyle })}
                     >
                       <option value="logo-centered">Logo centred</option>
@@ -257,6 +320,103 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                   </div>
                 </div>
               )}
+
+              {/* Layout & visibility — applies to most templates */}
+              <div className="pt-2 mt-2 border-t border-border space-y-3">
+                <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Layout</p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Density</Label>
+                    <Select
+                      value={config.density ?? 'normal'}
+                      onChange={(e) => setConfig({ ...config, density: e.target.value as Density })}
+                    >
+                      <option value="compact">Compact</option>
+                      <option value="normal">Normal</option>
+                      <option value="spacious">Spacious</option>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Divider</Label>
+                    <Select
+                      value={config.divider_style ?? 'pipe'}
+                      onChange={(e) => setConfig({ ...config, divider_style: e.target.value as DividerStyle })}
+                    >
+                      <option value="pipe">Mid-dot ·</option>
+                      <option value="dot">Bullet •</option>
+                      <option value="line">Dash —</option>
+                      <option value="none">None</option>
+                    </Select>
+                  </div>
+                </div>
+
+                {(initial.kind === 'email_signature' || initial.template_id === 'sig-card') && (
+                  <div>
+                    <Label className="text-xs">Corners</Label>
+                    <Select
+                      value={config.corner_style ?? 'rounded'}
+                      onChange={(e) => setConfig({ ...config, corner_style: e.target.value as CornerStyle })}
+                    >
+                      <option value="rounded">Rounded</option>
+                      <option value="sharp">Sharp</option>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {/* Show/hide toggles */}
+              <div className="pt-2 mt-2 border-t border-border space-y-2">
+                <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Show fields</p>
+                <ShowToggle
+                  id="show-pronouns"
+                  label="Pronouns"
+                  checked={config.show_pronouns !== false}
+                  onChange={(v) => setConfig({ ...config, show_pronouns: v })}
+                />
+                <ShowToggle
+                  id="show-mobile"
+                  label="Mobile number"
+                  checked={config.show_mobile !== false}
+                  onChange={(v) => setConfig({ ...config, show_mobile: v })}
+                />
+                {initial.kind === 'email_signature' && (
+                  <>
+                    <ShowToggle
+                      id="show-socials"
+                      label="Social links row"
+                      checked={config.show_socials !== false}
+                      onChange={(v) => setConfig({ ...config, show_socials: v })}
+                    />
+                    <ShowToggle
+                      id="show-calendar-cta"
+                      label="Calendar / booking button"
+                      checked={config.show_calendar_cta !== false}
+                      onChange={(v) => setConfig({ ...config, show_calendar_cta: v })}
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Footer text — extra small line for sustainability statements,
+                  manifesto excerpts, "Member of…" lines, etc. */}
+              <div className="pt-2 mt-2 border-t border-border space-y-2">
+                <Label className="text-xs">
+                  Footer line
+                  {templateId === 'sig-eco' && (
+                    <span className="text-muted-foreground"> (defaults to an eco statement)</span>
+                  )}
+                </Label>
+                <Input
+                  value={config.footer_text ?? ''}
+                  onChange={(e) => setConfig({ ...config, footer_text: e.target.value || undefined })}
+                  placeholder={
+                    templateId === 'sig-eco'
+                      ? '🌱 Please consider the environment before printing this email.'
+                      : 'Optional small text — quote, tagline, member-of statement…'
+                  }
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -294,7 +454,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
             <CardContent className="pt-6">
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">Preview</p>
               <div className="bg-zinc-900/40 border border-border rounded-md p-10 min-h-[340px] flex items-center justify-center">
-                {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) ? (
+                {initial.kind === 'business_card' && isDoubleSidedTemplate(templateId) ? (
                   <Card3dViewer
                     front={renderTemplate(previewDesign, { side: 'front' })}
                     back={renderTemplate(previewDesign, { side: 'back' })}
@@ -312,7 +472,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
               </div>
               {initial.kind === 'business_card' && (
                 <p className="text-xs text-muted-foreground mt-3 text-center">
-                  {isDoubleSidedTemplate(initial.template_id)
+                  {isDoubleSidedTemplate(templateId)
                     ? 'Move cursor to tilt · click the card or the button to flip · the exported PDF is print-ready with 3mm bleed and crop marks.'
                     : 'The exported PDF is print-ready with 3mm bleed and crop marks.'}
                 </p>
@@ -358,6 +518,30 @@ function ColorOverride({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function ShowToggle({
+  id,
+  label,
+  checked,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <Label htmlFor={id} className="cursor-pointer">{label}</Label>
     </div>
   );
 }

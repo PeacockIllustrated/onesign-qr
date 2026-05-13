@@ -2,29 +2,25 @@ import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors } from '@/lib/brand/hydrate';
 import { SigAvatar, resolveAvatarSettings, sigInitials } from './sig-shared';
 
-interface SigClassicProps {
+interface SigPhotoLedProps {
   design: BrandDesignHydrated;
 }
 
 /**
- * Classic email signature: logo on the left, contact details on the right.
+ * Photo-led signature.
  *
- * If an avatar shape is configured AND the person has a photo, the avatar
- * replaces the logo as the leading visual. Otherwise the logo shows.
- *
- * Rendered using HTML tables and inline styles because Outlook (Windows) ignores
- * external CSS, modern flexbox, and most non-trivial selectors. Width pinned to
- * 600px which is the desktop-client convention.
+ * Large headshot dominates the left side, contact details to the right.
+ * Used by client-facing roles (sales, recruiters, consultants). Falls back
+ * to logo if no person photo is set.
  */
-export function SigClassic({ design }: SigClassicProps) {
+export function SigPhotoLed({ design }: SigPhotoLedProps) {
   const colors = resolveColors(design);
-  const { profile, person, logo_url, person_photo_url } = design;
-  const tagline = design.config.tagline ?? profile.tagline;
+  const { profile, person, person_photo_url, logo_url } = design;
   const accent = colors.accent ?? colors.primary;
+  const tagline = design.config.tagline ?? profile.tagline;
   const socials = profile.socials ?? {};
-  const avatar = resolveAvatarSettings(design, 'none');
-  const showAvatar = avatar.showImage && person_photo_url !== null;
-  const showLeft = showAvatar || (logo_url && design.config.show_logo !== false);
+  const avatar = resolveAvatarSettings(design, 'circle');
+  const hasPhoto = avatar.showImage && person_photo_url !== null;
 
   return (
     <table
@@ -36,57 +32,51 @@ export function SigClassic({ design }: SigClassicProps) {
         fontFamily: `'${profile.font_body}', Arial, sans-serif`,
         fontSize: '13px',
         color: '#222',
-        lineHeight: 1.45,
-        width: '600px',
+        lineHeight: 1.5,
+        width: '560px',
       }}
     >
       <tbody>
         <tr>
-          {showLeft && (
-            <td
-              valign="top"
-              style={{
-                paddingRight: '20px',
-                borderRight: `3px solid ${accent}`,
-                width: showAvatar ? '100px' : '120px',
-                verticalAlign: 'top',
-              }}
-            >
-              {showAvatar ? (
-                <SigAvatar
-                  photoUrl={person_photo_url}
-                  initials={sigInitials(person?.full_name)}
-                  shape={avatar.shape === 'square' ? 'square' : 'circle'}
-                  border={avatar.border}
-                  borderColor={avatar.borderColor}
-                  sizePx={80}
-                  fallbackBg={`${accent}20`}
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={logo_url!}
-                  alt={profile.name}
-                  width={100}
-                  style={{ display: 'block', maxWidth: '100px', height: 'auto' }}
-                />
-              )}
-            </td>
-          )}
-
+          {/* Left: photo or logo, larger */}
           <td
             valign="top"
             style={{
-              paddingLeft: showLeft ? '20px' : 0,
+              paddingRight: '24px',
+              width: '124px',
               verticalAlign: 'top',
             }}
           >
+            {hasPhoto ? (
+              <SigAvatar
+                photoUrl={person_photo_url}
+                initials={sigInitials(person?.full_name)}
+                shape={avatar.shape === 'square' ? 'square' : 'circle'}
+                border={avatar.border}
+                borderColor={avatar.borderColor}
+                sizePx={100}
+                fallbackBg={`${accent}20`}
+              />
+            ) : logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logo_url}
+                alt={profile.name}
+                width={100}
+                style={{ display: 'block', maxWidth: '100px', height: 'auto' }}
+              />
+            ) : null}
+          </td>
+
+          {/* Right: typographic stack */}
+          <td valign="top" style={{ verticalAlign: 'top', borderLeft: `3px solid ${accent}`, paddingLeft: '20px' }}>
             <div
               style={{
-                fontSize: '16px',
+                fontSize: '18px',
                 fontWeight: 700,
                 color: colors.primary,
                 fontFamily: `'${profile.font_heading}', Arial, sans-serif`,
+                lineHeight: 1.2,
               }}
             >
               {person?.full_name ?? 'Your Name'}
@@ -98,66 +88,67 @@ export function SigClassic({ design }: SigClassicProps) {
             </div>
 
             {person?.role && (
-              <div style={{ color: '#555', marginTop: '2px' }}>
+              <div style={{ color: accent, marginTop: '3px', fontSize: '13px', fontWeight: 500 }}>
                 {person.role}
-                {profile.name && <span style={{ color: '#888' }}> · {profile.name}</span>}
+                {profile.name && <span style={{ color: '#888', fontWeight: 400 }}> · {profile.name}</span>}
               </div>
             )}
 
             {tagline && (
-              <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', marginTop: '4px' }}>
+              <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', marginTop: '6px', maxWidth: '380px' }}>
                 {tagline}
               </div>
             )}
 
-            <div style={{ marginTop: '10px', fontSize: '12px' }}>
+            <div style={{ marginTop: '12px', fontSize: '12.5px' }}>
               {person?.email && (
-                <a href={`mailto:${person.email}`} style={{ color: colors.primary, textDecoration: 'none' }}>
-                  {person.email}
-                </a>
-              )}
-              {person?.email && (person?.phone || person?.mobile) && (
-                <span style={{ color: '#bbb' }}> · </span>
-              )}
-              {person?.phone && (
-                <a href={`tel:${person.phone}`} style={{ color: '#444', textDecoration: 'none' }}>
-                  {person.phone}
-                </a>
-              )}
-              {person?.mobile && (
-                <>
-                  {person?.phone && <span style={{ color: '#bbb' }}> · </span>}
-                  <a href={`tel:${person.mobile}`} style={{ color: '#444', textDecoration: 'none' }}>
-                    {person.mobile}
+                <div>
+                  <a href={`mailto:${person.email}`} style={{ color: colors.primary, textDecoration: 'none', fontWeight: 500 }}>
+                    {person.email}
                   </a>
-                </>
+                </div>
+              )}
+              {(person?.phone || person?.mobile) && (
+                <div style={{ color: '#444', marginTop: '2px' }}>
+                  {person?.phone && (
+                    <a href={`tel:${person.phone}`} style={{ color: '#444', textDecoration: 'none' }}>
+                      {person.phone}
+                    </a>
+                  )}
+                  {person?.phone && person?.mobile && <span style={{ color: '#bbb' }}> · </span>}
+                  {person?.mobile && (
+                    <a href={`tel:${person.mobile}`} style={{ color: '#444', textDecoration: 'none' }}>
+                      {person.mobile}
+                    </a>
+                  )}
+                </div>
+              )}
+              {profile.website && (
+                <div style={{ marginTop: '2px' }}>
+                  <a
+                    href={profile.website}
+                    style={{ color: colors.primary, textDecoration: 'none', fontWeight: 500 }}
+                  >
+                    {profile.website.replace(/^https?:\/\//, '')}
+                  </a>
+                </div>
               )}
             </div>
 
-            {profile.website && (
-              <div style={{ marginTop: '4px', fontSize: '12px' }}>
-                <a
-                  href={profile.website}
-                  style={{ color: colors.primary, textDecoration: 'none', fontWeight: 600 }}
-                >
-                  {profile.website.replace(/^https?:\/\//, '')}
-                </a>
-              </div>
-            )}
-
             {(socials.calendar || socials.booking) && (
-              <div style={{ marginTop: '10px', fontSize: '12px' }}>
+              <div style={{ marginTop: '12px' }}>
                 {socials.calendar && (
                   <a
                     href={socials.calendar}
                     style={{
                       display: 'inline-block',
-                      padding: '4px 10px',
+                      padding: '5px 12px',
                       backgroundColor: accent,
                       color: '#ffffff',
                       textDecoration: 'none',
                       borderRadius: '4px',
                       fontWeight: 600,
+                      fontSize: '12px',
                       marginRight: 6,
                     }}
                   >
@@ -169,12 +160,13 @@ export function SigClassic({ design }: SigClassicProps) {
                     href={socials.booking}
                     style={{
                       display: 'inline-block',
-                      padding: '4px 10px',
+                      padding: '5px 12px',
                       border: `1px solid ${accent}`,
                       color: accent,
                       textDecoration: 'none',
                       borderRadius: '4px',
                       fontWeight: 600,
+                      fontSize: '12px',
                     }}
                   >
                     Schedule
@@ -184,7 +176,7 @@ export function SigClassic({ design }: SigClassicProps) {
             )}
 
             {(socials.linkedin || socials.twitter || socials.instagram || socials.threads || socials.github || socials.behance || socials.dribbble) && (
-              <div style={{ marginTop: '8px', fontSize: '12px' }}>
+              <div style={{ marginTop: '10px', fontSize: '12px' }}>
                 {socials.linkedin && (
                   <a href={socials.linkedin} style={{ color: '#0a66c2', textDecoration: 'none', marginRight: 10 }}>
                     LinkedIn

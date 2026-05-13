@@ -121,3 +121,28 @@ export function isDarkColor(hex: string): boolean {
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance < 0.5;
 }
+
+/** Density scale multiplier — applied to padding + spacing values. */
+export function densityScale(d: 'compact' | 'normal' | 'spacious' | undefined): number {
+  if (d === 'compact') return 0.8;
+  if (d === 'spacious') return 1.2;
+  return 1;
+}
+
+/** Render an inline contact divider — used between email · phone · website etc. */
+export function ContactDivider({
+  style,
+  color = '#bbb',
+}: {
+  style: 'none' | 'line' | 'dot' | 'pipe' | undefined;
+  color?: string;
+}) {
+  if (style === 'none') return <span> </span>;
+  const ch = style === 'line' ? '—' : style === 'dot' ? '•' : '·';
+  return <span style={{ color, margin: '0 0.4em' }}>{ch}</span>;
+}
+
+/** Resolve an effective corner radius value for avatars (mm) from corner_style. */
+export function cornerRadiusMm(corner: 'sharp' | 'rounded' | undefined, base = 1.5): string {
+  return corner === 'sharp' ? '0' : `${base}mm`;
+}

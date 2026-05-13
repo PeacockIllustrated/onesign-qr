@@ -18,6 +18,7 @@ import {
   useToast,
 } from '@/components/ui';
 import { BRAND_TEMPLATES } from '@/lib/brand/templates';
+import { FontPicker } from '@/components/brand/font-picker';
 import type { BrandProfile, BrandPerson, BrandDesign, BrandDesignKind } from '@/types/brand';
 import { formatDate } from '@/lib/utils';
 
@@ -28,20 +29,6 @@ interface Props {
   logoUrl: string | null;
   logoDarkUrl: string | null;
 }
-
-const FONT_OPTIONS = [
-  'Inter',
-  'Manrope',
-  'DM Sans',
-  'Plus Jakarta Sans',
-  'Space Grotesk',
-  'Playfair Display',
-  'Lora',
-  'Merriweather',
-  'IBM Plex Sans',
-  'IBM Plex Serif',
-  'Work Sans',
-];
 
 export function BrandProfileEditor({ profile: initial, people, designs, logoUrl: initialLogo, logoDarkUrl: initialLogoDark }: Props) {
   const router = useRouter();
@@ -119,9 +106,18 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
   }
 
   async function deleteProfile() {
-    if (!confirm('Delete this brand profile? Designs will also be removed.')) return;
-    const res = await fetch(`/api/brand/profiles/${profile.id}`, { method: 'DELETE' });
-    if (res.ok) router.push('/app/brand-kit');
+    if (!confirm(`Delete brand profile "${profile.name}"? Designs and uploaded assets will be removed too.`)) return;
+    try {
+      const res = await fetch(`/api/brand/profiles/${profile.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.details ?? body?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Brand deleted', variant: 'success' });
+      router.push('/app/brand-kit');
+    } catch (err: any) {
+      addToast({ title: 'Delete failed', description: err.message, variant: 'error' });
+    }
   }
 
   return (
@@ -198,24 +194,22 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
                 />
               </div>
 
-              {/* Fonts */}
+              {/* Fonts — searchable Google Fonts picker */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Heading font</Label>
-                  <Select value={profile.font_heading} onChange={(e) => patch('font_heading', e.target.value)}>
-                    {FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </Select>
-                </div>
-                <div>
-                  <Label>Body font</Label>
-                  <Select value={profile.font_body} onChange={(e) => patch('font_body', e.target.value)}>
-                    {FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </Select>
-                </div>
+                <FontPicker
+                  label="Heading font"
+                  value={profile.font_heading}
+                  onChange={(v) => patch('font_heading', v)}
+                />
+                <FontPicker
+                  label="Body font"
+                  value={profile.font_body}
+                  onChange={(v) => patch('font_body', v)}
+                />
               </div>
 
-              {/* Web + socials */}
-              <div className="space-y-3">
+              {/* Web + socials + action links */}
+              <div className="space-y-4">
                 <div>
                   <Label>Website</Label>
                   <Input
@@ -224,11 +218,34 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
                     placeholder="https://example.com"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <SocialField label="LinkedIn" value={profile.socials.linkedin ?? ''} onChange={(v) => patch('socials', { ...profile.socials, linkedin: v })} />
-                  <SocialField label="Twitter / X" value={profile.socials.twitter ?? ''} onChange={(v) => patch('socials', { ...profile.socials, twitter: v })} />
-                  <SocialField label="Instagram" value={profile.socials.instagram ?? ''} onChange={(v) => patch('socials', { ...profile.socials, instagram: v })} />
-                  <SocialField label="GitHub" value={profile.socials.github ?? ''} onChange={(v) => patch('socials', { ...profile.socials, github: v })} />
+
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-400">Socials</Label>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <SocialField label="LinkedIn" value={profile.socials.linkedin ?? ''} onChange={(v) => patch('socials', { ...profile.socials, linkedin: v })} />
+                    <SocialField label="Twitter / X" value={profile.socials.twitter ?? ''} onChange={(v) => patch('socials', { ...profile.socials, twitter: v })} />
+                    <SocialField label="Instagram" value={profile.socials.instagram ?? ''} onChange={(v) => patch('socials', { ...profile.socials, instagram: v })} />
+                    <SocialField label="Threads" value={profile.socials.threads ?? ''} onChange={(v) => patch('socials', { ...profile.socials, threads: v })} />
+                    <SocialField label="Facebook" value={profile.socials.facebook ?? ''} onChange={(v) => patch('socials', { ...profile.socials, facebook: v })} />
+                    <SocialField label="YouTube" value={profile.socials.youtube ?? ''} onChange={(v) => patch('socials', { ...profile.socials, youtube: v })} />
+                    <SocialField label="TikTok" value={profile.socials.tiktok ?? ''} onChange={(v) => patch('socials', { ...profile.socials, tiktok: v })} />
+                    <SocialField label="Mastodon" value={profile.socials.mastodon ?? ''} onChange={(v) => patch('socials', { ...profile.socials, mastodon: v })} />
+                    <SocialField label="GitHub" value={profile.socials.github ?? ''} onChange={(v) => patch('socials', { ...profile.socials, github: v })} />
+                    <SocialField label="Behance" value={profile.socials.behance ?? ''} onChange={(v) => patch('socials', { ...profile.socials, behance: v })} />
+                    <SocialField label="Dribbble" value={profile.socials.dribbble ?? ''} onChange={(v) => patch('socials', { ...profile.socials, dribbble: v })} />
+                    <SocialField label="Portfolio" value={profile.socials.portfolio ?? ''} onChange={(v) => patch('socials', { ...profile.socials, portfolio: v })} />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-400">Action links</Label>
+                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    Surfaced as call-to-action links on signatures.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SocialField label="Calendar (Calendly, etc.)" value={profile.socials.calendar ?? ''} onChange={(v) => patch('socials', { ...profile.socials, calendar: v })} />
+                    <SocialField label="Booking / scheduling" value={profile.socials.booking ?? ''} onChange={(v) => patch('socials', { ...profile.socials, booking: v })} />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -371,10 +388,19 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
     }
   }
 
-  async function deletePerson(id: string) {
-    if (!confirm('Remove this person?')) return;
-    await fetch(`/api/brand/people/${id}`, { method: 'DELETE' });
-    router.refresh();
+  async function deletePerson(id: string, name: string) {
+    if (!confirm(`Remove ${name}? Any designs that referenced them will keep working with no person attached.`)) return;
+    try {
+      const res = await fetch(`/api/brand/people/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.details ?? body?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Person removed', variant: 'success' });
+      router.refresh();
+    } catch (err: any) {
+      addToast({ title: 'Delete failed', description: err.message, variant: 'error' });
+    }
   }
 
   async function uploadPhoto(personId: string, file: File) {
@@ -451,7 +477,7 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => deletePerson(p.id)}>
+              <Button variant="ghost" size="icon" onClick={() => deletePerson(p.id, p.full_name)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -529,6 +555,21 @@ function DesignsSection({
     }
   }
 
+  async function deleteDesign(designId: string, designName: string) {
+    if (!confirm(`Delete design "${designName}"?`)) return;
+    try {
+      const res = await fetch(`/api/brand/designs/${designId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.details ?? body?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Design deleted', variant: 'success' });
+      router.refresh();
+    } catch (err: any) {
+      addToast({ title: 'Delete failed', description: err.message, variant: 'error' });
+    }
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -538,12 +579,14 @@ function DesignsSection({
         )}
 
         {designs.map((d) => (
-          <Link
+          <div
             key={d.id}
-            href={`/app/brand-kit/${profileId}/designs/${d.id}`}
-            className="flex items-center justify-between gap-3 py-3 border-b border-border last:border-b-0 hover:bg-zinc-900/30 -mx-2 px-2 rounded transition-colors"
+            className="flex items-center justify-between gap-3 py-3 border-b border-border last:border-b-0 hover:bg-zinc-900/30 -mx-2 px-2 rounded transition-colors group"
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href={`/app/brand-kit/${profileId}/designs/${d.id}`}
+              className="flex items-center gap-3 min-w-0 flex-1"
+            >
               {d.kind === 'business_card' ? (
                 <CreditCard className="h-4 w-4 text-zinc-500 shrink-0" />
               ) : (
@@ -555,8 +598,17 @@ function DesignsSection({
                   {d.kind === 'business_card' ? 'Business card' : 'Email signature'} · {d.template_id} · Updated {formatDate(d.updated_at)}
                 </p>
               </div>
-            </div>
-          </Link>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => deleteDesign(d.id, d.name)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              aria-label={`Delete ${d.name}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         ))}
 
         {/* Create flow */}

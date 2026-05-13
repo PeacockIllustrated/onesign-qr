@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { updateBrandDesignSchema } from '@/validations/brand';
 import { isValidUUID } from '@/validations/qr';
@@ -95,11 +96,30 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { error } = await supabase
+  // Same workaround as profile soft-delete: Postgres applies the SELECT
+  // policy's USING clause (which includes `deleted_at IS NULL`) to the new
+  // row of an UPDATE, so a soft-delete always fails RLS as "new row violates
+  // policy". Verify access with the user-scoped client, then perform the
+  // soft-delete with the admin client.
+  const { data: existing, error: lookupError } = await supabase
+    .from('brand_designs')
+    .select('id')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single();
+
+  if (lookupError || !existing) {
+    return NextResponse.json({ error: 'Design not found or already deleted' }, { status: 404 });
+  }
+
+  const admin = createAdminClient();
+  const { error: updateError } = await admin
     .from('brand_designs')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
-  if (error) return NextResponse.json({ error: 'Failed to delete design' }, { status: 500 });
+  if (updateError) {
+    return NextResponse.json({ error: 'Failed to delete design', details: updateError.message }, { status: 500 });
+  }
   return new NextResponse(null, { status: 204 });
 }

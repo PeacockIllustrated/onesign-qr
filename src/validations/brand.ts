@@ -40,7 +40,14 @@ export const updateBrandProfileSchema = z.object({
       youtube: z.string().max(2048).optional(),
       tiktok: z.string().max(2048).optional(),
       github: z.string().max(2048).optional(),
+      threads: z.string().max(2048).optional(),
+      mastodon: z.string().max(2048).optional(),
+      behance: z.string().max(2048).optional(),
+      dribbble: z.string().max(2048).optional(),
       website: z.string().max(2048).optional(),
+      calendar: z.string().max(2048).optional(),
+      booking: z.string().max(2048).optional(),
+      portfolio: z.string().max(2048).optional(),
     })
     .optional(),
 });
@@ -79,6 +86,18 @@ const designConfig = z
     avatar_border_color: hexColor.optional(),
 
     back_style: z.enum(['logo-centered', 'solid-accent', 'monogram']).optional(),
+
+    density: z.enum(['compact', 'normal', 'spacious']).optional(),
+    accent_style: z.enum(['bar', 'block', 'outline', 'minimal']).optional(),
+    corner_style: z.enum(['sharp', 'rounded']).optional(),
+    divider_style: z.enum(['none', 'line', 'dot', 'pipe']).optional(),
+
+    show_pronouns: z.boolean().optional(),
+    show_mobile: z.boolean().optional(),
+    show_socials: z.boolean().optional(),
+    show_calendar_cta: z.boolean().optional(),
+
+    footer_text: z.string().max(200).optional(),
 
     show_qr: z.boolean().optional(),
     qr_destination_url: z.string().max(2048).optional(),

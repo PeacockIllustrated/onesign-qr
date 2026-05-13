@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { updateBrandProfileSchema } from '@/validations/brand';
 import { isValidUUID } from '@/validations/qr';
@@ -112,13 +113,32 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { error } = await supabase
+  // Authorise via user-scoped SELECT — the brand_profiles SELECT policy
+  // requires org membership, so finding the row proves the caller is allowed
+  // to act on it. Postgres applies the SELECT policy's USING expression to
+  // the *new* row of an UPDATE, and our policy includes `deleted_at IS NULL`
+  // — which means a soft-delete UPDATE always fails RLS as "new row violates
+  // policy". Workaround: do the soft-delete with the admin client after
+  // authorisation passes.
+  const { data: existing, error: lookupError } = await supabase
+    .from('brand_profiles')
+    .select('id')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single();
+
+  if (lookupError || !existing) {
+    return NextResponse.json({ error: 'Profile not found or already deleted' }, { status: 404 });
+  }
+
+  const admin = createAdminClient();
+  const { error: updateError } = await admin
     .from('brand_profiles')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
-  if (error) {
-    return NextResponse.json({ error: 'Failed to delete profile' }, { status: 500 });
+  if (updateError) {
+    return NextResponse.json({ error: 'Failed to delete profile', details: updateError.message }, { status: 500 });
   }
   return new NextResponse(null, { status: 204 });
 }

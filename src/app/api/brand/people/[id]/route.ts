@@ -59,11 +59,17 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('brand_people')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
 
-  if (error) return NextResponse.json({ error: 'Failed to delete person' }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: 'Failed to delete person', details: error.message }, { status: 500 });
+  }
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: 'Person not found or you do not have permission' }, { status: 404 });
+  }
   return new NextResponse(null, { status: 204 });
 }
