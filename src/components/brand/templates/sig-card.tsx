@@ -54,7 +54,14 @@ export function SigCard({ design }: SigCardProps) {
               <tbody>
                 <tr>
                   {(hasPhoto || (logo_url && design.config.show_logo !== false)) && (
-                    <td valign="top" style={{ paddingRight: '16px', width: '76px', verticalAlign: 'top' }}>
+                    <td valign="top" style={{ paddingRight: '16px', width: '70px', verticalAlign: 'top' }}>
+                      {/* Logo above avatar — tight lockup, both feel like one
+                          grouped identity rather than separated visuals. */}
+                      {hasPhoto && logo_url && design.config.show_logo !== false && (
+                        <div style={{ marginBottom: '6px', paddingBottom: '5px', borderBottom: `1px solid ${accent}30` }}>
+                          <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={22} />
+                        </div>
+                      )}
                       {hasPhoto ? (
                         <SigAvatar
                           photoUrl={person_photo_url}
@@ -62,19 +69,12 @@ export function SigCard({ design }: SigCardProps) {
                           shape={avatar.shape === 'square' ? 'square' : 'circle'}
                           border={avatar.border}
                           borderColor={avatar.borderColor}
-                          sizePx={60}
+                          sizePx={54}
                           fallbackBg={`${accent}20`}
                         />
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={logo_url!} alt={profile.name} width={60} style={{ display: 'block', maxWidth: '60px', height: 'auto' }} />
-                      )}
-                      {/* When both are present, render the logo as a small mark
-                          underneath the avatar so both can be seen. */}
-                      {hasPhoto && logo_url && design.config.show_logo !== false && (
-                        <div style={{ marginTop: '8px' }}>
-                          <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={20} />
-                        </div>
                       )}
                     </td>
                   )}

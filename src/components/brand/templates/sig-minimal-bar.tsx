@@ -44,30 +44,33 @@ export function SigMinimalBar({ design }: SigMinimalBarProps) {
     >
       <tbody>
         <tr>
-          {hasPhoto && (
+          {(hasPhoto || showLogoInAvatarSlot) && (
             <td valign="top" style={{ paddingRight: '14px', verticalAlign: 'top' }}>
-              <SigAvatar
-                photoUrl={person_photo_url}
-                initials={sigInitials(person?.full_name)}
-                shape={avatar.shape === 'square' ? 'square' : 'circle'}
-                border={avatar.border}
-                borderColor={avatar.borderColor}
-                sizePx={52}
-                fallbackBg={`${accent}20`}
-              />
-            </td>
-          )}
-          {showLogoInAvatarSlot && (
-            <td valign="top" style={{ paddingRight: '14px', verticalAlign: 'top' }}>
-              <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={36} />
+              {/* Brand + person lockup — logo above avatar in the same column,
+                  both centred so they read as one grouped element to the left
+                  of the accent bar. If only one is configured, that one alone
+                  occupies this cell. */}
+              {showSecondaryLogo && (
+                <div style={{ marginBottom: '6px', textAlign: 'left' }}>
+                  <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={22} />
+                </div>
+              )}
+              {hasPhoto ? (
+                <SigAvatar
+                  photoUrl={person_photo_url}
+                  initials={sigInitials(person?.full_name)}
+                  shape={avatar.shape === 'square' ? 'square' : 'circle'}
+                  border={avatar.border}
+                  borderColor={avatar.borderColor}
+                  sizePx={48}
+                  fallbackBg={`${accent}20`}
+                />
+              ) : (
+                <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={36} />
+              )}
             </td>
           )}
           <td valign="top" style={{ borderLeft: `2px solid ${accent}`, paddingLeft: '14px', verticalAlign: 'top' }}>
-            {showSecondaryLogo && (
-              <div style={{ marginBottom: '6px' }}>
-                <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={18} />
-              </div>
-            )}
             <div
               style={{
                 fontFamily: `'${profile.font_heading}', Georgia, serif`,

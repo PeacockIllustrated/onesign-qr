@@ -47,7 +47,15 @@ export function SigEco({ design }: SigEcoProps) {
       <tbody>
         <tr>
           {(hasPhoto || (logo_url && design.config.show_logo !== false)) && (
-            <td valign="top" style={{ paddingRight: '18px', width: '92px', verticalAlign: 'top' }}>
+            <td valign="top" style={{ paddingRight: '18px', width: '88px', verticalAlign: 'top' }}>
+              {/* Brand-and-person lockup: logo sits ABOVE the avatar in the same
+                  column with a thin accent separator, both centred to feel like
+                  a single grouped identity rather than two stranded marks. */}
+              {hasPhoto && logo_url && design.config.show_logo !== false && (
+                <div style={{ marginBottom: '6px', paddingBottom: '6px', borderBottom: `1px solid ${accent}25`, textAlign: 'center' }}>
+                  <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={28} align="left" />
+                </div>
+              )}
               {hasPhoto ? (
                 <SigAvatar
                   photoUrl={person_photo_url}
@@ -55,19 +63,12 @@ export function SigEco({ design }: SigEcoProps) {
                   shape={avatar.shape === 'square' ? 'square' : 'circle'}
                   border={avatar.border}
                   borderColor={avatar.borderColor}
-                  sizePx={72}
+                  sizePx={64}
                   fallbackBg={`${accent}20`}
                 />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={logo_url!} alt={profile.name} width={80} style={{ display: 'block', maxWidth: '80px', height: 'auto' }} />
-              )}
-              {/* When both are present, render the logo as a small mark under
-                  the avatar to keep the brand visible alongside the person. */}
-              {hasPhoto && logo_url && design.config.show_logo !== false && (
-                <div style={{ marginTop: '8px' }}>
-                  <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={20} />
-                </div>
               )}
             </td>
           )}

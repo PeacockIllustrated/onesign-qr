@@ -61,6 +61,13 @@ export function SigClassic({ design }: SigClassicProps) {
                 verticalAlign: 'top',
               }}
             >
+              {/* Logo above avatar when both present — tight lockup, no orphaned
+                  brand mark at the bottom of the social row. */}
+              {showSecondaryLogo && (
+                <div style={{ marginBottom: '8px', paddingBottom: '6px', borderBottom: `1px solid ${accent}25` }}>
+                  <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={26} />
+                </div>
+              )}
               {leadingIsAvatar ? (
                 <SigAvatar
                   photoUrl={person_photo_url}
@@ -68,7 +75,7 @@ export function SigClassic({ design }: SigClassicProps) {
                   shape={avatar.shape === 'square' ? 'square' : 'circle'}
                   border={avatar.border}
                   borderColor={avatar.borderColor}
-                  sizePx={80}
+                  sizePx={70}
                   fallbackBg={`${accent}20`}
                 />
               ) : (
@@ -232,11 +239,6 @@ export function SigClassic({ design }: SigClassicProps) {
               </div>
             )}
 
-            {showSecondaryLogo && (
-              <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: `1px solid ${accent}25` }}>
-                <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={24} />
-              </div>
-            )}
           </td>
         </tr>
       </tbody>
