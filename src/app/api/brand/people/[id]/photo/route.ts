@@ -31,16 +31,32 @@ export async function POST(
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: getRateLimitHeaders(rateLimit) });
   }
 
-  // Auth via user-scoped client + brand_profiles join — caller must be a
-  // member of the org that owns the person's parent profile.
-  const { data: person } = await supabase
+  // Auth via user-scoped client. The brand_people RLS policy requires the
+  // caller to be a member of the parent profile's org, so a successful SELECT
+  // already proves authorisation. We then fetch org_id from the profile in a
+  // separate query to keep the response shape predictable (the join-embed
+  // form has burned us with shape inconsistencies before).
+  const { data: person, error: personErr } = await supabase
     .from('brand_people')
-    .select('id, photo_storage_path, brand_profile_id, brand_profiles!inner(org_id)')
+    .select('id, photo_storage_path, brand_profile_id')
     .eq('id', id)
     .single();
 
-  if (!person) return NextResponse.json({ error: 'Person not found' }, { status: 404 });
-  const orgId = (person.brand_profiles as unknown as { org_id: string }).org_id;
+  if (personErr || !person) {
+    return NextResponse.json({ error: 'Person not found', details: personErr?.message }, { status: 404 });
+  }
+
+  const { data: parent, error: parentErr } = await supabase
+    .from('brand_profiles')
+    .select('org_id')
+    .eq('id', person.brand_profile_id)
+    .single();
+
+  if (parentErr || !parent) {
+    return NextResponse.json({ error: 'Parent profile not found', details: parentErr?.message }, { status: 404 });
+  }
+
+  const orgId = parent.org_id;
 
   const formData = await request.formData();
   const file = formData.get('file');

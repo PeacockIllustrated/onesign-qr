@@ -298,8 +298,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                   <Card3dViewer
                     front={renderTemplate(previewDesign, { side: 'front' })}
                     back={renderTemplate(previewDesign, { side: 'back' })}
-                    aspect="85 / 55"
-                    width="min(440px, 100%)"
+                    width={480}
                   />
                 ) : initial.kind === 'business_card' ? (
                   <div style={{ transform: 'scale(2.4)', transformOrigin: 'center' }}>

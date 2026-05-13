@@ -96,8 +96,12 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
       });
       if (!res.ok) throw new Error((await res.json()).error ?? 'Upload failed');
       const data = await res.json();
-      if (variant === 'dark') setLogoDarkUrl(data.public_url);
-      else setLogoUrl(data.public_url);
+      // Cache-bust: same Supabase Storage URL after re-upload would show the
+      // stale browser-cached image. Append a timestamp query param so the
+      // <img> reloads fresh.
+      const freshUrl = `${data.public_url}?t=${Date.now()}`;
+      if (variant === 'dark') setLogoDarkUrl(freshUrl);
+      else setLogoUrl(freshUrl);
       addToast({ title: `${variant === 'dark' ? 'Dark' : 'Light'} logo uploaded`, variant: 'success' });
       router.refresh();
     } catch (err: any) {
@@ -381,11 +385,15 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
         method: 'POST',
         body: formData,
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Upload failed');
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const reason = body?.details ?? body?.error ?? `HTTP ${res.status}`;
+        throw new Error(reason);
+      }
       addToast({ title: 'Photo uploaded', variant: 'success' });
       router.refresh();
     } catch (err: any) {
-      addToast({ title: 'Upload failed', description: err.message, variant: 'error' });
+      addToast({ title: 'Photo upload failed', description: err.message, variant: 'error' });
     }
   }
 
@@ -398,8 +406,9 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
     <Card>
       <CardContent className="pt-6 space-y-4">
         {people.map((p) => {
+          // updated_at appended for cache-busting when the user replaces a photo.
           const photoUrl = p.photo_storage_path
-            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/brand-assets/${p.photo_storage_path}`
+            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/brand-assets/${p.photo_storage_path}?t=${new Date(p.updated_at).getTime()}`
             : null;
           return (
             <div key={p.id} className="flex items-start gap-3 py-3 border-b border-border last:border-b-0">

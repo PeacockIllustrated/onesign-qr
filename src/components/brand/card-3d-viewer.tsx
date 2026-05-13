@@ -6,59 +6,76 @@ import { RotateCw } from 'lucide-react';
 interface Card3dViewerProps {
   front: ReactNode;
   back: ReactNode;
-  /** Card aspect ratio as a CSS aspect-ratio string, e.g. '85 / 55'. */
-  aspect?: string;
-  /** Visual width of the card on screen (CSS units). */
-  width?: string;
+  /** Visual width of the card on screen in pixels. Default 460. */
+  width?: number;
 }
 
-/**
- * Interactive 3D card preview.
- *
- * - Idle: card tilts subtly toward the cursor (perspective parallax).
- * - Click anywhere on the card OR the Flip button: rotates 180° to the other side.
- * - Cursor parallax keeps working on whichever side is currently showing.
- *
- * The front and back React subtrees are rendered at their actual mm-based
- * dimensions and then scaled to fit the requested `width`. This means the
- * preview is pixel-faithful to the print output.
- */
-export function Card3dViewer({
-  front,
-  back,
-  aspect = '85 / 55',
-  width = '420px',
-}: Card3dViewerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [flipped, setFlipped] = useState(false);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
+// Card natural width is 85mm ≈ 321.26px at 96dpi. Templates set explicit mm
+// dimensions on the article, so we use this fixed value to compute the
+// fit-to-viewer scale instead of measuring at runtime.
+const CARD_NATURAL_WIDTH_PX = 85 * (96 / 25.4);
 
-  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+/**
+ * Interactive 3D card viewer.
+ *
+ * - Idle: card tilts toward the cursor (~±12° parallax).
+ * - Click or "Flip" button: rotates 180° with a spring-y ease.
+ *
+ * Tilt is driven directly via refs + requestAnimationFrame instead of React
+ * state — re-rendering on every mousemove was making the card feel laggy
+ * and was likely why "doesn't follow the cursor" was the user-visible bug.
+ * The flip state stays in React because it's a meaningful UI mode change.
+ */
+export function Card3dViewer({ front, back, width = 460 }: Card3dViewerProps) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tiltRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
+  const rafRef = useRef<number | null>(null);
+  const [flipped, setFlipped] = useState(false);
+
+  // Aspect ratio of a UK business card; height derived from width.
+  const heightPx = Math.round((width * 55) / 85);
+  const scale = width / CARD_NATURAL_WIDTH_PX;
+
+  // rAF loop: smooth tilt toward the target, write directly to the DOM.
+  useEffect(() => {
+    function tick() {
+      const t = tiltRef.current;
+      // Easing toward target — exponential, frame-rate-aware enough at 60fps.
+      t.x += (t.targetX - t.x) * 0.18;
+      t.y += (t.targetY - t.y) * 0.18;
+
+      const el = innerRef.current;
+      if (el) {
+        const flipDeg = flipped ? 180 : 0;
+        // When flipped, invert Y tilt so it still feels like it follows the
+        // cursor from the viewer's perspective.
+        const yTilt = flipped ? -t.y : t.y;
+        el.style.transform = `rotateY(${flipDeg}deg) rotateX(${t.x.toFixed(2)}deg) rotateY(${yTilt.toFixed(2)}deg)`;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [flipped]);
+
+  function setTargetFromPoint(clientX: number, clientY: number) {
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width;   // 0..1
-    const py = (e.clientY - rect.top) / rect.height;   // 0..1
-    // Map to ±maxDeg tilt. Inverted Y because positive rotateX tilts forward.
-    const maxDeg = 9;
-    setTilt({
-      x: (0.5 - py) * 2 * maxDeg,
-      y: (px - 0.5) * 2 * maxDeg,
-    });
+    const px = (clientX - rect.left) / rect.width;   // 0..1
+    const py = (clientY - rect.top) / rect.height;
+    const maxDeg = 12;
+    tiltRef.current.targetX = (0.5 - py) * 2 * maxDeg;
+    tiltRef.current.targetY = (px - 0.5) * 2 * maxDeg;
   }
 
-  function handleMouseLeave() {
-    setIsHovering(false);
-    setTilt({ x: 0, y: 0 });
+  function handleLeave() {
+    tiltRef.current.targetX = 0;
+    tiltRef.current.targetY = 0;
   }
-
-  // Compose transform: base flip + cursor tilt
-  // When flipped, the inner element is rotated 180°, so the cursor tilt's Y
-  // direction needs to invert to feel correct from the viewer's perspective.
-  const tiltX = tilt.x;
-  const tiltY = flipped ? -tilt.y : tilt.y;
-  const transform = `rotateY(${flipped ? 180 : 0}deg) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -66,39 +83,38 @@ export function Card3dViewer({
         ref={containerRef}
         className="relative cursor-pointer select-none"
         style={{
-          width,
-          aspectRatio: aspect,
-          perspective: '1400px',
+          width: `${width}px`,
+          height: `${heightPx}px`,
+          perspective: '1600px',
         }}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={handleMouseLeave}
+        onMouseMove={(e) => setTargetFromPoint(e.clientX, e.clientY)}
+        onMouseLeave={handleLeave}
+        onTouchMove={(e) => {
+          const touch = e.touches[0];
+          if (touch) setTargetFromPoint(touch.clientX, touch.clientY);
+        }}
+        onTouchEnd={handleLeave}
         onClick={() => setFlipped((v) => !v)}
         role="button"
-        aria-label={`Card front and back — currently showing ${flipped ? 'back' : 'front'}. Click to flip.`}
+        aria-label={`Business card — currently showing ${flipped ? 'back' : 'front'}. Click to flip.`}
       >
         <div
+          ref={innerRef}
           className="absolute inset-0"
           style={{
             transformStyle: 'preserve-3d',
-            transform,
-            transition: isHovering
-              ? 'transform 0.12s ease-out'
-              : 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            transition: 'transform 0.7s cubic-bezier(0.2, 0.85, 0.3, 1)',
             willChange: 'transform',
-            boxShadow: '0 30px 60px -20px rgba(0,0,0,0.5), 0 18px 36px -18px rgba(0,0,0,0.35)',
-            borderRadius: '4px',
+            borderRadius: '6px',
+            boxShadow:
+              '0 30px 60px -22px rgba(0,0,0,0.55), 0 18px 36px -18px rgba(0,0,0,0.4)',
           }}
         >
-          {/* Front face */}
           <CardFace>
-            <FitToWidth>{front}</FitToWidth>
+            <ScaledCard scale={scale}>{front}</ScaledCard>
           </CardFace>
-
-          {/* Back face — rotated 180° around Y, so its content shows mirrored
-              when the parent rotates. */}
           <CardFace flipped>
-            <FitToWidth>{back}</FitToWidth>
+            <ScaledCard scale={scale}>{back}</ScaledCard>
           </CardFace>
         </div>
       </div>
@@ -126,7 +142,7 @@ function CardFace({ children, flipped }: { children: ReactNode; flipped?: boolea
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
         transform: flipped ? 'rotateY(180deg)' : undefined,
-        borderRadius: '4px',
+        borderRadius: '6px',
         backgroundColor: '#fff',
       }}
     >
@@ -136,42 +152,21 @@ function CardFace({ children, flipped }: { children: ReactNode; flipped?: boolea
 }
 
 /**
- * Scales whatever's inside to fit the parent's width. The card templates are
- * authored at 85mm physical size (~321px at 96dpi), and we want them to fill
- * the configured viewer width — so we measure the child width on mount and
- * compute a transform scale.
+ * Wraps a card template (whose natural width is CARD_NATURAL_WIDTH_PX) and
+ * applies a fixed transform: scale so it fills the viewer.
  */
-function FitToWidth({ children }: { children: ReactNode }) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    function recompute() {
-      const wrap = wrapperRef.current;
-      const content = contentRef.current;
-      if (!wrap || !content) return;
-      const wrapWidth = wrap.clientWidth;
-      // The card root sets explicit mm-based width — read it from its layout.
-      const naturalWidth = content.firstElementChild
-        ? (content.firstElementChild as HTMLElement).offsetWidth
-        : content.offsetWidth;
-      if (naturalWidth > 0) setScale(wrapWidth / naturalWidth);
-    }
-    recompute();
-    const ro = new ResizeObserver(recompute);
-    if (wrapperRef.current) ro.observe(wrapperRef.current);
-    return () => ro.disconnect();
-  }, [children]);
-
+function ScaledCard({ children, scale }: { children: ReactNode; scale: number }) {
   return (
     <div
-      ref={wrapperRef}
-      className="w-full h-full flex items-center justify-center"
-      style={{ overflow: 'hidden' }}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
       <div
-        ref={contentRef}
         style={{
           transform: `scale(${scale})`,
           transformOrigin: 'center center',
