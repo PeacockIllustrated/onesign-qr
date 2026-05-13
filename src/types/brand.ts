@@ -50,6 +50,9 @@ export interface BrandPerson {
   updated_at: string;
 }
 
+export type AvatarShape = 'none' | 'circle' | 'square';
+export type CardBackStyle = 'logo-centered' | 'solid-accent' | 'monogram';
+
 export interface BrandDesignConfig {
   // Per-design overrides; any field omitted falls back to brand profile / person.
   primary_color?: string;
@@ -57,9 +60,19 @@ export interface BrandDesignConfig {
   accent_color?: string;
   tagline?: string;
   show_logo?: boolean;
-  show_qr?: boolean;        // back-of-card QR
+
+  // Avatar / photo controls (cards only).
+  avatar_shape?: AvatarShape;       // default 'none'
+  avatar_border?: boolean;          // default false
+  avatar_border_color?: string;     // default = accent_color
+
+  // Back-of-card controls.
+  back_style?: CardBackStyle;       // default 'logo-centered'
+
+  // Misc / free-form.
+  show_qr?: boolean;                // back-of-card QR (future)
   qr_destination_url?: string;
-  custom_lines?: string[];  // free-form extra lines (e.g. department, certifications)
+  custom_lines?: string[];          // free-form extra lines
   notes?: string;
 }
 

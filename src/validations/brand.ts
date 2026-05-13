@@ -73,6 +73,13 @@ const designConfig = z
     accent_color: hexColor.optional(),
     tagline: z.string().max(200).optional(),
     show_logo: z.boolean().optional(),
+
+    avatar_shape: z.enum(['none', 'circle', 'square']).optional(),
+    avatar_border: z.boolean().optional(),
+    avatar_border_color: hexColor.optional(),
+
+    back_style: z.enum(['logo-centered', 'solid-accent', 'monogram']).optional(),
+
     show_qr: z.boolean().optional(),
     qr_destination_url: z.string().max(2048).optional(),
     custom_lines: z.array(z.string().max(120)).max(6).optional(),

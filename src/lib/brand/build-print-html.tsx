@@ -1,28 +1,39 @@
 import 'server-only';
 import type { BrandDesignHydrated } from '@/types/brand';
-import { renderTemplate } from '@/components/brand/templates';
+import { renderTemplate, isDoubleSidedTemplate } from '@/components/brand/templates';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
 
 /**
  * Build a complete HTML document for Puppeteer to render to PDF.
  *
- * Includes the brand's heading and body fonts loaded from Google Fonts so
- * the PDF embeds proper typography. The @page rule pins the PDF page size
- * to the card dimensions (including bleed) so there's no scaling.
- *
- * `react-dom/server` is imported dynamically to keep Turbopack from
- * walking this file into any client component graph.
+ * For double-sided cards, emits a two-page document — front then back.
+ * The @page rule pins the page size to the card dimensions (including
+ * bleed) so there's no scaling. Pages are separated by a CSS page break.
  */
 export async function buildCardPrintHtml(design: BrandDesignHydrated): Promise<string> {
   const { renderToStaticMarkup } = await import('react-dom/server');
-  const body = renderToStaticMarkup(
-    renderTemplate(design, { print: true }) as React.ReactElement
+
+  const front = renderToStaticMarkup(
+    renderTemplate(design, { print: true, side: 'front' }) as React.ReactElement
   );
+  const back = isDoubleSidedTemplate(design.template_id)
+    ? renderToStaticMarkup(
+        renderTemplate(design, { print: true, side: 'back' }) as React.ReactElement
+      )
+    : null;
 
   const fontParam = (font: string) => font.trim().replace(/\s+/g, '+');
-  const fontHrefs = Array.from(new Set([design.profile.font_heading, design.profile.font_body]))
+  const fontFamilies = new Set([design.profile.font_heading, design.profile.font_body]);
+  // Mono template uses JetBrains Mono for the contact stack — request it too.
+  if (design.template_id === 'card-mono') fontFamilies.add('JetBrains Mono');
+
+  const fontHrefs = Array.from(fontFamilies)
     .filter((f) => /^[A-Za-z0-9 ]+$/.test(f))
-    .map((f) => `https://fonts.googleapis.com/css2?family=${fontParam(f)}:wght@400;500;600;700&display=swap`);
+    .map((f) => `https://fonts.googleapis.com/css2?family=${fontParam(f)}:wght@400;500;600;700;800&display=swap`);
+
+  const body = back
+    ? `${front}<div class="page-break"></div>${back}`
+    : front;
 
   return `<!doctype html>
 <html>
@@ -43,6 +54,10 @@ export async function buildCardPrintHtml(design: BrandDesignHydrated): Promise<s
       print-color-adjust: exact;
     }
     img { max-width: 100%; }
+    .page-break {
+      page-break-after: always;
+      break-after: page;
+    }
   </style>
 </head>
 <body>

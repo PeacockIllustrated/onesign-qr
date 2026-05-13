@@ -12,8 +12,9 @@ import {
   Select,
   useToast,
 } from '@/components/ui';
-import { renderTemplate } from '@/components/brand/templates';
-import type { BrandDesignHydrated, BrandPerson, BrandDesignConfig } from '@/types/brand';
+import { renderTemplate, isDoubleSidedTemplate } from '@/components/brand/templates';
+import { FontLoader } from '@/components/brand/font-loader';
+import type { BrandDesignHydrated, BrandPerson, BrandDesignConfig, AvatarShape, CardBackStyle } from '@/types/brand';
 
 interface Props {
   design: BrandDesignHydrated;
@@ -130,6 +131,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
 
   return (
     <div>
+      <FontLoader fonts={[initial.profile.font_heading, initial.profile.font_body]} />
       <div className="flex items-start justify-between mb-6">
         <div className="min-w-0 flex-1">
           <Input
@@ -201,6 +203,59 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                 />
                 <Label htmlFor="show-logo" className="cursor-pointer">Show logo</Label>
               </div>
+
+              {/* Card-specific: avatar + back style */}
+              {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) && (
+                <div className="pt-2 mt-2 border-t border-border space-y-3">
+                  <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Card options</p>
+
+                  <div>
+                    <Label className="text-xs">Avatar shape</Label>
+                    <Select
+                      value={config.avatar_shape ?? 'none'}
+                      onChange={(e) => setConfig({ ...config, avatar_shape: e.target.value as AvatarShape })}
+                    >
+                      <option value="none">No avatar</option>
+                      <option value="circle">Circle</option>
+                      <option value="square">Square (rounded)</option>
+                    </Select>
+                  </div>
+
+                  {(config.avatar_shape ?? 'none') !== 'none' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="avatar-border"
+                          type="checkbox"
+                          checked={config.avatar_border ?? false}
+                          onChange={(e) => setConfig({ ...config, avatar_border: e.target.checked })}
+                        />
+                        <Label htmlFor="avatar-border" className="cursor-pointer">Avatar border</Label>
+                      </div>
+                      {config.avatar_border && (
+                        <ColorOverride
+                          label="Border colour"
+                          value={config.avatar_border_color}
+                          fallback={config.accent_color ?? initial.profile.accent_color ?? initial.profile.primary_color}
+                          onChange={(v) => setConfig({ ...config, avatar_border_color: v })}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  <div>
+                    <Label className="text-xs">Back style</Label>
+                    <Select
+                      value={config.back_style ?? (initial.template_id === 'card-mono' ? 'solid-accent' : 'logo-centered')}
+                      onChange={(e) => setConfig({ ...config, back_style: e.target.value as CardBackStyle })}
+                    >
+                      <option value="logo-centered">Logo centred</option>
+                      <option value="solid-accent">Solid accent + tagline</option>
+                      <option value="monogram">Monogram</option>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -237,14 +292,34 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">Preview</p>
-              <div className="flex justify-center items-center bg-zinc-900/40 border border-border rounded-md p-8 min-h-[300px] overflow-auto">
-                <div style={{ transform: initial.kind === 'business_card' ? 'scale(2.5)' : 'none', transformOrigin: 'center' }}>
-                  {renderTemplate(previewDesign)}
-                </div>
+              <div className="bg-zinc-900/40 border border-border rounded-md p-8 min-h-[300px] overflow-auto">
+                {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) ? (
+                  <div className="flex flex-col gap-8 items-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Front</span>
+                      <div style={{ transform: 'scale(2.2)', transformOrigin: 'center top' }}>
+                        {renderTemplate(previewDesign, { side: 'front' })}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-2" style={{ marginTop: '120mm' }}>
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Back</span>
+                      <div style={{ transform: 'scale(2.2)', transformOrigin: 'center top' }}>
+                        {renderTemplate(previewDesign, { side: 'back' })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-center items-center">
+                    <div style={{ transform: initial.kind === 'business_card' ? 'scale(2.5)' : 'none', transformOrigin: 'center' }}>
+                      {renderTemplate(previewDesign)}
+                    </div>
+                  </div>
+                )}
               </div>
               {initial.kind === 'business_card' && (
                 <p className="text-xs text-muted-foreground mt-3 text-center">
-                  Card shown at 2.5× zoom. The exported PDF is print-ready with 3mm bleed and crop marks.
+                  Cards shown at 2.2× zoom. The exported PDF is print-ready with 3mm bleed and crop marks
+                  {isDoubleSidedTemplate(initial.template_id) ? ' across two pages (front + back)' : ''}.
                 </p>
               )}
             </CardContent>

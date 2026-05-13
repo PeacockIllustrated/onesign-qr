@@ -328,23 +328,81 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
     router.refresh();
   }
 
+  async function uploadPhoto(personId: string, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(`/api/brand/people/${personId}/photo`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Upload failed');
+      addToast({ title: 'Photo uploaded', variant: 'success' });
+      router.refresh();
+    } catch (err: any) {
+      addToast({ title: 'Upload failed', description: err.message, variant: 'error' });
+    }
+  }
+
+  async function removePhoto(personId: string) {
+    await fetch(`/api/brand/people/${personId}/photo`, { method: 'DELETE' });
+    router.refresh();
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
-        {people.map((p) => (
-          <div key={p.id} className="flex items-start justify-between gap-3 py-3 border-b border-border last:border-b-0">
-            <div className="min-w-0">
-              <p className="font-medium text-zinc-100">{p.full_name}</p>
-              {p.role && <p className="text-sm text-muted-foreground">{p.role}</p>}
-              <p className="text-xs text-muted-foreground mt-1">
-                {[p.email, p.phone, p.mobile].filter(Boolean).join(' · ') || '—'}
-              </p>
+        {people.map((p) => {
+          const photoUrl = p.photo_storage_path
+            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/brand-assets/${p.photo_storage_path}`
+            : null;
+          return (
+            <div key={p.id} className="flex items-start gap-3 py-3 border-b border-border last:border-b-0">
+              {/* Photo */}
+              <div className="shrink-0">
+                {photoUrl ? (
+                  <img src={photoUrl} alt={p.full_name} className="h-12 w-12 rounded-full object-cover border border-border" />
+                ) : (
+                  <div className="h-12 w-12 rounded-full bg-zinc-800 border border-border flex items-center justify-center text-xs text-zinc-500">
+                    {p.full_name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-zinc-100">{p.full_name}</p>
+                {p.role && <p className="text-sm text-muted-foreground">{p.role}</p>}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {[p.email, p.phone, p.mobile].filter(Boolean).join(' · ') || '—'}
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <label className="inline-flex">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadPhoto(p.id, file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <span className="text-xs text-zinc-400 hover:text-zinc-100 cursor-pointer underline">
+                      {photoUrl ? 'Replace photo' : 'Add photo'}
+                    </span>
+                  </label>
+                  {photoUrl && (
+                    <button onClick={() => removePhoto(p.id)} className="text-xs text-zinc-400 hover:text-zinc-100 underline">
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => deletePerson(p.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => deletePerson(p.id)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
+          );
+        })}
 
         <div className="pt-3 space-y-3">
           <div className="grid grid-cols-2 gap-3">
