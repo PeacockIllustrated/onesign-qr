@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { validateUrlStrict } from '@/lib/security/url-validator';
+import { validateUrlStrict } from '@/lib/security/url-validator-strict';
 import { checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { updateBioLinkSchema } from '@/validations/bio';
 import { isValidUUID } from '@/validations/qr';

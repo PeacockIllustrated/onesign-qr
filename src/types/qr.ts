@@ -197,7 +197,20 @@ export interface AnalyticsSummary {
   scans_today: number;
   scans_this_week: number;
   scans_this_month: number;
+  unique_visitors: number;
+  period: '7d' | '30d' | '90d';
+  scans_by_day: Array<{ date: string; count: number }>;
   top_countries: Array<{ country: string; count: number }>;
   top_devices: Array<{ device: DeviceType; count: number }>;
-  scans_by_day: Array<{ date: string; count: number }>;
+  top_os: Array<{ os: string; count: number }>;
+  top_browsers: Array<{ browser: string; count: number }>;
+  top_referrers: Array<{ domain: string; count: number }>;
+  recent_scans: Array<{
+    scanned_at: string;
+    country_code: string | null;
+    device_type: DeviceType;
+    os_family: string | null;
+    browser_family: string | null;
+    referrer_domain: string | null;
+  }>;
 }
