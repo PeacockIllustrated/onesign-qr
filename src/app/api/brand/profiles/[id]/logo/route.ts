@@ -42,14 +42,34 @@ export async function POST(
   if (!file || !(file instanceof File)) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
   }
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+
+  // Resolve effective MIME: browser-reported MIME first, then fall back to the
+  // filename extension. Some Windows browsers send an empty type for SVG.
+  let effectiveMime = file.type;
+  if (!effectiveMime || !ALLOWED_TYPES.includes(effectiveMime)) {
+    const nameExt = file.name.split('.').pop()?.toLowerCase();
+    const extToMime: Record<string, string> = {
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      svg: 'image/svg+xml',
+      webp: 'image/webp',
+    };
+    if (nameExt && extToMime[nameExt]) {
+      effectiveMime = extToMime[nameExt];
+    }
+  }
+  if (!ALLOWED_TYPES.includes(effectiveMime)) {
+    return NextResponse.json(
+      { error: `Invalid file type: ${file.type || 'unknown'}. Allowed: PNG, JPG, SVG, WebP` },
+      { status: 400 }
+    );
   }
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json({ error: 'File too large (max 5 MB)' }, { status: 400 });
   }
 
-  const ext = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1].replace('+xml', '');
+  const ext = effectiveMime === 'image/jpeg' ? 'jpg' : effectiveMime.split('/')[1].replace('+xml', '');
   const filename = variant === 'dark' ? `logo-dark.${ext}` : `logo.${ext}`;
   const storagePath = `${profile.org_id}/profiles/${profile.id}/${filename}`;
 
@@ -59,13 +79,21 @@ export async function POST(
     await supabase.storage.from('brand-assets').remove([existing]);
   }
 
+  // Re-wrap as a Blob with explicit MIME so Supabase storage's content-type
+  // checks pass even for stricter types like image/svg+xml. Without the
+  // re-wrap, the SDK can send Content-Type: application/octet-stream which
+  // the storage service then rejects with a 400.
   const buffer = await file.arrayBuffer();
+  const blob = new Blob([buffer], { type: effectiveMime });
   const { error: uploadError } = await supabase.storage
     .from('brand-assets')
-    .upload(storagePath, buffer, { contentType: file.type, upsert: true });
+    .upload(storagePath, blob, { contentType: effectiveMime, upsert: true });
   if (uploadError) {
-    console.error('Logo upload failed:', uploadError.message);
-    return NextResponse.json({ error: 'Failed to upload logo' }, { status: 500 });
+    console.error('Logo upload failed:', uploadError.message, '— path:', storagePath, 'mime:', effectiveMime);
+    return NextResponse.json(
+      { error: 'Failed to upload logo', details: uploadError.message },
+      { status: 500 }
+    );
   }
 
   const updateField = variant === 'dark' ? 'logo_dark_storage_path' : 'logo_storage_path';
