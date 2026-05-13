@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ExternalLink, Copy, Download, Settings, BarChart3, History } from 'lucide-react';
+import { ExternalLink, Copy } from 'lucide-react';
 import {
   Button,
   Card,
@@ -20,6 +20,7 @@ import {
 import { QRPreview } from './qr-preview';
 import { StylePanel } from './style-panel';
 import { ExportPanel } from './export-panel';
+import { QRAnalyticsPanel } from './qr-analytics-panel';
 import type { QRStyleConfig, ErrorCorrectionLevel, LogoMode } from '@/types/qr';
 import type { ModuleShape, EyeShape } from '@/lib/qr/shapes';
 import { QR_DEFAULTS } from '@/lib/constants';
@@ -274,17 +275,7 @@ export function QRDetailClient({ qr, style: initialStyle, redirectUrl }: QRDetai
           {/* Analytics Tab */}
           {qr.analytics_enabled && (
             <TabsContent value="analytics">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-12 text-muted-foreground">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Analytics coming soon</p>
-                    <p className="text-sm mt-2">
-                      Total scans: {qr.total_scans}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <QRAnalyticsPanel qrId={qr.id} />
             </TabsContent>
           )}
         </Tabs>
