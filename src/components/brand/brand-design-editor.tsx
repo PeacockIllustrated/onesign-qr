@@ -82,7 +82,15 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ format: 'pdf' }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'PDF generation failed');
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        // Surface the route's phase + details so failures are diagnosable
+        // straight from the toast instead of needing the dev console.
+        const reason = body?.details
+          ? `${body.error ?? 'Export failed'} (${body.phase ?? 'unknown phase'}): ${body.details}`
+          : body?.error ?? `HTTP ${res.status}`;
+        throw new Error(reason);
+      }
       const blob = await res.blob();
       downloadBlob(blob, `${slugify(name)}.pdf`);
       addToast({ title: 'PDF downloaded', variant: 'success' });
