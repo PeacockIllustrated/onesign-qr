@@ -27,6 +27,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# Local-only backups (e.g. QR endpoint snapshots — contain customer URLs)
+/backups/
+
 # Vercel
 .vercel
 
