@@ -1,7 +1,8 @@
-import type { BrandDesignHydrated, AvatarShape, CardBackStyle } from '@/types/brand';
+import type { BrandDesignHydrated, AvatarShape } from '@/types/brand';
 import { resolveColors, pickLogo } from '@/lib/brand/hydrate';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
 import { Avatar, getInitials, PrintBleed, isDarkColor } from './shared';
+import { CardBack, backBgColor } from './card-back';
 
 /**
  * Diagonal — dynamic accent band slanted across the card.
@@ -19,7 +20,9 @@ import { Avatar, getInitials, PrintBleed, isDarkColor } from './shared';
  * Use case: tech startups, creative agencies, modern services.
  */
 export function CardDiagonal({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
-  return side === 'front' ? <Front design={design} /> : <Back design={design} />;
+  return side === 'front'
+    ? <Front design={design} />
+    : <CardBack design={design} defaultStyle="solid-accent" flavour="dynamic" />;
 }
 
 // Band coordinates in mm, as a parallelogram. Tweaked so:
@@ -171,90 +174,9 @@ function Front({ design }: { design: BrandDesignHydrated }) {
   );
 }
 
-function Back({ design }: { design: BrandDesignHydrated }) {
-  const colors = resolveColors(design);
-  const { profile } = design;
-  const accent = colors.accent ?? colors.primary;
-  const tagline = design.config.tagline ?? profile.tagline;
-  const backStyle: CardBackStyle = design.config.back_style ?? 'solid-accent';
-  const bgColor =
-    backStyle === 'logo-centered' ? colors.primary :
-    backStyle === 'monogram' ? accent :
-    accent; // solid-accent
-  const { url: logoUrl, needsInvert } = pickLogo(design, 'dark');
-
-  return (
-    <article
-      style={{
-        width: `${CARD_DIMENSIONS.width_mm}mm`,
-        height: `${CARD_DIMENSIONS.height_mm}mm`,
-        backgroundColor: bgColor,
-        color: colors.secondary,
-        fontFamily: `'${profile.font_heading}', Arial, sans-serif`,
-        position: 'relative',
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        padding: '6mm',
-        gap: '3mm',
-      }}
-    >
-      {/* Subtle diagonal echo using the same SVG band, muted */}
-      <svg
-        viewBox={`0 0 ${CARD_DIMENSIONS.width_mm} ${CARD_DIMENSIONS.height_mm}`}
-        preserveAspectRatio="none"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-        }}
-      >
-        <polygon points={BAND_POLYGON} fill="rgba(255,255,255,0.08)" />
-      </svg>
-
-      {backStyle === 'monogram' ? (
-        <span style={{ fontSize: '26mm', fontWeight: 800, letterSpacing: '-0.04em', zIndex: 1 }}>
-          {profile.name.charAt(0).toUpperCase()}
-        </span>
-      ) : logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoUrl}
-          alt=""
-          style={{
-            maxHeight: '14mm',
-            maxWidth: '52mm',
-            objectFit: 'contain',
-            filter: needsInvert ? 'brightness(0) invert(1)' : undefined,
-            zIndex: 1,
-          }}
-        />
-      ) : (
-        <span style={{ fontSize: '6mm', fontWeight: 700, zIndex: 1 }}>{profile.name}</span>
-      )}
-      {tagline && backStyle !== 'monogram' && (
-        <p style={{ fontSize: '2.4mm', fontStyle: 'italic', opacity: 0.85, margin: 0, textAlign: 'center', maxWidth: '55mm', zIndex: 1 }}>
-          {tagline}
-        </p>
-      )}
-    </article>
-  );
-}
-
 export function CardDiagonalPrint({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
   const colors = resolveColors(design);
-  const accent = colors.accent ?? colors.primary;
-  const bs = design.config.back_style ?? 'solid-accent';
-  const bg =
-    side === 'front'
-      ? colors.secondary
-      : bs === 'logo-centered'
-      ? colors.primary
-      : accent;
+  const bg = side === 'front' ? colors.secondary : backBgColor(design, 'solid-accent');
   return (
     <PrintBleed bgColor={bg}>
       <CardDiagonal design={design} side={side} />

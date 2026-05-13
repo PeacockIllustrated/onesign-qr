@@ -310,12 +310,20 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                   <div>
                     <Label className="text-xs">Style</Label>
                     <Select
-                      value={config.back_style ?? (templateId === 'card-mono' ? 'solid-accent' : 'logo-centered')}
+                      value={(() => {
+                        const v = config.back_style ?? (templateId === 'card-mono' ? 'solid-accent' : 'logo-centered');
+                        // Legacy designs may still carry monogram — surface it
+                        // as logo-centered in the picker so the dropdown matches
+                        // what's actually being rendered.
+                        return v === 'monogram' ? 'logo-centered' : v;
+                      })()}
                       onChange={(e) => setConfig({ ...config, back_style: e.target.value as CardBackStyle })}
                     >
                       <option value="logo-centered">Logo centred</option>
                       <option value="solid-accent">Solid accent + tagline</option>
-                      <option value="monogram">Monogram</option>
+                      <option value="contact">Contact card</option>
+                      <option value="tagline-hero">Tagline (hero)</option>
+                      <option value="socials">Social handles</option>
                     </Select>
                   </div>
                 </div>

@@ -1,7 +1,8 @@
-import type { BrandDesignHydrated, AvatarShape, CardBackStyle } from '@/types/brand';
+import type { BrandDesignHydrated, AvatarShape } from '@/types/brand';
 import { resolveColors, pickLogo } from '@/lib/brand/hydrate';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
 import { Avatar, getInitials, PrintBleed, isDarkColor, type SideProps } from './shared';
+import { CardBack, backBgColor } from './card-back';
 
 /**
  * Classic+ business card — editorial, asymmetric, type-led.
@@ -20,7 +21,7 @@ import { Avatar, getInitials, PrintBleed, isDarkColor, type SideProps } from './
 export function CardClassicPlus({ design, side }: SideProps & { side: 'front' | 'back' }) {
   return side === 'front'
     ? <CardClassicPlusFront design={design} />
-    : <CardClassicPlusBack design={design} />;
+    : <CardBack design={design} defaultStyle="logo-centered" />;
 }
 
 function CardClassicPlusFront({ design }: { design: BrandDesignHydrated }) {
@@ -147,128 +148,10 @@ function CardClassicPlusFront({ design }: { design: BrandDesignHydrated }) {
   );
 }
 
-function CardClassicPlusBack({ design }: { design: BrandDesignHydrated }) {
-  const colors = resolveColors(design);
-  const { profile } = design;
-  const backStyle: CardBackStyle = design.config.back_style ?? 'logo-centered';
-  const tagline = design.config.tagline ?? profile.tagline;
-
-  // Back of Classic+ is always a dark surface (primary or accent), so prefer
-  // the dark logo if present.
-  const { url: logoUrl, needsInvert: logoNeedsInvert } = pickLogo(design, 'dark');
-
-  const baseStyle: React.CSSProperties = {
-    width: `${CARD_DIMENSIONS.width_mm}mm`,
-    height: `${CARD_DIMENSIONS.height_mm}mm`,
-    overflow: 'hidden',
-    position: 'relative',
-    fontFamily: `'${profile.font_heading}', Georgia, serif`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxSizing: 'border-box',
-    padding: '6mm',
-  };
-
-  if (backStyle === 'solid-accent') {
-    return (
-      <article style={{ ...baseStyle, backgroundColor: colors.accent ?? colors.primary, color: colors.secondary }}>
-        {logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logoUrl}
-            alt=""
-            style={{
-              position: 'absolute',
-              right: '6mm',
-              bottom: '6mm',
-              maxHeight: '7mm',
-              maxWidth: '24mm',
-              objectFit: 'contain',
-              filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined,
-              opacity: 0.95,
-            }}
-          />
-        )}
-        {tagline && (
-          <p
-            style={{
-              fontSize: '4mm',
-              fontWeight: 500,
-              letterSpacing: '-0.005em',
-              maxWidth: '60mm',
-              lineHeight: 1.2,
-              margin: 0,
-              textAlign: 'center',
-            }}
-          >
-            {tagline}
-          </p>
-        )}
-      </article>
-    );
-  }
-
-  if (backStyle === 'monogram') {
-    return (
-      <article style={{ ...baseStyle, backgroundColor: colors.accent ?? colors.primary, color: colors.secondary }}>
-        <span style={{ fontSize: '24mm', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
-          {profile.name.charAt(0).toUpperCase()}
-        </span>
-      </article>
-    );
-  }
-
-  // logo-centered (default)
-  return (
-    <article style={{ ...baseStyle, backgroundColor: colors.primary, color: colors.secondary, flexDirection: 'column', gap: '3mm' }}>
-      {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoUrl}
-          alt=""
-          style={{ maxHeight: '14mm', maxWidth: '50mm', objectFit: 'contain', filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined }}
-        />
-      ) : (
-        <span style={{ fontSize: '6mm', fontWeight: 600 }}>{profile.name}</span>
-      )}
-      {tagline && (
-        <p
-          style={{
-            fontSize: '2.6mm',
-            fontWeight: 400,
-            opacity: 0.7,
-            margin: 0,
-            maxWidth: '55mm',
-            textAlign: 'center',
-            fontStyle: 'italic',
-            lineHeight: 1.4,
-          }}
-        >
-          {tagline}
-        </p>
-      )}
-      <div
-        style={{
-          width: '10mm',
-          height: '0.4mm',
-          backgroundColor: colors.accent ?? colors.secondary,
-          opacity: 0.6,
-          marginTop: '1mm',
-        }}
-      />
-    </article>
-  );
-}
-
 /** Print-mode wrapper used by the PDF pipeline. */
 export function CardClassicPlusPrint({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
   const colors = resolveColors(design);
-  const bg = side === 'front'
-    ? colors.secondary
-    : (design.config.back_style ?? 'logo-centered') === 'logo-centered'
-    ? colors.primary
-    : colors.accent ?? colors.primary;
+  const bg = side === 'front' ? colors.secondary : backBgColor(design, 'logo-centered');
   return (
     <PrintBleed bgColor={bg}>
       <CardClassicPlus design={design} side={side} />

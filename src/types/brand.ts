@@ -60,7 +60,20 @@ export interface BrandPerson {
 }
 
 export type AvatarShape = 'none' | 'circle' | 'square';
-export type CardBackStyle = 'logo-centered' | 'solid-accent' | 'monogram';
+/**
+ * Back-of-card style options.
+ *
+ * Note: `monogram` is intentionally kept in the type so existing saved
+ * designs with `back_style: 'monogram'` still parse — but it's no longer
+ * offered in the editor, and the renderer falls through to `logo-centered`.
+ */
+export type CardBackStyle =
+  | 'logo-centered'
+  | 'solid-accent'
+  | 'contact'
+  | 'tagline-hero'
+  | 'socials'
+  | 'monogram'; // deprecated, falls through to logo-centered
 export type Density = 'compact' | 'normal' | 'spacious';
 export type AccentStyle = 'bar' | 'block' | 'outline' | 'minimal';
 export type CornerStyle = 'sharp' | 'rounded';

@@ -1,7 +1,8 @@
-import type { BrandDesignHydrated, AvatarShape, CardBackStyle } from '@/types/brand';
+import type { BrandDesignHydrated, AvatarShape } from '@/types/brand';
 import { resolveColors, pickLogo } from '@/lib/brand/hydrate';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
 import { Avatar, getInitials, PrintBleed, isDarkColor } from './shared';
+import { CardBack, backBgColor } from './card-back';
 
 /**
  * Mono business card — bold name treatment, monospaced contact stack,
@@ -19,7 +20,7 @@ import { Avatar, getInitials, PrintBleed, isDarkColor } from './shared';
 export function CardMono({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
   return side === 'front'
     ? <CardMonoFront design={design} />
-    : <CardMonoBack design={design} />;
+    : <CardBack design={design} defaultStyle="solid-accent" />;
 }
 
 function CardMonoFront({ design }: { design: BrandDesignHydrated }) {
@@ -167,163 +168,9 @@ function ContactRow({ label, value, accent }: { label: string; value: string; ac
   );
 }
 
-function CardMonoBack({ design }: { design: BrandDesignHydrated }) {
-  const colors = resolveColors(design);
-  const { profile } = design;
-  const accent = colors.accent ?? colors.primary;
-  const backStyle: CardBackStyle = design.config.back_style ?? 'solid-accent';
-  const tagline = design.config.tagline ?? profile.tagline;
-  // Mono back is always a dark/coloured surface — use dark logo with light fallback inverted.
-  const { url: logoUrl, needsInvert: logoNeedsInvert } = pickLogo(design, 'dark');
-
-  if (backStyle === 'monogram') {
-    return (
-      <article
-        style={{
-          width: `${CARD_DIMENSIONS.width_mm}mm`,
-          height: `${CARD_DIMENSIONS.height_mm}mm`,
-          backgroundColor: accent,
-          color: colors.secondary,
-          fontFamily: `'${profile.font_heading}', Arial, sans-serif`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-        }}
-      >
-        <span style={{ fontSize: '26mm', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1 }}>
-          {profile.name.charAt(0).toUpperCase()}
-        </span>
-      </article>
-    );
-  }
-
-  if (backStyle === 'logo-centered') {
-    return (
-      <article
-        style={{
-          width: `${CARD_DIMENSIONS.width_mm}mm`,
-          height: `${CARD_DIMENSIONS.height_mm}mm`,
-          backgroundColor: colors.primary,
-          color: colors.secondary,
-          fontFamily: `'${profile.font_body}', Arial, sans-serif`,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '3mm',
-          padding: '6mm',
-        }}
-      >
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logoUrl}
-            alt=""
-            style={{ maxHeight: '12mm', maxWidth: '50mm', objectFit: 'contain', filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined }}
-          />
-        ) : (
-          <span style={{ fontSize: '6mm', fontWeight: 600 }}>{profile.name}</span>
-        )}
-        {tagline && (
-          <p
-            style={{
-              fontFamily: '"JetBrains Mono", "SF Mono", monospace',
-              fontSize: '2.2mm',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              textAlign: 'center',
-              margin: 0,
-              opacity: 0.7,
-            }}
-          >
-            {tagline}
-          </p>
-        )}
-      </article>
-    );
-  }
-
-  // solid-accent (default for mono)
-  return (
-    <article
-      style={{
-        width: `${CARD_DIMENSIONS.width_mm}mm`,
-        height: `${CARD_DIMENSIONS.height_mm}mm`,
-        backgroundColor: accent,
-        color: colors.secondary,
-        fontFamily: `'${profile.font_heading}', Arial, sans-serif`,
-        position: 'relative',
-        overflow: 'hidden',
-        padding: '6mm',
-        boxSizing: 'border-box',
-      }}
-    >
-      {/* Top: small wordmark */}
-      <div
-        style={{
-          fontSize: '2.2mm',
-          letterSpacing: '0.25em',
-          textTransform: 'uppercase',
-          fontWeight: 600,
-          opacity: 0.85,
-        }}
-      >
-        {profile.name}
-      </div>
-
-      {/* Centered tagline */}
-      {tagline && (
-        <p
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '6mm',
-            right: '6mm',
-            transform: 'translateY(-50%)',
-            fontSize: '5mm',
-            fontWeight: 600,
-            letterSpacing: '-0.015em',
-            lineHeight: 1.15,
-            margin: 0,
-          }}
-        >
-          {tagline}
-        </p>
-      )}
-
-      {/* Bottom-right logo */}
-      {logoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoUrl}
-          alt=""
-          style={{
-            position: 'absolute',
-            right: '6mm',
-            bottom: '6mm',
-            maxHeight: '7mm',
-            maxWidth: '20mm',
-            objectFit: 'contain',
-            filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined,
-            opacity: 0.95,
-          }}
-        />
-      )}
-    </article>
-  );
-}
-
 export function CardMonoPrint({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
   const colors = resolveColors(design);
-  const accent = colors.accent ?? colors.primary;
-  const backStyle = design.config.back_style ?? 'solid-accent';
-  const bg =
-    side === 'front'
-      ? colors.secondary
-      : backStyle === 'logo-centered'
-      ? colors.primary
-      : accent;
+  const bg = side === 'front' ? colors.secondary : backBgColor(design, 'solid-accent');
   return (
     <PrintBleed bgColor={bg}>
       <CardMono design={design} side={side} />

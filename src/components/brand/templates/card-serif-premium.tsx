@@ -1,7 +1,8 @@
-import type { BrandDesignHydrated, AvatarShape, CardBackStyle } from '@/types/brand';
+import type { BrandDesignHydrated, AvatarShape } from '@/types/brand';
 import { resolveColors, pickLogo } from '@/lib/brand/hydrate';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
 import { Avatar, getInitials, PrintBleed, isDarkColor } from './shared';
+import { CardBack, backBgColor } from './card-back';
 
 /**
  * Serif Premium — classical luxury treatment.
@@ -15,7 +16,9 @@ import { Avatar, getInitials, PrintBleed, isDarkColor } from './shared';
  * Use case: law firms, wealth management, consultancies, hospitality.
  */
 export function CardSerifPremium({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
-  return side === 'front' ? <Front design={design} /> : <Back design={design} />;
+  return side === 'front'
+    ? <Front design={design} />
+    : <CardBack design={design} defaultStyle="logo-centered" flavour="classical" />;
 }
 
 function Front({ design }: { design: BrandDesignHydrated }) {
@@ -120,85 +123,9 @@ function Front({ design }: { design: BrandDesignHydrated }) {
   );
 }
 
-function Back({ design }: { design: BrandDesignHydrated }) {
-  const colors = resolveColors(design);
-  const { profile } = design;
-  const accent = colors.accent ?? colors.primary;
-  const tagline = design.config.tagline ?? profile.tagline;
-  const backStyle: CardBackStyle = design.config.back_style ?? 'monogram';
-  const { url: logoUrl, needsInvert } = pickLogo(design, 'dark');
-
-  if (backStyle === 'monogram') {
-    return (
-      <article
-        style={{
-          width: `${CARD_DIMENSIONS.width_mm}mm`,
-          height: `${CARD_DIMENSIONS.height_mm}mm`,
-          backgroundColor: colors.primary,
-          color: colors.secondary,
-          fontFamily: `'${profile.font_heading}', Georgia, serif`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-        }}
-      >
-        <span style={{ fontSize: '24mm', fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1, fontStyle: 'italic' }}>
-          {profile.name.charAt(0).toUpperCase()}
-        </span>
-        <div style={{ position: 'absolute', bottom: '5mm', left: '6mm', right: '6mm', textAlign: 'center', fontSize: '1.8mm', letterSpacing: '0.3em', textTransform: 'uppercase', opacity: 0.6 }}>
-          {profile.name}
-        </div>
-      </article>
-    );
-  }
-
-  const bg = backStyle === 'solid-accent' ? accent : colors.primary;
-  return (
-    <article
-      style={{
-        width: `${CARD_DIMENSIONS.width_mm}mm`,
-        height: `${CARD_DIMENSIONS.height_mm}mm`,
-        backgroundColor: bg,
-        color: colors.secondary,
-        fontFamily: `'${profile.font_heading}', Georgia, serif`,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '6mm',
-        gap: '3mm',
-      }}
-    >
-      {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoUrl}
-          alt=""
-          style={{
-            maxHeight: '12mm',
-            maxWidth: '50mm',
-            objectFit: 'contain',
-            filter: needsInvert ? 'brightness(0) invert(1)' : undefined,
-          }}
-        />
-      ) : (
-        <span style={{ fontSize: '6mm', fontWeight: 400, fontStyle: 'italic' }}>{profile.name}</span>
-      )}
-      {tagline && (
-        <p style={{ fontSize: '2.4mm', fontStyle: 'italic', opacity: 0.8, margin: 0, textAlign: 'center', maxWidth: '55mm' }}>
-          {tagline}
-        </p>
-      )}
-    </article>
-  );
-}
-
 export function CardSerifPremiumPrint({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
   const colors = resolveColors(design);
-  const accent = colors.accent ?? colors.primary;
-  const bs = design.config.back_style ?? 'monogram';
-  const bg = side === 'front' ? colors.secondary : bs === 'solid-accent' ? accent : colors.primary;
+  const bg = side === 'front' ? colors.secondary : backBgColor(design, 'logo-centered');
   return (
     <PrintBleed bgColor={bg}>
       <CardSerifPremium design={design} side={side} />
