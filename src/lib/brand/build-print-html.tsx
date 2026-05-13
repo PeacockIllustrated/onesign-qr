@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+import 'server-only';
 import type { BrandDesignHydrated } from '@/types/brand';
 import { renderTemplate } from '@/components/brand/templates';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
@@ -9,8 +9,12 @@ import { CARD_DIMENSIONS } from '@/lib/brand/templates';
  * Includes the brand's heading and body fonts loaded from Google Fonts so
  * the PDF embeds proper typography. The @page rule pins the PDF page size
  * to the card dimensions (including bleed) so there's no scaling.
+ *
+ * `react-dom/server` is imported dynamically to keep Turbopack from
+ * walking this file into any client component graph.
  */
-export function buildCardPrintHtml(design: BrandDesignHydrated): string {
+export async function buildCardPrintHtml(design: BrandDesignHydrated): Promise<string> {
+  const { renderToStaticMarkup } = await import('react-dom/server');
   const body = renderToStaticMarkup(
     renderTemplate(design, { print: true }) as React.ReactElement
   );

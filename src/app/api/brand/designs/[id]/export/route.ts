@@ -1,5 +1,5 @@
+import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { isValidUUID } from '@/validations/qr';
@@ -58,6 +58,7 @@ export async function POST(
     if (format === 'pdf') {
       return NextResponse.json({ error: 'Email signatures export as HTML only' }, { status: 400 });
     }
+    const { renderToStaticMarkup } = await import('react-dom/server');
     const sigHtml = renderToStaticMarkup(renderTemplate(hydrated) as React.ReactElement);
     const fullDoc = `<!doctype html><html><head><meta charset="utf-8"></head><body>${sigHtml}</body></html>`;
     return new NextResponse(fullDoc, {
@@ -72,7 +73,7 @@ export async function POST(
   // ─── Business card → PDF via Puppeteer ──────────────────────────
   if (hydrated.kind === 'business_card') {
     if (format === 'html') {
-      const html = buildCardPrintHtml(hydrated);
+      const html = await buildCardPrintHtml(hydrated);
       return new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
@@ -85,7 +86,7 @@ export async function POST(
     try {
       browser = await launchChromium();
       const page = await browser.newPage();
-      const html = buildCardPrintHtml(hydrated);
+      const html = await buildCardPrintHtml(hydrated);
       await page.setContent(html, { waitUntil: 'networkidle0' });
       // Wait for fonts to fully load before rasterising
       await page.evaluateHandle('document.fonts.ready');
