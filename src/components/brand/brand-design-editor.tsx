@@ -32,15 +32,21 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Live preview uses the latest config + person picked
+  // Live preview uses the latest config + person picked.
+  // The photo URL is derived from the chosen person's storage path so swapping
+  // person in the dropdown updates the avatar immediately — without this the
+  // preview always showed initials or no image until a hard refresh.
   const previewDesign: BrandDesignHydrated = useMemo(() => {
     const newPerson = personId ? people.find((p) => p.id === personId) ?? null : null;
+    const newPhotoUrl = newPerson?.photo_storage_path
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/brand-assets/${newPerson.photo_storage_path}?t=${new Date(newPerson.updated_at).getTime()}`
+      : null;
     return {
       ...initial,
       name,
       person_id: personId,
       person: newPerson,
-      person_photo_url: null,
+      person_photo_url: newPhotoUrl,
       config,
     };
   }, [initial, name, personId, config, people]);
@@ -205,15 +211,15 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                 <Label htmlFor="show-logo" className="cursor-pointer">Show logo</Label>
               </div>
 
-              {/* Card-specific: avatar + back style */}
-              {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) && (
+              {/* Avatar — shown for cards and signatures that can host one */}
+              {(isDoubleSidedTemplate(initial.template_id) || initial.kind === 'email_signature') && (
                 <div className="pt-2 mt-2 border-t border-border space-y-3">
-                  <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Card options</p>
+                  <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Avatar</p>
 
                   <div>
-                    <Label className="text-xs">Avatar shape</Label>
+                    <Label className="text-xs">Shape</Label>
                     <Select
-                      value={config.avatar_shape ?? 'none'}
+                      value={config.avatar_shape ?? (initial.template_id === 'sig-photo-led' ? 'circle' : 'none')}
                       onChange={(e) => setConfig({ ...config, avatar_shape: e.target.value as AvatarShape })}
                     >
                       <option value="none">No avatar</option>
@@ -222,7 +228,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                     </Select>
                   </div>
 
-                  {(config.avatar_shape ?? 'none') !== 'none' && (
+                  {(config.avatar_shape ?? (initial.template_id === 'sig-photo-led' ? 'circle' : 'none')) !== 'none' && (
                     <>
                       <div className="flex items-center gap-2">
                         <input
@@ -241,11 +247,23 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                           onChange={(v) => setConfig({ ...config, avatar_border_color: v })}
                         />
                       )}
+                      {initial.kind === 'email_signature' && !previewDesign.person_photo_url && (
+                        <p className="text-xs text-amber-400/80">
+                          Add a photo to this person on the People tab to populate the avatar.
+                        </p>
+                      )}
                     </>
                   )}
+                </div>
+              )}
+
+              {/* Card-specific: back style */}
+              {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) && (
+                <div className="pt-2 mt-2 border-t border-border space-y-3">
+                  <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Card back</p>
 
                   <div>
-                    <Label className="text-xs">Back style</Label>
+                    <Label className="text-xs">Style</Label>
                     <Select
                       value={config.back_style ?? (initial.template_id === 'card-mono' ? 'solid-accent' : 'logo-centered')}
                       onChange={(e) => setConfig({ ...config, back_style: e.target.value as CardBackStyle })}

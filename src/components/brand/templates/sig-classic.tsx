@@ -1,5 +1,6 @@
 import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors } from '@/lib/brand/hydrate';
+import { SigAvatar, resolveAvatarSettings, sigInitials } from './sig-shared';
 
 interface SigClassicProps {
   design: BrandDesignHydrated;
@@ -8,19 +9,22 @@ interface SigClassicProps {
 /**
  * Classic email signature: logo on the left, contact details on the right.
  *
+ * If an avatar shape is configured AND the person has a photo, the avatar
+ * replaces the logo as the leading visual. Otherwise the logo shows.
+ *
  * Rendered using HTML tables and inline styles because Outlook (Windows) ignores
  * external CSS, modern flexbox, and most non-trivial selectors. Width pinned to
  * 600px which is the desktop-client convention.
- *
- * This component is also used by the export endpoint to produce a static HTML
- * string that users paste into Gmail/Outlook. Keep all styles inline.
  */
 export function SigClassic({ design }: SigClassicProps) {
   const colors = resolveColors(design);
-  const { profile, person, logo_url } = design;
+  const { profile, person, logo_url, person_photo_url } = design;
   const tagline = design.config.tagline ?? profile.tagline;
   const accent = colors.accent ?? colors.primary;
   const socials = profile.socials ?? {};
+  const avatar = resolveAvatarSettings(design, 'none');
+  const showAvatar = avatar.showImage && person_photo_url !== null;
+  const showLeft = showAvatar || (logo_url && design.config.show_logo !== false);
 
   return (
     <table
@@ -38,29 +42,42 @@ export function SigClassic({ design }: SigClassicProps) {
     >
       <tbody>
         <tr>
-          {logo_url && design.config.show_logo !== false && (
+          {showLeft && (
             <td
               valign="top"
               style={{
                 paddingRight: '20px',
                 borderRight: `3px solid ${accent}`,
-                width: '120px',
+                width: showAvatar ? '100px' : '120px',
                 verticalAlign: 'top',
               }}
             >
-              <img
-                src={logo_url}
-                alt={profile.name}
-                width={100}
-                style={{ display: 'block', maxWidth: '100px', height: 'auto' }}
-              />
+              {showAvatar ? (
+                <SigAvatar
+                  photoUrl={person_photo_url}
+                  initials={sigInitials(person?.full_name)}
+                  shape={avatar.shape === 'square' ? 'square' : 'circle'}
+                  border={avatar.border}
+                  borderColor={avatar.borderColor}
+                  sizePx={80}
+                  fallbackBg={`${accent}20`}
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logo_url!}
+                  alt={profile.name}
+                  width={100}
+                  style={{ display: 'block', maxWidth: '100px', height: 'auto' }}
+                />
+              )}
             </td>
           )}
 
           <td
             valign="top"
             style={{
-              paddingLeft: logo_url ? '20px' : 0,
+              paddingLeft: showLeft ? '20px' : 0,
               verticalAlign: 'top',
             }}
           >

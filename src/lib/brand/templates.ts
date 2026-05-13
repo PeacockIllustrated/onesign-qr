@@ -30,8 +30,22 @@ export const BRAND_TEMPLATES: BrandTemplate[] = [
     id: 'sig-classic',
     kind: 'email_signature',
     name: 'Classic',
-    description: 'Logo on the left, contact details on the right. Outlook-safe.',
+    description: 'Logo (or avatar) on the left, contact details on the right. Outlook-safe.',
     preview_aspect: '600 / 180',
+  },
+  {
+    id: 'sig-photo-led',
+    kind: 'email_signature',
+    name: 'Photo-led',
+    description: 'Large headshot dominates the left side, contact stack on the right. Best for client-facing roles.',
+    preview_aspect: '560 / 180',
+  },
+  {
+    id: 'sig-compact',
+    kind: 'email_signature',
+    name: 'Compact',
+    description: 'Tight two-line signature with optional small avatar. For minimalists.',
+    preview_aspect: '500 / 60',
   },
 ];
 

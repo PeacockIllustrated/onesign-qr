@@ -2,6 +2,8 @@ import { CardClassic } from './card-classic';
 import { CardClassicPlus, CardClassicPlusPrint } from './card-classic-plus';
 import { CardMono, CardMonoPrint } from './card-mono';
 import { SigClassic } from './sig-classic';
+import { SigPhotoLed } from './sig-photo-led';
+import { SigCompact } from './sig-compact';
 import { DOUBLE_SIDED_CARD_TEMPLATES } from '@/lib/brand/templates';
 import type { BrandDesignHydrated } from '@/types/brand';
 
@@ -33,6 +35,10 @@ export function renderTemplate(
       return <CardClassic design={design} print={opts.print} />;
     case 'sig-classic':
       return <SigClassic design={design} />;
+    case 'sig-photo-led':
+      return <SigPhotoLed design={design} />;
+    case 'sig-compact':
+      return <SigCompact design={design} />;
     default:
       return null;
   }
@@ -42,4 +48,4 @@ export function isDoubleSidedTemplate(templateId: string): boolean {
   return DOUBLE_SIDED_CARD_TEMPLATES.has(templateId);
 }
 
-export { CardClassic, CardClassicPlus, CardMono, SigClassic };
+export { CardClassic, CardClassicPlus, CardMono, SigClassic, SigPhotoLed, SigCompact };
