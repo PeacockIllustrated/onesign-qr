@@ -9,7 +9,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => mockSupabase),
 }));
 
-vi.mock('@/lib/security/url-validator', () => ({
+vi.mock('@/lib/security/url-validator-strict', () => ({
   validateUrlStrict: vi.fn(async () => ({
     isValid: true,
     normalizedUrl: 'https://example.com/',
