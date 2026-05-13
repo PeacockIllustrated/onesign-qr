@@ -85,7 +85,9 @@ const designConfig = z
     avatar_border: z.boolean().optional(),
     avatar_border_color: hexColor.optional(),
 
-    back_style: z.enum(['logo-centered', 'solid-accent', 'monogram']).optional(),
+    back_style: z
+      .enum(['logo-centered', 'solid-accent', 'contact', 'tagline-hero', 'socials', 'monogram'])
+      .optional(),
 
     density: z.enum(['compact', 'normal', 'spacious']).optional(),
     accent_style: z.enum(['bar', 'block', 'outline', 'minimal']).optional(),

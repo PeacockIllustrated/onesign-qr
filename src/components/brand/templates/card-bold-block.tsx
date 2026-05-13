@@ -1,7 +1,8 @@
-import type { BrandDesignHydrated, AvatarShape, CardBackStyle } from '@/types/brand';
+import type { BrandDesignHydrated, AvatarShape } from '@/types/brand';
 import { resolveColors, pickLogo } from '@/lib/brand/hydrate';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
 import { Avatar, getInitials, PrintBleed, isDarkColor, densityScale } from './shared';
+import { CardBack, backBgColor } from './card-back';
 
 /**
  * Bold Block — split-colour front, magazine-style drop cap.
@@ -15,7 +16,7 @@ import { Avatar, getInitials, PrintBleed, isDarkColor, densityScale } from './sh
  * Use case: confident, maximalist, agency / architecture / studio brands.
  */
 export function CardBoldBlock({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
-  return side === 'front' ? <Front design={design} /> : <Back design={design} />;
+  return side === 'front' ? <Front design={design} /> : <CardBack design={design} defaultStyle="solid-accent" />;
 }
 
 function Front({ design }: { design: BrandDesignHydrated }) {
@@ -148,77 +149,9 @@ function Front({ design }: { design: BrandDesignHydrated }) {
   );
 }
 
-function Back({ design }: { design: BrandDesignHydrated }) {
-  const colors = resolveColors(design);
-  const { profile } = design;
-  const accent = colors.accent ?? colors.primary;
-  const backStyle: CardBackStyle = design.config.back_style ?? 'solid-accent';
-  const tagline = design.config.tagline ?? profile.tagline;
-  const footer = design.config.footer_text;
-  const { url: logoUrl, needsInvert } = pickLogo(design, 'dark');
-
-  const baseStyle: React.CSSProperties = {
-    width: `${CARD_DIMENSIONS.width_mm}mm`,
-    height: `${CARD_DIMENSIONS.height_mm}mm`,
-    overflow: 'hidden',
-    position: 'relative',
-    fontFamily: `'${profile.font_heading}', Georgia, serif`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'column',
-    padding: '6mm',
-    boxSizing: 'border-box',
-    color: colors.secondary,
-    gap: '3mm',
-  };
-
-  if (backStyle === 'monogram') {
-    return (
-      <article style={{ ...baseStyle, backgroundColor: accent }}>
-        <span style={{ fontSize: '26mm', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1 }}>
-          {profile.name.charAt(0).toUpperCase()}
-        </span>
-      </article>
-    );
-  }
-
-  return (
-    <article style={{ ...baseStyle, backgroundColor: backStyle === 'solid-accent' ? accent : colors.primary }}>
-      {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoUrl}
-          alt=""
-          style={{
-            maxHeight: '14mm',
-            maxWidth: '52mm',
-            objectFit: 'contain',
-            filter: needsInvert ? 'brightness(0) invert(1)' : undefined,
-          }}
-        />
-      ) : (
-        <span style={{ fontSize: '6mm', fontWeight: 700 }}>{profile.name}</span>
-      )}
-      {tagline && (
-        <p style={{ fontSize: '2.6mm', fontStyle: 'italic', opacity: 0.75, margin: 0, maxWidth: '55mm', textAlign: 'center', lineHeight: 1.4 }}>
-          {tagline}
-        </p>
-      )}
-      {footer && (
-        <p style={{ position: 'absolute', bottom: '4mm', left: '6mm', right: '6mm', fontSize: '1.8mm', textAlign: 'center', opacity: 0.6, margin: 0 }}>
-          {footer}
-        </p>
-      )}
-    </article>
-  );
-}
-
 export function CardBoldBlockPrint({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
   const colors = resolveColors(design);
-  const accent = colors.accent ?? colors.primary;
-  const bs = design.config.back_style ?? 'solid-accent';
-  const bg = side === 'front' ? colors.secondary : bs === 'solid-accent' ? accent : bs === 'monogram' ? accent : colors.primary;
+  const bg = side === 'front' ? colors.secondary : backBgColor(design, 'solid-accent');
   return (
     <PrintBleed bgColor={bg}>
       <CardBoldBlock design={design} side={side} />

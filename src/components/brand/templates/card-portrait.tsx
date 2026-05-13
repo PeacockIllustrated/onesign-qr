@@ -1,7 +1,8 @@
-import type { BrandDesignHydrated, CardBackStyle } from '@/types/brand';
+import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors, pickLogo } from '@/lib/brand/hydrate';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
 import { getInitials, PrintBleed, isDarkColor } from './shared';
+import { CardBack, backBgColor } from './card-back';
 
 /**
  * Portrait — the front is dominated by a photo of the person.
@@ -18,7 +19,7 @@ import { getInitials, PrintBleed, isDarkColor } from './shared';
  * colour-block with initials if none is set.
  */
 export function CardPortrait({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
-  return side === 'front' ? <Front design={design} /> : <Back design={design} />;
+  return side === 'front' ? <Front design={design} /> : <CardBack design={design} defaultStyle="logo-centered" />;
 }
 
 function Front({ design }: { design: BrandDesignHydrated }) {
@@ -149,83 +150,9 @@ function Front({ design }: { design: BrandDesignHydrated }) {
   );
 }
 
-function Back({ design }: { design: BrandDesignHydrated }) {
-  const colors = resolveColors(design);
-  const { profile } = design;
-  const accent = colors.accent ?? colors.primary;
-  const tagline = design.config.tagline ?? profile.tagline;
-  const backStyle: CardBackStyle = design.config.back_style ?? 'logo-centered';
-  const { url: logoUrl, needsInvert } = pickLogo(design, 'dark');
-
-  if (backStyle === 'monogram') {
-    return (
-      <article
-        style={{
-          width: `${CARD_DIMENSIONS.width_mm}mm`,
-          height: `${CARD_DIMENSIONS.height_mm}mm`,
-          backgroundColor: accent,
-          color: colors.secondary,
-          fontFamily: `'${profile.font_heading}', Arial, sans-serif`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <span style={{ fontSize: '26mm', fontWeight: 700, letterSpacing: '-0.04em' }}>
-          {profile.name.charAt(0).toUpperCase()}
-        </span>
-      </article>
-    );
-  }
-
-  const bg = backStyle === 'solid-accent' ? accent : colors.primary;
-  return (
-    <article
-      style={{
-        width: `${CARD_DIMENSIONS.width_mm}mm`,
-        height: `${CARD_DIMENSIONS.height_mm}mm`,
-        backgroundColor: bg,
-        color: colors.secondary,
-        fontFamily: `'${profile.font_body}', Arial, sans-serif`,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '3mm',
-        padding: '6mm',
-      }}
-    >
-      {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoUrl}
-          alt=""
-          style={{
-            maxHeight: '14mm',
-            maxWidth: '50mm',
-            objectFit: 'contain',
-            filter: needsInvert ? 'brightness(0) invert(1)' : undefined,
-          }}
-        />
-      ) : (
-        <span style={{ fontSize: '6mm', fontWeight: 600, fontFamily: `'${profile.font_heading}', Arial, sans-serif` }}>
-          {profile.name}
-        </span>
-      )}
-      {tagline && (
-        <p style={{ fontSize: '2.4mm', fontStyle: 'italic', opacity: 0.75, margin: 0, textAlign: 'center', maxWidth: '55mm', lineHeight: 1.4 }}>
-          {tagline}
-        </p>
-      )}
-    </article>
-  );
-}
-
 export function CardPortraitPrint({ design, side }: { design: BrandDesignHydrated; side: 'front' | 'back' }) {
   const colors = resolveColors(design);
-  const accent = colors.accent ?? colors.primary;
-  const bs = design.config.back_style ?? 'logo-centered';
-  const bg = side === 'front' ? colors.secondary : bs === 'solid-accent' || bs === 'monogram' ? accent : colors.primary;
+  const bg = side === 'front' ? colors.secondary : backBgColor(design, 'logo-centered');
   return (
     <PrintBleed bgColor={bg}>
       <CardPortrait design={design} side={side} />
