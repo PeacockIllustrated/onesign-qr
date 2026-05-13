@@ -12,7 +12,16 @@ export interface BrandSocials {
   youtube?: string;
   tiktok?: string;
   github?: string;
+  threads?: string;
+  mastodon?: string;
+  behance?: string;
+  dribbble?: string;
   website?: string;
+  // Action links — surfaced as buttons / "Book a meeting" / "Schedule a call"
+  // on signatures and (eventually) cards.
+  calendar?: string;
+  booking?: string;
+  portfolio?: string;
 }
 
 export interface BrandProfile {

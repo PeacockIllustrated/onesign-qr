@@ -40,7 +40,14 @@ export const updateBrandProfileSchema = z.object({
       youtube: z.string().max(2048).optional(),
       tiktok: z.string().max(2048).optional(),
       github: z.string().max(2048).optional(),
+      threads: z.string().max(2048).optional(),
+      mastodon: z.string().max(2048).optional(),
+      behance: z.string().max(2048).optional(),
+      dribbble: z.string().max(2048).optional(),
       website: z.string().max(2048).optional(),
+      calendar: z.string().max(2048).optional(),
+      booking: z.string().max(2048).optional(),
+      portfolio: z.string().max(2048).optional(),
     })
     .optional(),
 });

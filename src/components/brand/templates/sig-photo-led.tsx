@@ -135,7 +135,47 @@ export function SigPhotoLed({ design }: SigPhotoLedProps) {
               )}
             </div>
 
-            {(socials.linkedin || socials.twitter || socials.instagram) && (
+            {(socials.calendar || socials.booking) && (
+              <div style={{ marginTop: '12px' }}>
+                {socials.calendar && (
+                  <a
+                    href={socials.calendar}
+                    style={{
+                      display: 'inline-block',
+                      padding: '5px 12px',
+                      backgroundColor: accent,
+                      color: '#ffffff',
+                      textDecoration: 'none',
+                      borderRadius: '4px',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      marginRight: 6,
+                    }}
+                  >
+                    Book a meeting
+                  </a>
+                )}
+                {socials.booking && socials.booking !== socials.calendar && (
+                  <a
+                    href={socials.booking}
+                    style={{
+                      display: 'inline-block',
+                      padding: '5px 12px',
+                      border: `1px solid ${accent}`,
+                      color: accent,
+                      textDecoration: 'none',
+                      borderRadius: '4px',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                    }}
+                  >
+                    Schedule
+                  </a>
+                )}
+              </div>
+            )}
+
+            {(socials.linkedin || socials.twitter || socials.instagram || socials.threads || socials.github || socials.behance || socials.dribbble) && (
               <div style={{ marginTop: '10px', fontSize: '12px' }}>
                 {socials.linkedin && (
                   <a href={socials.linkedin} style={{ color: '#0a66c2', textDecoration: 'none', marginRight: 10 }}>
@@ -150,6 +190,26 @@ export function SigPhotoLed({ design }: SigPhotoLedProps) {
                 {socials.instagram && (
                   <a href={socials.instagram} style={{ color: '#e1306c', textDecoration: 'none', marginRight: 10 }}>
                     Instagram
+                  </a>
+                )}
+                {socials.threads && (
+                  <a href={socials.threads} style={{ color: '#222', textDecoration: 'none', marginRight: 10 }}>
+                    Threads
+                  </a>
+                )}
+                {socials.github && (
+                  <a href={socials.github} style={{ color: '#24292f', textDecoration: 'none', marginRight: 10 }}>
+                    GitHub
+                  </a>
+                )}
+                {socials.behance && (
+                  <a href={socials.behance} style={{ color: '#0057ff', textDecoration: 'none', marginRight: 10 }}>
+                    Behance
+                  </a>
+                )}
+                {socials.dribbble && (
+                  <a href={socials.dribbble} style={{ color: '#ea4c89', textDecoration: 'none', marginRight: 10 }}>
+                    Dribbble
                   </a>
                 )}
               </div>

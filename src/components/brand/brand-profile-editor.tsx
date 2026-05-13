@@ -18,6 +18,7 @@ import {
   useToast,
 } from '@/components/ui';
 import { BRAND_TEMPLATES } from '@/lib/brand/templates';
+import { FontPicker } from '@/components/brand/font-picker';
 import type { BrandProfile, BrandPerson, BrandDesign, BrandDesignKind } from '@/types/brand';
 import { formatDate } from '@/lib/utils';
 
@@ -28,20 +29,6 @@ interface Props {
   logoUrl: string | null;
   logoDarkUrl: string | null;
 }
-
-const FONT_OPTIONS = [
-  'Inter',
-  'Manrope',
-  'DM Sans',
-  'Plus Jakarta Sans',
-  'Space Grotesk',
-  'Playfair Display',
-  'Lora',
-  'Merriweather',
-  'IBM Plex Sans',
-  'IBM Plex Serif',
-  'Work Sans',
-];
 
 export function BrandProfileEditor({ profile: initial, people, designs, logoUrl: initialLogo, logoDarkUrl: initialLogoDark }: Props) {
   const router = useRouter();
@@ -198,24 +185,22 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
                 />
               </div>
 
-              {/* Fonts */}
+              {/* Fonts — searchable Google Fonts picker */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Heading font</Label>
-                  <Select value={profile.font_heading} onChange={(e) => patch('font_heading', e.target.value)}>
-                    {FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </Select>
-                </div>
-                <div>
-                  <Label>Body font</Label>
-                  <Select value={profile.font_body} onChange={(e) => patch('font_body', e.target.value)}>
-                    {FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </Select>
-                </div>
+                <FontPicker
+                  label="Heading font"
+                  value={profile.font_heading}
+                  onChange={(v) => patch('font_heading', v)}
+                />
+                <FontPicker
+                  label="Body font"
+                  value={profile.font_body}
+                  onChange={(v) => patch('font_body', v)}
+                />
               </div>
 
-              {/* Web + socials */}
-              <div className="space-y-3">
+              {/* Web + socials + action links */}
+              <div className="space-y-4">
                 <div>
                   <Label>Website</Label>
                   <Input
@@ -224,11 +209,34 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
                     placeholder="https://example.com"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <SocialField label="LinkedIn" value={profile.socials.linkedin ?? ''} onChange={(v) => patch('socials', { ...profile.socials, linkedin: v })} />
-                  <SocialField label="Twitter / X" value={profile.socials.twitter ?? ''} onChange={(v) => patch('socials', { ...profile.socials, twitter: v })} />
-                  <SocialField label="Instagram" value={profile.socials.instagram ?? ''} onChange={(v) => patch('socials', { ...profile.socials, instagram: v })} />
-                  <SocialField label="GitHub" value={profile.socials.github ?? ''} onChange={(v) => patch('socials', { ...profile.socials, github: v })} />
+
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-400">Socials</Label>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <SocialField label="LinkedIn" value={profile.socials.linkedin ?? ''} onChange={(v) => patch('socials', { ...profile.socials, linkedin: v })} />
+                    <SocialField label="Twitter / X" value={profile.socials.twitter ?? ''} onChange={(v) => patch('socials', { ...profile.socials, twitter: v })} />
+                    <SocialField label="Instagram" value={profile.socials.instagram ?? ''} onChange={(v) => patch('socials', { ...profile.socials, instagram: v })} />
+                    <SocialField label="Threads" value={profile.socials.threads ?? ''} onChange={(v) => patch('socials', { ...profile.socials, threads: v })} />
+                    <SocialField label="Facebook" value={profile.socials.facebook ?? ''} onChange={(v) => patch('socials', { ...profile.socials, facebook: v })} />
+                    <SocialField label="YouTube" value={profile.socials.youtube ?? ''} onChange={(v) => patch('socials', { ...profile.socials, youtube: v })} />
+                    <SocialField label="TikTok" value={profile.socials.tiktok ?? ''} onChange={(v) => patch('socials', { ...profile.socials, tiktok: v })} />
+                    <SocialField label="Mastodon" value={profile.socials.mastodon ?? ''} onChange={(v) => patch('socials', { ...profile.socials, mastodon: v })} />
+                    <SocialField label="GitHub" value={profile.socials.github ?? ''} onChange={(v) => patch('socials', { ...profile.socials, github: v })} />
+                    <SocialField label="Behance" value={profile.socials.behance ?? ''} onChange={(v) => patch('socials', { ...profile.socials, behance: v })} />
+                    <SocialField label="Dribbble" value={profile.socials.dribbble ?? ''} onChange={(v) => patch('socials', { ...profile.socials, dribbble: v })} />
+                    <SocialField label="Portfolio" value={profile.socials.portfolio ?? ''} onChange={(v) => patch('socials', { ...profile.socials, portfolio: v })} />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-zinc-400">Action links</Label>
+                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    Surfaced as call-to-action links on signatures.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SocialField label="Calendar (Calendly, etc.)" value={profile.socials.calendar ?? ''} onChange={(v) => patch('socials', { ...profile.socials, calendar: v })} />
+                    <SocialField label="Booking / scheduling" value={profile.socials.booking ?? ''} onChange={(v) => patch('socials', { ...profile.socials, booking: v })} />
+                  </div>
                 </div>
               </div>
             </CardContent>

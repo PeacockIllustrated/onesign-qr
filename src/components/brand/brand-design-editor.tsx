@@ -15,6 +15,7 @@ import {
 import { renderTemplate, isDoubleSidedTemplate } from '@/components/brand/templates';
 import { FontLoader } from '@/components/brand/font-loader';
 import { Card3dViewer } from '@/components/brand/card-3d-viewer';
+import { BRAND_TEMPLATES } from '@/lib/brand/templates';
 import type { BrandDesignHydrated, BrandPerson, BrandDesignConfig, AvatarShape, CardBackStyle } from '@/types/brand';
 
 interface Props {
@@ -27,10 +28,13 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
   const { addToast } = useToast();
 
   const [name, setName] = useState(initial.name);
+  const [templateId, setTemplateId] = useState(initial.template_id);
   const [personId, setPersonId] = useState<string | null>(initial.person_id);
   const [config, setConfig] = useState<BrandDesignConfig>(initial.config ?? {});
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  const sameKindTemplates = BRAND_TEMPLATES.filter((t) => t.kind === initial.kind);
 
   // Live preview uses the latest config + person picked.
   // The photo URL is derived from the chosen person's storage path so swapping
@@ -44,12 +48,13 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
     return {
       ...initial,
       name,
+      template_id: templateId,
       person_id: personId,
       person: newPerson,
       person_photo_url: newPhotoUrl,
       config,
     };
-  }, [initial, name, personId, config, people]);
+  }, [initial, name, templateId, personId, config, people]);
 
   async function save() {
     setSaving(true);
@@ -57,7 +62,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
       const res = await fetch(`/api/brand/designs/${initial.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, person_id: personId, config }),
+        body: JSON.stringify({ name, template_id: templateId, person_id: personId, config }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
       addToast({ title: 'Saved', variant: 'success' });
@@ -147,7 +152,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
             className="text-2xl font-semibold border-0 bg-transparent px-0 h-auto focus-visible:ring-0"
           />
           <p className="text-sm text-muted-foreground mt-1">
-            {initial.kind === 'business_card' ? 'Business card' : 'Email signature'} · template {initial.template_id}
+            {initial.kind === 'business_card' ? 'Business card' : 'Email signature'} · {sameKindTemplates.find((t) => t.id === templateId)?.name ?? templateId}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -163,6 +168,20 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardContent className="pt-6 space-y-4">
+              <div>
+                <Label className="text-xs">Template</Label>
+                <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+                  {sameKindTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </Select>
+                {sameKindTemplates.find((t) => t.id === templateId)?.description && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {sameKindTemplates.find((t) => t.id === templateId)?.description}
+                  </p>
+                )}
+              </div>
+
               <div>
                 <Label className="text-xs">Person</Label>
                 <Select value={personId ?? ''} onChange={(e) => setPersonId(e.target.value || null)}>
@@ -212,14 +231,14 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
               </div>
 
               {/* Avatar — shown for cards and signatures that can host one */}
-              {(isDoubleSidedTemplate(initial.template_id) || initial.kind === 'email_signature') && (
+              {(isDoubleSidedTemplate(templateId) || initial.kind === 'email_signature') && (
                 <div className="pt-2 mt-2 border-t border-border space-y-3">
                   <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Avatar</p>
 
                   <div>
                     <Label className="text-xs">Shape</Label>
                     <Select
-                      value={config.avatar_shape ?? (initial.template_id === 'sig-photo-led' ? 'circle' : 'none')}
+                      value={config.avatar_shape ?? (templateId === 'sig-photo-led' ? 'circle' : 'none')}
                       onChange={(e) => setConfig({ ...config, avatar_shape: e.target.value as AvatarShape })}
                     >
                       <option value="none">No avatar</option>
@@ -228,7 +247,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                     </Select>
                   </div>
 
-                  {(config.avatar_shape ?? (initial.template_id === 'sig-photo-led' ? 'circle' : 'none')) !== 'none' && (
+                  {(config.avatar_shape ?? (templateId === 'sig-photo-led' ? 'circle' : 'none')) !== 'none' && (
                     <>
                       <div className="flex items-center gap-2">
                         <input
@@ -258,14 +277,14 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
               )}
 
               {/* Card-specific: back style */}
-              {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) && (
+              {initial.kind === 'business_card' && isDoubleSidedTemplate(templateId) && (
                 <div className="pt-2 mt-2 border-t border-border space-y-3">
                   <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Card back</p>
 
                   <div>
                     <Label className="text-xs">Style</Label>
                     <Select
-                      value={config.back_style ?? (initial.template_id === 'card-mono' ? 'solid-accent' : 'logo-centered')}
+                      value={config.back_style ?? (templateId === 'card-mono' ? 'solid-accent' : 'logo-centered')}
                       onChange={(e) => setConfig({ ...config, back_style: e.target.value as CardBackStyle })}
                     >
                       <option value="logo-centered">Logo centred</option>
@@ -312,7 +331,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
             <CardContent className="pt-6">
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">Preview</p>
               <div className="bg-zinc-900/40 border border-border rounded-md p-10 min-h-[340px] flex items-center justify-center">
-                {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) ? (
+                {initial.kind === 'business_card' && isDoubleSidedTemplate(templateId) ? (
                   <Card3dViewer
                     front={renderTemplate(previewDesign, { side: 'front' })}
                     back={renderTemplate(previewDesign, { side: 'back' })}
@@ -330,7 +349,7 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
               </div>
               {initial.kind === 'business_card' && (
                 <p className="text-xs text-muted-foreground mt-3 text-center">
-                  {isDoubleSidedTemplate(initial.template_id)
+                  {isDoubleSidedTemplate(templateId)
                     ? 'Move cursor to tilt · click the card or the button to flip · the exported PDF is print-ready with 3mm bleed and crop marks.'
                     : 'The exported PDF is print-ready with 3mm bleed and crop marks.'}
                 </p>
