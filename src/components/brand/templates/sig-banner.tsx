@@ -47,9 +47,30 @@ export function SigBanner({ design }: SigBannerProps) {
               padding: '14px 20px',
             }}
           >
+            {/*
+              Band layout:
+                [Avatar?] [Name + Role + Company]                  [Logo?]
+              The avatar sits inline with the name as a tight identity lockup;
+              the logo claims the band right as the brand mark. Both stay
+              inside the band so they read as one grouped header rather than
+              being separated across the band/body boundary.
+            */}
             <table cellPadding={0} cellSpacing={0} border={0} style={{ width: '100%' }}>
               <tbody>
                 <tr>
+                  {showAvatar && (
+                    <td valign="middle" style={{ paddingRight: '14px', width: '52px', verticalAlign: 'middle' }}>
+                      <SigAvatar
+                        photoUrl={person_photo_url}
+                        initials={sigInitials(person?.full_name)}
+                        shape={avatar.shape === 'square' ? 'square' : 'circle'}
+                        border={avatar.border}
+                        borderColor={avatar.borderColor}
+                        sizePx={48}
+                        fallbackBg={`${accent}50`}
+                      />
+                    </td>
+                  )}
                   <td valign="middle" style={{ verticalAlign: 'middle' }}>
                     <div
                       style={{
@@ -75,36 +96,21 @@ export function SigBanner({ design }: SigBannerProps) {
                       </div>
                     )}
                   </td>
-                  {(showAvatar || (logo_url && design.config.show_logo !== false)) && (
-                    <td valign="middle" align="right" style={{ verticalAlign: 'middle', textAlign: 'right' }}>
-                      {/* If both are present, show the logo as the wordmark in the band
-                          and the avatar moves into the body alongside the contact column
-                          (see below). If only one, that one fills the band corner. */}
-                      {showAvatar && !(logo_url && design.config.show_logo !== false) ? (
-                        <SigAvatar
-                          photoUrl={person_photo_url}
-                          initials={sigInitials(person?.full_name)}
-                          shape={avatar.shape === 'square' ? 'square' : 'circle'}
-                          border={avatar.border}
-                          borderColor={avatar.borderColor}
-                          sizePx={56}
-                          fallbackBg={`${accent}40`}
-                        />
-                      ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={logo_url!}
-                          alt={profile.name}
-                          width={80}
-                          style={{
-                            display: 'block',
-                            maxWidth: '80px',
-                            height: 'auto',
-                            filter: 'brightness(0) invert(1)',
-                            opacity: 0.95,
-                          }}
-                        />
-                      )}
+                  {logo_url && design.config.show_logo !== false && (
+                    <td valign="middle" align="right" style={{ verticalAlign: 'middle', textAlign: 'right', paddingLeft: '14px' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={logo_url}
+                        alt={profile.name}
+                        width={72}
+                        style={{
+                          display: 'block',
+                          maxWidth: '72px',
+                          height: 'auto',
+                          filter: 'brightness(0) invert(1)',
+                          opacity: 0.95,
+                        }}
+                      />
                     </td>
                   )}
                 </tr>
@@ -116,34 +122,7 @@ export function SigBanner({ design }: SigBannerProps) {
         {/* Body */}
         <tr>
           <td style={{ padding: '14px 20px', backgroundColor: '#ffffff' }}>
-            {/* When both an avatar and a logo are set, the logo claims the band
-                top-right and the avatar sits at the top-left of the body next
-                to the tagline / contact stack. */}
-            {showAvatar && logo_url && design.config.show_logo !== false && (
-              <table cellPadding={0} cellSpacing={0} border={0} style={{ marginBottom: '8px' }}>
-                <tbody>
-                  <tr>
-                    <td valign="middle" style={{ paddingRight: '10px', verticalAlign: 'middle' }}>
-                      <SigAvatar
-                        photoUrl={person_photo_url}
-                        initials={sigInitials(person?.full_name)}
-                        shape={avatar.shape === 'square' ? 'square' : 'circle'}
-                        border={avatar.border}
-                        borderColor={avatar.borderColor}
-                        sizePx={42}
-                        fallbackBg={`${accent}20`}
-                      />
-                    </td>
-                    {tagline && (
-                      <td valign="middle" style={{ verticalAlign: 'middle', fontSize: '12px', color: '#888', fontStyle: 'italic' }}>
-                        {tagline}
-                      </td>
-                    )}
-                  </tr>
-                </tbody>
-              </table>
-            )}
-            {!(showAvatar && logo_url) && tagline && (
+            {tagline && (
               <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', marginBottom: '8px' }}>
                 {tagline}
               </div>
