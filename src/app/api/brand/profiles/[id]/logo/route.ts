@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { checkApiLimit, getRateLimitHeaders } from '@/lib/security/rate-limiter';
 import { isValidUUID } from '@/validations/qr';
 
@@ -73,21 +74,25 @@ export async function POST(
   const filename = variant === 'dark' ? `logo-dark.${ext}` : `logo.${ext}`;
   const storagePath = `${profile.org_id}/profiles/${profile.id}/${filename}`;
 
+  // Authorization happened above (brand_profiles SELECT under user-scoped
+  // client respects org RLS). For the actual blob write we use the admin
+  // client so the storage service doesn't re-run RLS — its handling of
+  // SVG uploads under user-scoped JWTs returns spurious 400s in some
+  // configurations even with valid permissions and allow-listed MIME.
+  const admin = createAdminClient();
+
   // Remove existing logo if path differs (different extension)
   const existing = variant === 'dark' ? profile.logo_dark_storage_path : profile.logo_storage_path;
   if (existing && existing !== storagePath) {
-    await supabase.storage.from('brand-assets').remove([existing]);
+    await admin.storage.from('brand-assets').remove([existing]);
   }
 
-  // Re-wrap as a Blob with explicit MIME so Supabase storage's content-type
-  // checks pass even for stricter types like image/svg+xml. Without the
-  // re-wrap, the SDK can send Content-Type: application/octet-stream which
-  // the storage service then rejects with a 400.
-  const buffer = await file.arrayBuffer();
-  const blob = new Blob([buffer], { type: effectiveMime });
-  const { error: uploadError } = await supabase.storage
+  // Re-wrap as a Blob with explicit MIME so the Content-Type header matches
+  // what the storage service sees on the body. Buffer is fine here too.
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const { error: uploadError } = await admin.storage
     .from('brand-assets')
-    .upload(storagePath, blob, { contentType: effectiveMime, upsert: true });
+    .upload(storagePath, buffer, { contentType: effectiveMime, upsert: true });
   if (uploadError) {
     console.error('Logo upload failed:', uploadError.message, '— path:', storagePath, 'mime:', effectiveMime);
     return NextResponse.json(
@@ -105,7 +110,7 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to save logo path' }, { status: 500 });
   }
 
-  const { data: urlData } = supabase.storage.from('brand-assets').getPublicUrl(storagePath);
+  const { data: urlData } = admin.storage.from('brand-assets').getPublicUrl(storagePath);
   return NextResponse.json(
     { storage_path: storagePath, public_url: urlData.publicUrl, variant },
     { headers: getRateLimitHeaders(rateLimit) }
@@ -140,7 +145,8 @@ export async function DELETE(
 
   const existing = (profile as Record<string, unknown>)[field] as string | null;
   if (existing) {
-    await supabase.storage.from('brand-assets').remove([existing]);
+    const admin = createAdminClient();
+    await admin.storage.from('brand-assets').remove([existing]);
   }
   await supabase.from('brand_profiles').update({ [field]: null }).eq('id', id);
   return new NextResponse(null, { status: 204 });
