@@ -1,6 +1,6 @@
 import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors } from '@/lib/brand/hydrate';
-import { SigAvatar, resolveAvatarSettings, sigInitials } from './sig-shared';
+import { SigAvatar, SecondaryLogo, resolveAvatarSettings, sigInitials } from './sig-shared';
 
 interface SigEcoProps {
   design: BrandDesignHydrated;
@@ -61,6 +61,13 @@ export function SigEco({ design }: SigEcoProps) {
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={logo_url!} alt={profile.name} width={80} style={{ display: 'block', maxWidth: '80px', height: 'auto' }} />
+              )}
+              {/* When both are present, render the logo as a small mark under
+                  the avatar to keep the brand visible alongside the person. */}
+              {hasPhoto && logo_url && design.config.show_logo !== false && (
+                <div style={{ marginTop: '8px' }}>
+                  <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={20} />
+                </div>
               )}
             </td>
           )}

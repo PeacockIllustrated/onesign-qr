@@ -1,6 +1,6 @@
 import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors } from '@/lib/brand/hydrate';
-import { SigAvatar, resolveAvatarSettings, sigInitials } from './sig-shared';
+import { SigAvatar, SecondaryLogo, resolveAvatarSettings, sigInitials } from './sig-shared';
 
 interface SigMinimalBarProps {
   design: BrandDesignHydrated;
@@ -15,13 +15,19 @@ interface SigMinimalBarProps {
  */
 export function SigMinimalBar({ design }: SigMinimalBarProps) {
   const colors = resolveColors(design);
-  const { profile, person, person_photo_url } = design;
+  const { profile, person, person_photo_url, logo_url } = design;
   const accent = colors.accent ?? colors.primary;
   const socials = profile.socials ?? {};
   const tagline = design.config.tagline ?? profile.tagline;
   const avatar = resolveAvatarSettings(design, 'none');
   const hasPhoto = avatar.showImage && person_photo_url !== null;
   const showSocials = design.config.show_socials !== false;
+  const wantLogo = !!logo_url && design.config.show_logo !== false;
+  // Small wordmark sits at the top of the type column when both visuals
+  // are configured. If only the logo is present, it stands in for the
+  // (absent) avatar to the left of the bar.
+  const showSecondaryLogo = hasPhoto && wantLogo;
+  const showLogoInAvatarSlot = !hasPhoto && wantLogo;
 
   return (
     <table
@@ -51,7 +57,17 @@ export function SigMinimalBar({ design }: SigMinimalBarProps) {
               />
             </td>
           )}
+          {showLogoInAvatarSlot && (
+            <td valign="top" style={{ paddingRight: '14px', verticalAlign: 'top' }}>
+              <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={36} />
+            </td>
+          )}
           <td valign="top" style={{ borderLeft: `2px solid ${accent}`, paddingLeft: '14px', verticalAlign: 'top' }}>
+            {showSecondaryLogo && (
+              <div style={{ marginBottom: '6px' }}>
+                <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={18} />
+              </div>
+            )}
             <div
               style={{
                 fontFamily: `'${profile.font_heading}', Georgia, serif`,
