@@ -106,9 +106,18 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
   }
 
   async function deleteProfile() {
-    if (!confirm('Delete this brand profile? Designs will also be removed.')) return;
-    const res = await fetch(`/api/brand/profiles/${profile.id}`, { method: 'DELETE' });
-    if (res.ok) router.push('/app/brand-kit');
+    if (!confirm(`Delete brand profile "${profile.name}"? Designs and uploaded assets will be removed too.`)) return;
+    try {
+      const res = await fetch(`/api/brand/profiles/${profile.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.details ?? body?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Brand deleted', variant: 'success' });
+      router.push('/app/brand-kit');
+    } catch (err: any) {
+      addToast({ title: 'Delete failed', description: err.message, variant: 'error' });
+    }
   }
 
   return (
@@ -379,10 +388,19 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
     }
   }
 
-  async function deletePerson(id: string) {
-    if (!confirm('Remove this person?')) return;
-    await fetch(`/api/brand/people/${id}`, { method: 'DELETE' });
-    router.refresh();
+  async function deletePerson(id: string, name: string) {
+    if (!confirm(`Remove ${name}? Any designs that referenced them will keep working with no person attached.`)) return;
+    try {
+      const res = await fetch(`/api/brand/people/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.details ?? body?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Person removed', variant: 'success' });
+      router.refresh();
+    } catch (err: any) {
+      addToast({ title: 'Delete failed', description: err.message, variant: 'error' });
+    }
   }
 
   async function uploadPhoto(personId: string, file: File) {
@@ -459,7 +477,7 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => deletePerson(p.id)}>
+              <Button variant="ghost" size="icon" onClick={() => deletePerson(p.id, p.full_name)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -537,6 +555,21 @@ function DesignsSection({
     }
   }
 
+  async function deleteDesign(designId: string, designName: string) {
+    if (!confirm(`Delete design "${designName}"?`)) return;
+    try {
+      const res = await fetch(`/api/brand/designs/${designId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.details ?? body?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Design deleted', variant: 'success' });
+      router.refresh();
+    } catch (err: any) {
+      addToast({ title: 'Delete failed', description: err.message, variant: 'error' });
+    }
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -546,12 +579,14 @@ function DesignsSection({
         )}
 
         {designs.map((d) => (
-          <Link
+          <div
             key={d.id}
-            href={`/app/brand-kit/${profileId}/designs/${d.id}`}
-            className="flex items-center justify-between gap-3 py-3 border-b border-border last:border-b-0 hover:bg-zinc-900/30 -mx-2 px-2 rounded transition-colors"
+            className="flex items-center justify-between gap-3 py-3 border-b border-border last:border-b-0 hover:bg-zinc-900/30 -mx-2 px-2 rounded transition-colors group"
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href={`/app/brand-kit/${profileId}/designs/${d.id}`}
+              className="flex items-center gap-3 min-w-0 flex-1"
+            >
               {d.kind === 'business_card' ? (
                 <CreditCard className="h-4 w-4 text-zinc-500 shrink-0" />
               ) : (
@@ -563,8 +598,17 @@ function DesignsSection({
                   {d.kind === 'business_card' ? 'Business card' : 'Email signature'} · {d.template_id} · Updated {formatDate(d.updated_at)}
                 </p>
               </div>
-            </div>
-          </Link>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => deleteDesign(d.id, d.name)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              aria-label={`Delete ${d.name}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         ))}
 
         {/* Create flow */}

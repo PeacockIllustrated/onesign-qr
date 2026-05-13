@@ -112,13 +112,21 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { error } = await supabase
+  // .select() forces the response to include affected rows so we can tell
+  // the difference between "RLS silently denied" (0 rows, no error) and a
+  // real success.
+  const { data, error } = await supabase
     .from('brand_profiles')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .is('deleted_at', null)
+    .select('id');
 
   if (error) {
-    return NextResponse.json({ error: 'Failed to delete profile' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete profile', details: error.message }, { status: 500 });
+  }
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: 'Profile not found or already deleted' }, { status: 404 });
   }
   return new NextResponse(null, { status: 204 });
 }

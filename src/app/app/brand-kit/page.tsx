@@ -1,9 +1,8 @@
-import Link from 'next/link';
-import { Plus, Palette } from 'lucide-react';
+import { Palette } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { Button, Card, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui';
 import { CreateBrandProfileButton } from '@/components/brand/create-brand-profile-button';
-import { formatDate } from '@/lib/utils';
+import { BrandProfileCard } from '@/components/brand/brand-profile-card';
 
 export default async function BrandKitPage() {
   const supabase = await createClient();
@@ -43,31 +42,7 @@ export default async function BrandKitPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {profiles.map((p) => (
-            <Link key={p.id} href={`/app/brand-kit/${p.id}`}>
-              <Card className="hover:border-lynx-400/40 transition-colors h-full">
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-4">
-                    {/* Colour swatches */}
-                    <div className="flex flex-col gap-1 shrink-0">
-                      <div className="h-6 w-6 rounded-sm border border-zinc-700" style={{ backgroundColor: p.primary_color }} />
-                      <div className="h-6 w-6 rounded-sm border border-zinc-700" style={{ backgroundColor: p.secondary_color }} />
-                      {p.accent_color && (
-                        <div className="h-6 w-6 rounded-sm border border-zinc-700" style={{ backgroundColor: p.accent_color }} />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-base font-medium text-zinc-100 truncate">{p.name}</h3>
-                      {p.tagline && (
-                        <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{p.tagline}</p>
-                      )}
-                      <p className="text-xs text-zinc-500 mt-3">
-                        Updated {formatDate(p.updated_at)}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+            <BrandProfileCard key={p.id} profile={p} />
           ))}
         </div>
       )}

@@ -95,11 +95,18 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('brand_designs')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .is('deleted_at', null)
+    .select('id');
 
-  if (error) return NextResponse.json({ error: 'Failed to delete design' }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: 'Failed to delete design', details: error.message }, { status: 500 });
+  }
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: 'Design not found or already deleted' }, { status: 404 });
+  }
   return new NextResponse(null, { status: 204 });
 }

@@ -136,9 +136,18 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
   }
 
   async function deleteDesign() {
-    if (!confirm('Delete this design?')) return;
-    const res = await fetch(`/api/brand/designs/${initial.id}`, { method: 'DELETE' });
-    if (res.ok) router.push(`/app/brand-kit/${initial.brand_profile_id}`);
+    if (!confirm(`Delete design "${name}"?`)) return;
+    try {
+      const res = await fetch(`/api/brand/designs/${initial.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.details ?? body?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Design deleted', variant: 'success' });
+      router.push(`/app/brand-kit/${initial.brand_profile_id}`);
+    } catch (err: any) {
+      addToast({ title: 'Delete failed', description: err.message, variant: 'error' });
+    }
   }
 
   return (
