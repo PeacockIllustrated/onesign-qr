@@ -87,6 +87,18 @@ const designConfig = z
 
     back_style: z.enum(['logo-centered', 'solid-accent', 'monogram']).optional(),
 
+    density: z.enum(['compact', 'normal', 'spacious']).optional(),
+    accent_style: z.enum(['bar', 'block', 'outline', 'minimal']).optional(),
+    corner_style: z.enum(['sharp', 'rounded']).optional(),
+    divider_style: z.enum(['none', 'line', 'dot', 'pipe']).optional(),
+
+    show_pronouns: z.boolean().optional(),
+    show_mobile: z.boolean().optional(),
+    show_socials: z.boolean().optional(),
+    show_calendar_cta: z.boolean().optional(),
+
+    footer_text: z.string().max(200).optional(),
+
     show_qr: z.boolean().optional(),
     qr_destination_url: z.string().max(2048).optional(),
     custom_lines: z.array(z.string().max(120)).max(6).optional(),

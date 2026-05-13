@@ -16,7 +16,16 @@ import { renderTemplate, isDoubleSidedTemplate } from '@/components/brand/templa
 import { FontLoader } from '@/components/brand/font-loader';
 import { Card3dViewer } from '@/components/brand/card-3d-viewer';
 import { BRAND_TEMPLATES } from '@/lib/brand/templates';
-import type { BrandDesignHydrated, BrandPerson, BrandDesignConfig, AvatarShape, CardBackStyle } from '@/types/brand';
+import type {
+  BrandDesignHydrated,
+  BrandPerson,
+  BrandDesignConfig,
+  AvatarShape,
+  CardBackStyle,
+  Density,
+  DividerStyle,
+  CornerStyle,
+} from '@/types/brand';
 
 interface Props {
   design: BrandDesignHydrated;
@@ -311,6 +320,103 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
                   </div>
                 </div>
               )}
+
+              {/* Layout & visibility — applies to most templates */}
+              <div className="pt-2 mt-2 border-t border-border space-y-3">
+                <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Layout</p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Density</Label>
+                    <Select
+                      value={config.density ?? 'normal'}
+                      onChange={(e) => setConfig({ ...config, density: e.target.value as Density })}
+                    >
+                      <option value="compact">Compact</option>
+                      <option value="normal">Normal</option>
+                      <option value="spacious">Spacious</option>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Divider</Label>
+                    <Select
+                      value={config.divider_style ?? 'pipe'}
+                      onChange={(e) => setConfig({ ...config, divider_style: e.target.value as DividerStyle })}
+                    >
+                      <option value="pipe">Mid-dot ·</option>
+                      <option value="dot">Bullet •</option>
+                      <option value="line">Dash —</option>
+                      <option value="none">None</option>
+                    </Select>
+                  </div>
+                </div>
+
+                {(initial.kind === 'email_signature' || initial.template_id === 'sig-card') && (
+                  <div>
+                    <Label className="text-xs">Corners</Label>
+                    <Select
+                      value={config.corner_style ?? 'rounded'}
+                      onChange={(e) => setConfig({ ...config, corner_style: e.target.value as CornerStyle })}
+                    >
+                      <option value="rounded">Rounded</option>
+                      <option value="sharp">Sharp</option>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {/* Show/hide toggles */}
+              <div className="pt-2 mt-2 border-t border-border space-y-2">
+                <p className="text-xs font-medium text-zinc-300 uppercase tracking-wider">Show fields</p>
+                <ShowToggle
+                  id="show-pronouns"
+                  label="Pronouns"
+                  checked={config.show_pronouns !== false}
+                  onChange={(v) => setConfig({ ...config, show_pronouns: v })}
+                />
+                <ShowToggle
+                  id="show-mobile"
+                  label="Mobile number"
+                  checked={config.show_mobile !== false}
+                  onChange={(v) => setConfig({ ...config, show_mobile: v })}
+                />
+                {initial.kind === 'email_signature' && (
+                  <>
+                    <ShowToggle
+                      id="show-socials"
+                      label="Social links row"
+                      checked={config.show_socials !== false}
+                      onChange={(v) => setConfig({ ...config, show_socials: v })}
+                    />
+                    <ShowToggle
+                      id="show-calendar-cta"
+                      label="Calendar / booking button"
+                      checked={config.show_calendar_cta !== false}
+                      onChange={(v) => setConfig({ ...config, show_calendar_cta: v })}
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Footer text — extra small line for sustainability statements,
+                  manifesto excerpts, "Member of…" lines, etc. */}
+              <div className="pt-2 mt-2 border-t border-border space-y-2">
+                <Label className="text-xs">
+                  Footer line
+                  {templateId === 'sig-eco' && (
+                    <span className="text-muted-foreground"> (defaults to an eco statement)</span>
+                  )}
+                </Label>
+                <Input
+                  value={config.footer_text ?? ''}
+                  onChange={(e) => setConfig({ ...config, footer_text: e.target.value || undefined })}
+                  placeholder={
+                    templateId === 'sig-eco'
+                      ? '🌱 Please consider the environment before printing this email.'
+                      : 'Optional small text — quote, tagline, member-of statement…'
+                  }
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -412,6 +518,30 @@ function ColorOverride({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function ShowToggle({
+  id,
+  label,
+  checked,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <Label htmlFor={id} className="cursor-pointer">{label}</Label>
     </div>
   );
 }

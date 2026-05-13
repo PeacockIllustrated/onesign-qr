@@ -61,6 +61,10 @@ export interface BrandPerson {
 
 export type AvatarShape = 'none' | 'circle' | 'square';
 export type CardBackStyle = 'logo-centered' | 'solid-accent' | 'monogram';
+export type Density = 'compact' | 'normal' | 'spacious';
+export type AccentStyle = 'bar' | 'block' | 'outline' | 'minimal';
+export type CornerStyle = 'sharp' | 'rounded';
+export type DividerStyle = 'none' | 'line' | 'dot' | 'pipe';
 
 export interface BrandDesignConfig {
   // Per-design overrides; any field omitted falls back to brand profile / person.
@@ -70,13 +74,28 @@ export interface BrandDesignConfig {
   tagline?: string;
   show_logo?: boolean;
 
-  // Avatar / photo controls (cards only).
+  // Avatar / photo controls (cards + signatures with avatar slots).
   avatar_shape?: AvatarShape;       // default 'none'
   avatar_border?: boolean;          // default false
   avatar_border_color?: string;     // default = accent_color
 
   // Back-of-card controls.
   back_style?: CardBackStyle;       // default 'logo-centered'
+
+  // Layout / aesthetic switches the user can use to tune any template.
+  density?: Density;                // default 'normal' — padding + type scale
+  accent_style?: AccentStyle;       // default varies by template
+  corner_style?: CornerStyle;       // default 'rounded' — affects avatars, signature card edges
+  divider_style?: DividerStyle;     // default 'pipe' — between inline contact bits
+
+  // Visibility toggles — let users hide fields they don't want surfaced.
+  show_pronouns?: boolean;          // default true
+  show_mobile?: boolean;            // default true
+  show_socials?: boolean;           // default true
+  show_calendar_cta?: boolean;      // default true
+
+  // Custom small text — footer line for signatures, "Member of…" line for cards.
+  footer_text?: string;
 
   // Misc / free-form.
   show_qr?: boolean;                // back-of-card QR (future)
