@@ -1,16 +1,19 @@
 import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors } from '@/lib/brand/hydrate';
-import { SigAvatar, resolveAvatarSettings, sigInitials } from './sig-shared';
+import { SigAvatar, SecondaryLogo, resolveAvatarSettings, sigInitials } from './sig-shared';
 
 interface SigClassicProps {
   design: BrandDesignHydrated;
 }
 
 /**
- * Classic email signature: logo on the left, contact details on the right.
+ * Classic email signature: leading visual on the left, contact details on
+ * the right.
  *
- * If an avatar shape is configured AND the person has a photo, the avatar
- * replaces the logo as the leading visual. Otherwise the logo shows.
+ * If the person has a photo AND an avatar shape is configured, the avatar
+ * takes the leading slot. The brand logo (when present) is rendered as a
+ * small secondary mark beneath the contact stack so both can be shown
+ * without competing for attention.
  *
  * Rendered using HTML tables and inline styles because Outlook (Windows) ignores
  * external CSS, modern flexbox, and most non-trivial selectors. Width pinned to
@@ -23,8 +26,14 @@ export function SigClassic({ design }: SigClassicProps) {
   const accent = colors.accent ?? colors.primary;
   const socials = profile.socials ?? {};
   const avatar = resolveAvatarSettings(design, 'none');
-  const showAvatar = avatar.showImage && person_photo_url !== null;
-  const showLeft = showAvatar || (logo_url && design.config.show_logo !== false);
+  const wantAvatar = avatar.showImage && person_photo_url !== null;
+  const wantLogo = !!logo_url && design.config.show_logo !== false;
+  // The leading slot prefers the avatar; logo gets a secondary slot below.
+  const leadingIsAvatar = wantAvatar;
+  const leadingIsLogo = !wantAvatar && wantLogo;
+  const showLeft = leadingIsAvatar || leadingIsLogo;
+  // Logo appears as a secondary mark whenever both are present.
+  const showSecondaryLogo = wantAvatar && wantLogo;
 
   return (
     <table
@@ -48,11 +57,11 @@ export function SigClassic({ design }: SigClassicProps) {
               style={{
                 paddingRight: '20px',
                 borderRight: `3px solid ${accent}`,
-                width: showAvatar ? '100px' : '120px',
+                width: leadingIsAvatar ? '100px' : '120px',
                 verticalAlign: 'top',
               }}
             >
-              {showAvatar ? (
+              {leadingIsAvatar ? (
                 <SigAvatar
                   photoUrl={person_photo_url}
                   initials={sigInitials(person?.full_name)}
@@ -220,6 +229,12 @@ export function SigClassic({ design }: SigClassicProps) {
                     Dribbble
                   </a>
                 )}
+              </div>
+            )}
+
+            {showSecondaryLogo && (
+              <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: `1px solid ${accent}25` }}>
+                <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={24} />
               </div>
             )}
           </td>

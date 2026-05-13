@@ -1,6 +1,6 @@
 import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors } from '@/lib/brand/hydrate';
-import { SigAvatar, resolveAvatarSettings, sigInitials } from './sig-shared';
+import { SigAvatar, SecondaryLogo, resolveAvatarSettings, sigInitials } from './sig-shared';
 
 interface SigCompactProps {
   design: BrandDesignHydrated;
@@ -10,16 +10,21 @@ interface SigCompactProps {
  * Compact email signature — small avatar (optional) and one or two tight
  * lines of contact info. Designed for people who want a minimal footprint.
  *
- * Layout:
- *   [avatar?]  Name · Role · Company
+ * Layout (avatar + brand logo can coexist — logo appears as a tiny
+ * wordmark inline with the company line):
+ *   [avatar?]  Name · Role · Company [logo?]
  *              email · phone · website
  */
 export function SigCompact({ design }: SigCompactProps) {
   const colors = resolveColors(design);
-  const { profile, person, person_photo_url } = design;
+  const { profile, person, person_photo_url, logo_url } = design;
   const accent = colors.accent ?? colors.primary;
   const avatar = resolveAvatarSettings(design, 'none');
   const hasPhoto = avatar.showImage && person_photo_url !== null;
+  const wantLogo = !!logo_url && design.config.show_logo !== false;
+  // Tiny wordmark inline with the company name when both avatar and logo
+  // are configured.
+  const showInlineLogo = hasPhoto && wantLogo;
 
   const headlineParts: string[] = [];
   if (person?.full_name) headlineParts.push(person.full_name);
@@ -72,6 +77,11 @@ export function SigCompact({ design }: SigCompactProps) {
                 <span style={{ color: '#888' }}>
                   <span style={{ color: '#bbb' }}>  ·  </span>
                   {profile.name}
+                </span>
+              )}
+              {showInlineLogo && (
+                <span style={{ marginLeft: 8, verticalAlign: 'middle' }}>
+                  <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={14} />
                 </span>
               )}
             </div>

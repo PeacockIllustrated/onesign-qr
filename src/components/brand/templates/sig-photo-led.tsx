@@ -1,6 +1,6 @@
 import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors } from '@/lib/brand/hydrate';
-import { SigAvatar, resolveAvatarSettings, sigInitials } from './sig-shared';
+import { SigAvatar, SecondaryLogo, resolveAvatarSettings, sigInitials } from './sig-shared';
 
 interface SigPhotoLedProps {
   design: BrandDesignHydrated;
@@ -10,8 +10,9 @@ interface SigPhotoLedProps {
  * Photo-led signature.
  *
  * Large headshot dominates the left side, contact details to the right.
- * Used by client-facing roles (sales, recruiters, consultants). Falls back
- * to logo if no person photo is set.
+ * When a brand logo is also configured it sits as a small wordmark at the
+ * top of the right column — both visuals can coexist without competing.
+ * Falls back to logo-only if no person photo is set.
  */
 export function SigPhotoLed({ design }: SigPhotoLedProps) {
   const colors = resolveColors(design);
@@ -21,6 +22,10 @@ export function SigPhotoLed({ design }: SigPhotoLedProps) {
   const socials = profile.socials ?? {};
   const avatar = resolveAvatarSettings(design, 'circle');
   const hasPhoto = avatar.showImage && person_photo_url !== null;
+  const wantLogo = !!logo_url && design.config.show_logo !== false;
+  // When a photo is present, the logo becomes a secondary wordmark at the
+  // top of the contact column. When no photo, the logo takes the left slot.
+  const showSecondaryLogo = hasPhoto && wantLogo;
 
   return (
     <table
@@ -70,6 +75,11 @@ export function SigPhotoLed({ design }: SigPhotoLedProps) {
 
           {/* Right: typographic stack */}
           <td valign="top" style={{ verticalAlign: 'top', borderLeft: `3px solid ${accent}`, paddingLeft: '20px' }}>
+            {showSecondaryLogo && (
+              <div style={{ marginBottom: '8px' }}>
+                <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={22} />
+              </div>
+            )}
             <div
               style={{
                 fontSize: '18px',

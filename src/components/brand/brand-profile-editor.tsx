@@ -368,6 +368,63 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
   const { addToast } = useToast();
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<Partial<BrandPerson>>({});
+  // The ID of the person currently being edited inline, plus a working draft
+  // of their fields. Null = no edit in progress.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Partial<BrandPerson>>({});
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  function startEdit(p: BrandPerson) {
+    setEditingId(p.id);
+    setEditDraft({
+      full_name: p.full_name,
+      role: p.role ?? '',
+      pronouns: p.pronouns ?? '',
+      email: p.email ?? '',
+      phone: p.phone ?? '',
+      mobile: p.mobile ?? '',
+      address: p.address ?? '',
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditDraft({});
+  }
+
+  async function saveEdit(id: string) {
+    if (!editDraft.full_name) return;
+    setSavingEdit(true);
+    try {
+      // Send empty strings as null so we can clear fields rather than store ''
+      const body: Record<string, string | null> = {};
+      for (const k of ['full_name', 'role', 'pronouns', 'email', 'phone', 'mobile', 'address'] as const) {
+        const v = editDraft[k];
+        if (k === 'full_name') {
+          body[k] = (v as string).trim();
+        } else {
+          body[k] = v ? (v as string).trim() : null;
+        }
+      }
+      const res = await fetch(`/api/brand/people/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const r = await res.json().catch(() => null);
+        throw new Error(r?.details ?? r?.error ?? `HTTP ${res.status}`);
+      }
+      addToast({ title: 'Person updated', variant: 'success' });
+      setEditingId(null);
+      setEditDraft({});
+      router.refresh();
+    } catch (err: any) {
+      addToast({ title: 'Save failed', description: err.message, variant: 'error' });
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   async function addPerson() {
     if (!draft.full_name) return;
@@ -436,6 +493,7 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
           const photoUrl = p.photo_storage_path
             ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/brand-assets/${p.photo_storage_path}?t=${new Date(p.updated_at).getTime()}`
             : null;
+          const isEditing = editingId === p.id;
           return (
             <div key={p.id} className="flex items-start gap-3 py-3 border-b border-border last:border-b-0">
               {/* Photo */}
@@ -448,38 +506,71 @@ function PeopleSection({ profileId, people }: { profileId: string; people: Brand
                   </div>
                 )}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-zinc-100">{p.full_name}</p>
-                {p.role && <p className="text-sm text-muted-foreground">{p.role}</p>}
-                <p className="text-xs text-muted-foreground mt-1">
-                  {[p.email, p.phone, p.mobile].filter(Boolean).join(' · ') || '—'}
-                </p>
-                <div className="flex gap-2 mt-2">
-                  <label className="inline-flex">
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadPhoto(p.id, file);
-                        e.target.value = '';
-                      }}
-                    />
-                    <span className="text-xs text-zinc-400 hover:text-zinc-100 cursor-pointer underline">
-                      {photoUrl ? 'Replace photo' : 'Add photo'}
-                    </span>
-                  </label>
-                  {photoUrl && (
-                    <button onClick={() => removePhoto(p.id)} className="text-xs text-zinc-400 hover:text-zinc-100 underline">
-                      Remove
-                    </button>
-                  )}
+
+              {isEditing ? (
+                /* Inline edit form */
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Full name *" value={editDraft.full_name ?? ''} onChange={(e) => setEditDraft({ ...editDraft, full_name: e.target.value })} />
+                    <Input placeholder="Role / job title" value={editDraft.role ?? ''} onChange={(e) => setEditDraft({ ...editDraft, role: e.target.value })} />
+                    <Input placeholder="Email" value={editDraft.email ?? ''} onChange={(e) => setEditDraft({ ...editDraft, email: e.target.value })} />
+                    <Input placeholder="Phone" value={editDraft.phone ?? ''} onChange={(e) => setEditDraft({ ...editDraft, phone: e.target.value })} />
+                    <Input placeholder="Mobile" value={editDraft.mobile ?? ''} onChange={(e) => setEditDraft({ ...editDraft, mobile: e.target.value })} />
+                    <Input placeholder="Pronouns" value={editDraft.pronouns ?? ''} onChange={(e) => setEditDraft({ ...editDraft, pronouns: e.target.value })} />
+                  </div>
+                  <Input placeholder="Address (optional)" value={editDraft.address ?? ''} onChange={(e) => setEditDraft({ ...editDraft, address: e.target.value })} />
+                  <div className="flex gap-2 pt-1">
+                    <Button size="sm" onClick={() => saveEdit(p.id)} disabled={savingEdit || !editDraft.full_name}>
+                      {savingEdit ? 'Saving…' : 'Save'}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEdit} disabled={savingEdit}>
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => deletePerson(p.id, p.full_name)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              ) : (
+                /* Read-only summary + actions */
+                <>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-zinc-100">{p.full_name}</p>
+                    {p.role && <p className="text-sm text-muted-foreground">{p.role}</p>}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {[p.email, p.phone, p.mobile].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs">
+                      <button
+                        onClick={() => startEdit(p)}
+                        className="text-zinc-400 hover:text-zinc-100 underline"
+                      >
+                        Edit details
+                      </button>
+                      <label className="inline-flex">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadPhoto(p.id, file);
+                            e.target.value = '';
+                          }}
+                        />
+                        <span className="text-zinc-400 hover:text-zinc-100 cursor-pointer underline">
+                          {photoUrl ? 'Replace photo' : 'Add photo'}
+                        </span>
+                      </label>
+                      {photoUrl && (
+                        <button onClick={() => removePhoto(p.id)} className="text-zinc-400 hover:text-zinc-100 underline">
+                          Remove photo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => deletePerson(p.id, p.full_name)} aria-label={`Remove ${p.full_name}`}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
           );
         })}

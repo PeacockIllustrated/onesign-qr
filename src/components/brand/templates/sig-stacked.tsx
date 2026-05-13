@@ -1,6 +1,6 @@
 import type { BrandDesignHydrated } from '@/types/brand';
 import { resolveColors } from '@/lib/brand/hydrate';
-import { SigAvatar, resolveAvatarSettings, sigInitials } from './sig-shared';
+import { SigAvatar, SecondaryLogo, resolveAvatarSettings, sigInitials } from './sig-shared';
 
 interface SigStackedProps {
   design: BrandDesignHydrated;
@@ -42,6 +42,13 @@ export function SigStacked({ design }: SigStackedProps) {
         {(hasPhoto || (logo_url && design.config.show_logo !== false)) && (
           <tr>
             <td style={{ paddingBottom: '10px' }}>
+              {/* Logo sits above the avatar (when both present) so the brand reads
+                  first on a mobile-first stack, then the person below. */}
+              {hasPhoto && logo_url && design.config.show_logo !== false && (
+                <div style={{ marginBottom: '10px' }}>
+                  <SecondaryLogo url={logo_url} alt={profile.name} maxHeightPx={28} />
+                </div>
+              )}
               {hasPhoto ? (
                 <SigAvatar
                   photoUrl={person_photo_url}

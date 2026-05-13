@@ -77,7 +77,10 @@ export function SigBanner({ design }: SigBannerProps) {
                   </td>
                   {(showAvatar || (logo_url && design.config.show_logo !== false)) && (
                     <td valign="middle" align="right" style={{ verticalAlign: 'middle', textAlign: 'right' }}>
-                      {showAvatar ? (
+                      {/* If both are present, show the logo as the wordmark in the band
+                          and the avatar moves into the body alongside the contact column
+                          (see below). If only one, that one fills the band corner. */}
+                      {showAvatar && !(logo_url && design.config.show_logo !== false) ? (
                         <SigAvatar
                           photoUrl={person_photo_url}
                           initials={sigInitials(person?.full_name)}
@@ -113,7 +116,34 @@ export function SigBanner({ design }: SigBannerProps) {
         {/* Body */}
         <tr>
           <td style={{ padding: '14px 20px', backgroundColor: '#ffffff' }}>
-            {tagline && (
+            {/* When both an avatar and a logo are set, the logo claims the band
+                top-right and the avatar sits at the top-left of the body next
+                to the tagline / contact stack. */}
+            {showAvatar && logo_url && design.config.show_logo !== false && (
+              <table cellPadding={0} cellSpacing={0} border={0} style={{ marginBottom: '8px' }}>
+                <tbody>
+                  <tr>
+                    <td valign="middle" style={{ paddingRight: '10px', verticalAlign: 'middle' }}>
+                      <SigAvatar
+                        photoUrl={person_photo_url}
+                        initials={sigInitials(person?.full_name)}
+                        shape={avatar.shape === 'square' ? 'square' : 'circle'}
+                        border={avatar.border}
+                        borderColor={avatar.borderColor}
+                        sizePx={42}
+                        fallbackBg={`${accent}20`}
+                      />
+                    </td>
+                    {tagline && (
+                      <td valign="middle" style={{ verticalAlign: 'middle', fontSize: '12px', color: '#888', fontStyle: 'italic' }}>
+                        {tagline}
+                      </td>
+                    )}
+                  </tr>
+                </tbody>
+              </table>
+            )}
+            {!(showAvatar && logo_url) && tagline && (
               <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', marginBottom: '8px' }}>
                 {tagline}
               </div>

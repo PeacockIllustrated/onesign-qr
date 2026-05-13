@@ -99,3 +99,40 @@ export function sigInitials(name: string | undefined): string {
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
+
+/**
+ * Compact logo treatment used when the avatar already occupies the
+ * signature's primary visual slot. Sits inline with the company line or
+ * underneath the contact stack — small enough to stay supportive, not
+ * compete for attention.
+ *
+ * Returns `null` if there is no logo to render or `show_logo === false`.
+ */
+export function SecondaryLogo({
+  url,
+  alt,
+  maxHeightPx,
+  align = 'left',
+}: {
+  url: string | null | undefined;
+  alt: string;
+  maxHeightPx: number;
+  align?: 'left' | 'right';
+}) {
+  if (!url) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt={alt}
+      style={{
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        maxHeight: `${maxHeightPx}px`,
+        maxWidth: `${maxHeightPx * 3}px`,
+        objectFit: 'contain',
+        objectPosition: align === 'right' ? 'right center' : 'left center',
+      }}
+    />
+  );
+}
