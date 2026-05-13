@@ -14,6 +14,7 @@ import {
 } from '@/components/ui';
 import { renderTemplate, isDoubleSidedTemplate } from '@/components/brand/templates';
 import { FontLoader } from '@/components/brand/font-loader';
+import { Card3dViewer } from '@/components/brand/card-3d-viewer';
 import type { BrandDesignHydrated, BrandPerson, BrandDesignConfig, AvatarShape, CardBackStyle } from '@/types/brand';
 
 interface Props {
@@ -292,34 +293,29 @@ export function BrandDesignEditor({ design: initial, people }: Props) {
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-4">Preview</p>
-              <div className="bg-zinc-900/40 border border-border rounded-md p-8 min-h-[300px] overflow-auto">
+              <div className="bg-zinc-900/40 border border-border rounded-md p-10 min-h-[340px] flex items-center justify-center">
                 {initial.kind === 'business_card' && isDoubleSidedTemplate(initial.template_id) ? (
-                  <div className="flex flex-col gap-8 items-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Front</span>
-                      <div style={{ transform: 'scale(2.2)', transformOrigin: 'center top' }}>
-                        {renderTemplate(previewDesign, { side: 'front' })}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center gap-2" style={{ marginTop: '120mm' }}>
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Back</span>
-                      <div style={{ transform: 'scale(2.2)', transformOrigin: 'center top' }}>
-                        {renderTemplate(previewDesign, { side: 'back' })}
-                      </div>
-                    </div>
+                  <Card3dViewer
+                    front={renderTemplate(previewDesign, { side: 'front' })}
+                    back={renderTemplate(previewDesign, { side: 'back' })}
+                    aspect="85 / 55"
+                    width="min(440px, 100%)"
+                  />
+                ) : initial.kind === 'business_card' ? (
+                  <div style={{ transform: 'scale(2.4)', transformOrigin: 'center' }}>
+                    {renderTemplate(previewDesign)}
                   </div>
                 ) : (
-                  <div className="flex justify-center items-center">
-                    <div style={{ transform: initial.kind === 'business_card' ? 'scale(2.5)' : 'none', transformOrigin: 'center' }}>
-                      {renderTemplate(previewDesign)}
-                    </div>
+                  <div className="w-full overflow-x-auto">
+                    {renderTemplate(previewDesign)}
                   </div>
                 )}
               </div>
               {initial.kind === 'business_card' && (
                 <p className="text-xs text-muted-foreground mt-3 text-center">
-                  Cards shown at 2.2× zoom. The exported PDF is print-ready with 3mm bleed and crop marks
-                  {isDoubleSidedTemplate(initial.template_id) ? ' across two pages (front + back)' : ''}.
+                  {isDoubleSidedTemplate(initial.template_id)
+                    ? 'Move cursor to tilt · click the card or the button to flip · the exported PDF is print-ready with 3mm bleed and crop marks.'
+                    : 'The exported PDF is print-ready with 3mm bleed and crop marks.'}
                 </p>
               )}
             </CardContent>

@@ -1,7 +1,7 @@
 import type { BrandDesignHydrated, AvatarShape, CardBackStyle } from '@/types/brand';
-import { resolveColors } from '@/lib/brand/hydrate';
+import { resolveColors, pickLogo } from '@/lib/brand/hydrate';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
-import { Avatar, getInitials, PrintBleed, type SideProps } from './shared';
+import { Avatar, getInitials, PrintBleed, isDarkColor, type SideProps } from './shared';
 
 /**
  * Classic+ business card — editorial, asymmetric, type-led.
@@ -25,7 +25,10 @@ export function CardClassicPlus({ design, side }: SideProps & { side: 'front' | 
 
 function CardClassicPlusFront({ design }: { design: BrandDesignHydrated }) {
   const colors = resolveColors(design);
-  const { profile, person, logo_url, person_photo_url } = design;
+  const { profile, person, person_photo_url } = design;
+  // Front uses the secondary colour as background — pick logo accordingly.
+  const frontSurface = isDarkColor(colors.secondary) ? 'dark' : 'light';
+  const { url: logoUrl, needsInvert: logoNeedsInvert } = pickLogo(design, frontSurface);
   const avatarShape: AvatarShape = design.config.avatar_shape ?? 'none';
   const avatarBorder = design.config.avatar_border ?? false;
   const avatarBorderColor = design.config.avatar_border_color ?? colors.accent ?? colors.primary;
@@ -50,12 +53,19 @@ function CardClassicPlusFront({ design }: { design: BrandDesignHydrated }) {
       {/* Left column: type-led */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* Logo lockup */}
-        {logo_url && design.config.show_logo !== false ? (
+        {logoUrl && design.config.show_logo !== false ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={logo_url}
+            src={logoUrl}
             alt=""
-            style={{ maxHeight: '8mm', maxWidth: '30mm', objectFit: 'contain', objectPosition: 'left center', display: 'block' }}
+            style={{
+              maxHeight: '8mm',
+              maxWidth: '30mm',
+              objectFit: 'contain',
+              objectPosition: 'left center',
+              display: 'block',
+              filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined,
+            }}
           />
         ) : (
           <div
@@ -139,9 +149,13 @@ function CardClassicPlusFront({ design }: { design: BrandDesignHydrated }) {
 
 function CardClassicPlusBack({ design }: { design: BrandDesignHydrated }) {
   const colors = resolveColors(design);
-  const { profile, logo_url } = design;
+  const { profile } = design;
   const backStyle: CardBackStyle = design.config.back_style ?? 'logo-centered';
   const tagline = design.config.tagline ?? profile.tagline;
+
+  // Back of Classic+ is always a dark surface (primary or accent), so prefer
+  // the dark logo if present.
+  const { url: logoUrl, needsInvert: logoNeedsInvert } = pickLogo(design, 'dark');
 
   const baseStyle: React.CSSProperties = {
     width: `${CARD_DIMENSIONS.width_mm}mm`,
@@ -159,10 +173,10 @@ function CardClassicPlusBack({ design }: { design: BrandDesignHydrated }) {
   if (backStyle === 'solid-accent') {
     return (
       <article style={{ ...baseStyle, backgroundColor: colors.accent ?? colors.primary, color: colors.secondary }}>
-        {logo_url && (
+        {logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={logo_url}
+            src={logoUrl}
             alt=""
             style={{
               position: 'absolute',
@@ -171,7 +185,7 @@ function CardClassicPlusBack({ design }: { design: BrandDesignHydrated }) {
               maxHeight: '7mm',
               maxWidth: '24mm',
               objectFit: 'contain',
-              filter: 'brightness(0) invert(1)',
+              filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined,
               opacity: 0.95,
             }}
           />
@@ -208,12 +222,12 @@ function CardClassicPlusBack({ design }: { design: BrandDesignHydrated }) {
   // logo-centered (default)
   return (
     <article style={{ ...baseStyle, backgroundColor: colors.primary, color: colors.secondary, flexDirection: 'column', gap: '3mm' }}>
-      {logo_url ? (
+      {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={logo_url}
+          src={logoUrl}
           alt=""
-          style={{ maxHeight: '14mm', maxWidth: '50mm', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+          style={{ maxHeight: '14mm', maxWidth: '50mm', objectFit: 'contain', filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined }}
         />
       ) : (
         <span style={{ fontSize: '6mm', fontWeight: 600 }}>{profile.name}</span>

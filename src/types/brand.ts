@@ -93,8 +93,10 @@ export interface BrandDesign {
 export interface BrandDesignHydrated extends BrandDesign {
   profile: BrandProfile;
   person: BrandPerson | null;
-  /** Public URL for the brand logo, if present. */
+  /** Public URL for the light-background brand logo, if present. */
   logo_url: string | null;
+  /** Public URL for the dark-background brand logo variant, if present. */
+  logo_dark_url: string | null;
   /** Public URL for the person's photo, if present. */
   person_photo_url: string | null;
 }

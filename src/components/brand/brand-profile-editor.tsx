@@ -26,6 +26,7 @@ interface Props {
   people: BrandPerson[];
   designs: BrandDesign[];
   logoUrl: string | null;
+  logoDarkUrl: string | null;
 }
 
 const FONT_OPTIONS = [
@@ -42,12 +43,13 @@ const FONT_OPTIONS = [
   'Work Sans',
 ];
 
-export function BrandProfileEditor({ profile: initial, people, designs, logoUrl: initialLogo }: Props) {
+export function BrandProfileEditor({ profile: initial, people, designs, logoUrl: initialLogo, logoDarkUrl: initialLogoDark }: Props) {
   const router = useRouter();
   const { addToast } = useToast();
 
   const [profile, setProfile] = useState(initial);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
+  const [logoDarkUrl, setLogoDarkUrl] = useState(initialLogoDark);
   const [saving, setSaving] = useState(false);
 
   function patch<K extends keyof BrandProfile>(key: K, value: BrandProfile[K]) {
@@ -83,9 +85,10 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
     }
   }
 
-  async function uploadLogo(file: File) {
+  async function uploadLogo(file: File, variant: 'light' | 'dark' = 'light') {
     const formData = new FormData();
     formData.append('file', file);
+    if (variant === 'dark') formData.append('variant', 'dark');
     try {
       const res = await fetch(`/api/brand/profiles/${profile.id}/logo`, {
         method: 'POST',
@@ -93,18 +96,20 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
       });
       if (!res.ok) throw new Error((await res.json()).error ?? 'Upload failed');
       const data = await res.json();
-      setLogoUrl(data.public_url);
-      addToast({ title: 'Logo uploaded', variant: 'success' });
+      if (variant === 'dark') setLogoDarkUrl(data.public_url);
+      else setLogoUrl(data.public_url);
+      addToast({ title: `${variant === 'dark' ? 'Dark' : 'Light'} logo uploaded`, variant: 'success' });
       router.refresh();
     } catch (err: any) {
       addToast({ title: 'Upload failed', description: err.message, variant: 'error' });
     }
   }
 
-  async function removeLogo() {
-    const res = await fetch(`/api/brand/profiles/${profile.id}/logo`, { method: 'DELETE' });
+  async function removeLogo(variant: 'light' | 'dark' = 'light') {
+    const res = await fetch(`/api/brand/profiles/${profile.id}/logo?variant=${variant}`, { method: 'DELETE' });
     if (res.ok) {
-      setLogoUrl(null);
+      if (variant === 'dark') setLogoDarkUrl(null);
+      else setLogoUrl(null);
       router.refresh();
     }
   }
@@ -152,41 +157,29 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
         <TabsContent value="identity">
           <Card>
             <CardContent className="pt-6 space-y-6">
-              {/* Logo */}
-              <div className="space-y-2">
-                <Label>Logo</Label>
-                <div className="flex items-center gap-4">
-                  <div className="h-20 w-20 rounded-md border border-border bg-zinc-900/40 flex items-center justify-center overflow-hidden">
-                    {logoUrl ? (
-                      <img src={logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
-                    ) : (
-                      <Upload className="h-6 w-6 text-zinc-600" />
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <label className="inline-flex">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) uploadLogo(file);
-                          e.target.value = '';
-                        }}
-                      />
-                      <span className="inline-flex items-center justify-center h-9 px-3 text-sm rounded-lg border border-input cursor-pointer hover:bg-accent">
-                        {logoUrl ? 'Replace' : 'Upload'}
-                      </span>
-                    </label>
-                    {logoUrl && (
-                      <Button variant="outline" size="sm" onClick={removeLogo}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+              {/* Logos: light + dark */}
+              <div className="space-y-3">
+                <Label>Logos</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <LogoSlot
+                    label="Light background"
+                    swatch="#ffffff"
+                    url={logoUrl}
+                    onUpload={(f) => uploadLogo(f, 'light')}
+                    onRemove={() => removeLogo('light')}
+                  />
+                  <LogoSlot
+                    label="Dark background"
+                    swatch="#0a0a0a"
+                    url={logoDarkUrl}
+                    onUpload={(f) => uploadLogo(f, 'dark')}
+                    onRemove={() => removeLogo('dark')}
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP, max 5MB.</p>
+                <p className="text-xs text-muted-foreground">
+                  Upload the right logo for each background — templates pick the version that fits the card side.
+                  PNG, JPG, SVG or WebP, max 5MB.
+                </p>
               </div>
 
               {/* Colours */}
@@ -253,6 +246,58 @@ export function BrandProfileEditor({ profile: initial, people, designs, logoUrl:
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────
+
+function LogoSlot({
+  label,
+  swatch,
+  url,
+  onUpload,
+  onRemove,
+}: {
+  label: string;
+  swatch: string;
+  url: string | null;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div
+        className="rounded-md border border-border flex items-center justify-center overflow-hidden"
+        style={{ backgroundColor: swatch, minHeight: 80 }}
+      >
+        {url ? (
+          <img src={url} alt="" className="max-h-16 max-w-[80%] object-contain" />
+        ) : (
+          <Upload className="h-5 w-5" style={{ color: swatch === '#ffffff' ? '#a1a1aa' : '#52525b' }} />
+        )}
+      </div>
+      <div className="flex gap-2">
+        <label className="inline-flex flex-1">
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onUpload(file);
+              e.target.value = '';
+            }}
+          />
+          <span className="inline-flex items-center justify-center h-9 px-3 text-sm rounded-lg border border-input cursor-pointer hover:bg-accent w-full">
+            {url ? 'Replace' : 'Upload'}
+          </span>
+        </label>
+        {url && (
+          <Button variant="outline" size="sm" onClick={onRemove}>
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function ColorField({
   label,

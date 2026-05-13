@@ -30,6 +30,7 @@ export async function hydrateBrandDesign(
   }
 
   const logo_url = publicUrl(supabase, 'brand-assets', profile.logo_storage_path);
+  const logo_dark_url = publicUrl(supabase, 'brand-assets', profile.logo_dark_storage_path);
   const person_photo_url = publicUrl(supabase, 'brand-assets', person?.photo_storage_path ?? null);
 
   return {
@@ -37,8 +38,30 @@ export async function hydrateBrandDesign(
     profile: profile as BrandProfile,
     person,
     logo_url,
+    logo_dark_url,
     person_photo_url,
   };
+}
+
+/**
+ * Pick the right logo for a side based on its background:
+ * - Light bg → use light logo (fall back to dark, then null)
+ * - Dark bg  → use dark logo if available, otherwise use the light one with
+ *   a CSS invert filter applied at the call site.
+ */
+export function pickLogo(
+  design: BrandDesignHydrated,
+  surface: 'light' | 'dark',
+): { url: string | null; needsInvert: boolean } {
+  if (surface === 'dark') {
+    if (design.logo_dark_url) return { url: design.logo_dark_url, needsInvert: false };
+    if (design.logo_url) return { url: design.logo_url, needsInvert: true };
+    return { url: null, needsInvert: false };
+  }
+  // light surface
+  if (design.logo_url) return { url: design.logo_url, needsInvert: false };
+  if (design.logo_dark_url) return { url: design.logo_dark_url, needsInvert: true };
+  return { url: null, needsInvert: false };
 }
 
 function publicUrl(

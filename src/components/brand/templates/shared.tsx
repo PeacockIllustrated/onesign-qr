@@ -108,3 +108,16 @@ export interface SideProps {
   design: BrandDesignHydrated;
   print?: boolean;
 }
+
+/** Returns true if a hex colour's perceived luminance is below 0.5. */
+export function isDarkColor(hex: string): boolean {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return false;
+  const num = parseInt(m[1], 16);
+  const r = (num >> 16) & 0xff;
+  const g = (num >> 8) & 0xff;
+  const b = num & 0xff;
+  // Standard relative luminance approximation
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.5;
+}

@@ -36,12 +36,14 @@ export default async function BrandProfilePage({ params }: PageProps) {
       .order('updated_at', { ascending: false }),
   ]);
 
-  // Pre-compute logo public URL on the server.
-  let logoUrl: string | null = null;
-  if (profile.logo_storage_path) {
-    const { data } = supabase.storage.from('brand-assets').getPublicUrl(profile.logo_storage_path);
-    logoUrl = data.publicUrl ?? null;
+  // Pre-compute logo public URLs on the server.
+  function publicUrl(path: string | null) {
+    if (!path) return null;
+    const { data } = supabase.storage.from('brand-assets').getPublicUrl(path);
+    return data.publicUrl ?? null;
   }
+  const logoUrl = publicUrl(profile.logo_storage_path);
+  const logoDarkUrl = publicUrl(profile.logo_dark_storage_path);
 
   return (
     <div className="p-5 md:p-8 max-w-6xl mx-auto">
@@ -58,6 +60,7 @@ export default async function BrandProfilePage({ params }: PageProps) {
         people={(people ?? []) as BrandPerson[]}
         designs={(designs ?? []) as BrandDesign[]}
         logoUrl={logoUrl}
+        logoDarkUrl={logoDarkUrl}
       />
     </div>
   );

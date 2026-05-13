@@ -1,7 +1,7 @@
 import type { BrandDesignHydrated, AvatarShape, CardBackStyle } from '@/types/brand';
-import { resolveColors } from '@/lib/brand/hydrate';
+import { resolveColors, pickLogo } from '@/lib/brand/hydrate';
 import { CARD_DIMENSIONS } from '@/lib/brand/templates';
-import { Avatar, getInitials, PrintBleed } from './shared';
+import { Avatar, getInitials, PrintBleed, isDarkColor } from './shared';
 
 /**
  * Mono business card — bold name treatment, monospaced contact stack,
@@ -24,8 +24,10 @@ export function CardMono({ design, side }: { design: BrandDesignHydrated; side: 
 
 function CardMonoFront({ design }: { design: BrandDesignHydrated }) {
   const colors = resolveColors(design);
-  const { profile, person, logo_url, person_photo_url } = design;
+  const { profile, person, person_photo_url } = design;
   const accent = colors.accent ?? colors.primary;
+  const frontSurface = isDarkColor(colors.secondary) ? 'dark' : 'light';
+  const { url: logoUrl, needsInvert: logoNeedsInvert } = pickLogo(design, frontSurface);
   const avatarShape: AvatarShape = design.config.avatar_shape ?? 'none';
   const avatarBorder = design.config.avatar_border ?? false;
   const avatarBorderColor = design.config.avatar_border_color ?? accent;
@@ -60,12 +62,18 @@ function CardMonoFront({ design }: { design: BrandDesignHydrated }) {
       >
         {/* Header: logo + optional avatar */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '3mm' }}>
-          {logo_url && design.config.show_logo !== false ? (
+          {logoUrl && design.config.show_logo !== false ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={logo_url}
+              src={logoUrl}
               alt=""
-              style={{ maxHeight: '6mm', maxWidth: '24mm', objectFit: 'contain', objectPosition: 'left center' }}
+              style={{
+                maxHeight: '6mm',
+                maxWidth: '24mm',
+                objectFit: 'contain',
+                objectPosition: 'left center',
+                filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined,
+              }}
             />
           ) : (
             <span
@@ -161,10 +169,12 @@ function ContactRow({ label, value, accent }: { label: string; value: string; ac
 
 function CardMonoBack({ design }: { design: BrandDesignHydrated }) {
   const colors = resolveColors(design);
-  const { profile, logo_url } = design;
+  const { profile } = design;
   const accent = colors.accent ?? colors.primary;
   const backStyle: CardBackStyle = design.config.back_style ?? 'solid-accent';
   const tagline = design.config.tagline ?? profile.tagline;
+  // Mono back is always a dark/coloured surface — use dark logo with light fallback inverted.
+  const { url: logoUrl, needsInvert: logoNeedsInvert } = pickLogo(design, 'dark');
 
   if (backStyle === 'monogram') {
     return (
@@ -205,12 +215,12 @@ function CardMonoBack({ design }: { design: BrandDesignHydrated }) {
           padding: '6mm',
         }}
       >
-        {logo_url ? (
+        {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={logo_url}
+            src={logoUrl}
             alt=""
-            style={{ maxHeight: '12mm', maxWidth: '50mm', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+            style={{ maxHeight: '12mm', maxWidth: '50mm', objectFit: 'contain', filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined }}
           />
         ) : (
           <span style={{ fontSize: '6mm', fontWeight: 600 }}>{profile.name}</span>
@@ -283,10 +293,10 @@ function CardMonoBack({ design }: { design: BrandDesignHydrated }) {
       )}
 
       {/* Bottom-right logo */}
-      {logo_url && (
+      {logoUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={logo_url}
+          src={logoUrl}
           alt=""
           style={{
             position: 'absolute',
@@ -295,7 +305,7 @@ function CardMonoBack({ design }: { design: BrandDesignHydrated }) {
             maxHeight: '7mm',
             maxWidth: '20mm',
             objectFit: 'contain',
-            filter: 'brightness(0) invert(1)',
+            filter: logoNeedsInvert ? 'brightness(0) invert(1)' : undefined,
             opacity: 0.95,
           }}
         />
