@@ -25,6 +25,11 @@ const DISPLAY_MS = 2200; // time the splash holds before auto-dismissing
 const REDUCED_DISPLAY_MS = 900; // calmer hold when reduced motion is on
 const EXIT_MS = 520; // must match the CSS fade-out transition
 
+/**
+ * Branded, skippable intro overlay for OneSign – Lynx. Plays once per browser
+ * session on OneSign-owned surfaces, then auto-dismisses. See the file header
+ * above for the full behaviour contract (gating, skip inputs, reduced motion).
+ */
 export function SplashScreen() {
   const pathname = usePathname();
   // Public bio pages are the customer's own brand — never overlay them.
@@ -38,6 +43,7 @@ export function SplashScreen() {
   const exitTimer = useRef<number | null>(null);
   const exitingRef = useRef(false);
 
+  /** Begin the fade-out, then unmount once the CSS transition completes. */
   const beginExit = useCallback(() => {
     if (exitingRef.current) return;
     exitingRef.current = true;
