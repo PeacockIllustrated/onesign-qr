@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
+import { SplashScreen } from '@/components/brand/splash-screen';
 
 const gilroy = localFont({
   src: [
@@ -61,6 +62,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={gilroy.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
+        <SplashScreen />
         {children}
       </body>
     </html>

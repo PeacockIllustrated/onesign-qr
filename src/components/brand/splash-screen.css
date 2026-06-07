@@ -1,0 +1,292 @@
+/**
+ * OneSign – Lynx splash screen.
+ *
+ * A brief, techy "QR-scanner" intro shown once per browser session on the
+ * OneSign-owned surfaces (marketing, app, auth, admin). Skippable and
+ * non-blocking — see splash-screen.tsx for the timing/dismiss logic.
+ *
+ * CSS-only animations (no JS animation libraries). Reduced-motion is honoured
+ * both here and globally in globals.css (which collapses durations to ~0).
+ *
+ * Everything is namespaced under .lynx-splash to avoid global collisions.
+ * Brand accent: lynx-500 #58a386, lynx-400 #6fbf98.
+ */
+
+.lynx-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 200; /* above marketing nav (z-50) and drawers */
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(120% 120% at 50% 38%, #0d0f0e 0%, #09090b 58%, #070708 100%);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 520ms ease, transform 520ms ease;
+  will-change: opacity, transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lynx-splash--exit {
+  opacity: 0;
+  transform: scale(1.025);
+  pointer-events: none;
+}
+
+/* ── Drifting grid texture ─────────────────────────────────────────────── */
+.lynx-splash__grid {
+  position: absolute;
+  inset: -2px;
+  background-image:
+    linear-gradient(to right, rgba(111, 191, 152, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(111, 191, 152, 0.1) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
+  opacity: 0.6;
+  animation: lynxGridDrift 6s linear infinite, lynxFadeIn 800ms ease both;
+}
+
+@keyframes lynxGridDrift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 44px 44px, 44px 44px; }
+}
+
+/* ── Ambient lynx glows ────────────────────────────────────────────────── */
+.lynx-splash__glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0;
+  animation: lynxGlowIn 1400ms ease forwards;
+}
+
+.lynx-splash__glow--a {
+  top: 10%;
+  left: 12%;
+  width: 32rem;
+  height: 32rem;
+  background: radial-gradient(circle, rgba(88, 163, 134, 0.4), transparent 60%);
+}
+
+.lynx-splash__glow--b {
+  right: 10%;
+  bottom: 8%;
+  width: 28rem;
+  height: 28rem;
+  background: radial-gradient(circle, rgba(88, 163, 134, 0.28), transparent 60%);
+  animation-delay: 120ms;
+}
+
+@keyframes lynxGlowIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 0.7; transform: scale(1); }
+}
+
+/* ── Centre stage ──────────────────────────────────────────────────────── */
+.lynx-splash__stage {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+/* QR-scanner viewfinder framing the mark */
+.lynx-splash__viewfinder {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 8.5rem;
+  height: 8.5rem;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent);
+}
+
+.lynx-splash__corner {
+  position: absolute;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 2px solid #6fbf98;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(111, 191, 152, 0.6));
+  animation: lynxCornerIn 500ms ease forwards;
+}
+
+.lynx-splash__corner--tl {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 0.6rem;
+  animation-delay: 120ms;
+}
+
+.lynx-splash__corner--tr {
+  top: 0;
+  right: 0;
+  border-left: 0;
+  border-bottom: 0;
+  border-top-right-radius: 0.6rem;
+  animation-delay: 220ms;
+}
+
+.lynx-splash__corner--bl {
+  bottom: 0;
+  left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom-left-radius: 0.6rem;
+  animation-delay: 320ms;
+}
+
+.lynx-splash__corner--br {
+  bottom: 0;
+  right: 0;
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: 0.6rem;
+  animation-delay: 420ms;
+}
+
+@keyframes lynxCornerIn {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Scanline sweeping the viewfinder */
+.lynx-splash__scan {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #6fbf98, transparent);
+  box-shadow: 0 0 12px 2px rgba(111, 191, 152, 0.7);
+  opacity: 0;
+  animation: lynxScan 1.8s 600ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes lynxScan {
+  0% { top: 6%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 94%; opacity: 0; }
+}
+
+/* The brand mark */
+.lynx-splash__mark {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  filter: drop-shadow(0 0 14px rgba(88, 163, 134, 0.45));
+  animation: lynxMarkIn 700ms 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes lynxMarkIn {
+  from { opacity: 0; transform: scale(0.7); }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Wordmark */
+.lynx-splash__wordmark {
+  opacity: 0;
+  animation: lynxRiseIn 700ms 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes lynxRiseIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress bar (duration set inline to match auto-dismiss timing) */
+.lynx-splash__bar {
+  position: relative;
+  width: 11rem;
+  height: 2px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  animation: lynxFadeIn 500ms 800ms ease forwards;
+}
+
+.lynx-splash__bar-fill {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: linear-gradient(90deg, #3e8068, #6fbf98);
+  box-shadow: 0 0 8px rgba(111, 191, 152, 0.6);
+  animation-name: lynxProgress;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes lynxProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ── Skip affordance ───────────────────────────────────────────────────── */
+.lynx-splash__skip {
+  position: absolute;
+  bottom: max(1.75rem, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.95rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(244, 244, 245, 0.55);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  cursor: pointer;
+  opacity: 0;
+  animation: lynxFadeIn 600ms 1000ms ease forwards;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.lynx-splash__skip:hover {
+  color: #f4f4f5;
+  border-color: rgba(111, 191, 152, 0.5);
+  background: rgba(111, 191, 152, 0.08);
+}
+
+.lynx-splash__skip:focus-visible {
+  outline: 2px solid #6fbf98;
+  outline-offset: 2px;
+}
+
+.lynx-splash__skip-arrow {
+  transition: transform 150ms ease;
+}
+
+.lynx-splash__skip:hover .lynx-splash__skip-arrow {
+  transform: translateX(2px);
+}
+
+@keyframes lynxFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .lynx-splash__scan {
+    display: none;
+  }
+  .lynx-splash__grid {
+    animation: none;
+    opacity: 0.4;
+  }
+}
