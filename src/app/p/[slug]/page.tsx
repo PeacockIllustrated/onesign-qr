@@ -9,6 +9,7 @@ import {
 import { BioLinkButton } from '@/components/bio/bio-link-button';
 import { BioPublicGrid } from '@/components/bio/public/bio-public-grid';
 import { BioContactCard } from '@/components/bio/public/bio-contact-card';
+import { BotanicalBioPage } from '@/components/bio/public/botanical/botanical-bio-page';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import type { BioLinkTheme, BioBlock, BioLayoutMode, BioBorderRadius, BioSpacing, BioCardLayout } from '@/types/bio';
@@ -146,6 +147,27 @@ export default async function BioPage({ params }: PageProps) {
     themeConfig.background.type === 'solid' || themeConfig.background.type === 'pattern'
       ? themeConfig.background.css
       : undefined;
+
+  // ─── Botanical style ────────────────────────────────────────────────
+  // Opt-in bespoke full-page takeover for beauty / aesthetics clients.
+  // Bypasses the default contact-card + link layout entirely, so every
+  // other page's rendering is untouched.
+  if (page.background_variant === 'botanical') {
+    return (
+      <BotanicalBioPage
+        title={page.title}
+        subtitle={page.subtitle}
+        location={page.location}
+        avatarUrl={avatarUrl}
+        links={links.map((l: { id: string; title: string; url: string }) => ({
+          id: l.id,
+          title: l.title,
+          url: l.url,
+        }))}
+        pageId={page.id}
+      />
+    );
+  }
 
   return (
     <>
