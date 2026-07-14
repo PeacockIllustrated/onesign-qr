@@ -36,6 +36,8 @@ export function QRPreview({ data, style, size = 256 }: QRPreviewProps) {
           moduleShape: style.moduleShape,
           eyeShape: style.eyeShape,
           quietZone: style.quietZone,
+          frameShape: style.frameShape,
+          frameLabel: style.frameLabel,
           logoMode: style.logoMode,
           logoDataUrl: style.logoDataUrl,
           logoSizeRatio: style.logoSizeRatio,

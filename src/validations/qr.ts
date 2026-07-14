@@ -6,6 +6,8 @@ import { z } from 'zod';
 import {
   MODULE_SHAPES,
   EYE_SHAPES,
+  FRAME_SHAPES,
+  FRAME_LABEL_MAX_LENGTH,
   ERROR_CORRECTION_LEVELS,
   SLUG_CONFIG,
   QR_DEFAULTS,
@@ -40,6 +42,12 @@ export const qrStyleSchema = z.object({
     .default(QR_DEFAULTS.QUIET_ZONE),
   module_shape: z.enum(MODULE_SHAPES).default('square'),
   eye_shape: z.enum(EYE_SHAPES).default('square'),
+  frame_shape: z.enum(FRAME_SHAPES).default('none'),
+  frame_label: z
+    .string()
+    .trim()
+    .max(FRAME_LABEL_MAX_LENGTH, `Label must be at most ${FRAME_LABEL_MAX_LENGTH} characters`)
+    .optional(),
   logo_size_ratio: z
     .number()
     .min(0.1)

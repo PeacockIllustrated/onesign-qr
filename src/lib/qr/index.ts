@@ -23,7 +23,20 @@ export {
   isFinderSeparator,
   type ModuleShape,
   type EyeShape,
+  type FrameShape,
 } from './shapes';
+
+export {
+  buildCircleFrame,
+  buildRadialFrame,
+  escapeXml,
+  FRAME_LABEL_MAX_LENGTH,
+  RADIAL_RING_COUNT,
+  type CircleFrameOptions,
+  type CircleFrameResult,
+  type RadialFrameOptions,
+  type RadialFrameResult,
+} from './frames';
 
 export {
   buildStyledSVG,

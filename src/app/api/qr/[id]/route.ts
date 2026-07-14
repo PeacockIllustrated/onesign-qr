@@ -176,6 +176,10 @@ export async function PATCH(
       if (styleParsed.data.quiet_zone !== undefined) styleUpdate.quiet_zone = styleParsed.data.quiet_zone;
       if (styleParsed.data.module_shape) styleUpdate.module_shape = styleParsed.data.module_shape;
       if (styleParsed.data.eye_shape) styleUpdate.eye_shape = styleParsed.data.eye_shape;
+      if (styleParsed.data.frame_shape) styleUpdate.frame_shape = styleParsed.data.frame_shape;
+      if (styleParsed.data.frame_label !== undefined) {
+        styleUpdate.frame_label = styleParsed.data.frame_label || null;
+      }
     }
 
     // Apply QR update

@@ -41,6 +41,8 @@ function DirectQRForm() {
     quietZone: QR_DEFAULTS.QUIET_ZONE,
     moduleShape: 'square',
     eyeShape: 'square',
+    frameShape: 'none',
+    frameLabel: undefined,
     logoMode: 'none',
     logoDataUrl: undefined,
     logoSizeRatio: QR_DEFAULTS.DEFAULT_LOGO_RATIO,
@@ -87,6 +89,8 @@ function DirectQRForm() {
             quiet_zone: style.quietZone,
             module_shape: style.moduleShape,
             eye_shape: style.eyeShape,
+            frame_shape: style.frameShape,
+            frame_label: style.frameLabel,
           },
         }),
       });

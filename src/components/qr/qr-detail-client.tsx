@@ -22,7 +22,7 @@ import { StylePanel } from './style-panel';
 import { ExportPanel } from './export-panel';
 import { QRAnalyticsPanel } from './qr-analytics-panel';
 import type { QRStyleConfig, ErrorCorrectionLevel, LogoMode } from '@/types/qr';
-import type { ModuleShape, EyeShape } from '@/lib/qr/shapes';
+import type { ModuleShape, EyeShape, FrameShape } from '@/lib/qr/shapes';
 import { QR_DEFAULTS } from '@/lib/constants';
 
 interface QRDetailClientProps {
@@ -45,6 +45,8 @@ export function QRDetailClient({ qr, style: initialStyle, redirectUrl }: QRDetai
     quietZone: initialStyle?.quiet_zone || 4,
     moduleShape: (initialStyle?.module_shape || 'square') as ModuleShape,
     eyeShape: (initialStyle?.eye_shape || 'square') as EyeShape,
+    frameShape: (initialStyle?.frame_shape || 'none') as FrameShape,
+    frameLabel: initialStyle?.frame_label || undefined,
     logoMode: (initialStyle?.logo_mode || 'none') as LogoMode,
     logoDataUrl: initialStyle?.logo_data_url || undefined,
     logoSizeRatio: initialStyle?.logo_size_ratio || QR_DEFAULTS.DEFAULT_LOGO_RATIO,
@@ -100,6 +102,8 @@ export function QRDetailClient({ qr, style: initialStyle, redirectUrl }: QRDetai
             quiet_zone: style.quietZone,
             module_shape: style.moduleShape,
             eye_shape: style.eyeShape,
+            frame_shape: style.frameShape,
+            frame_label: style.frameLabel ?? '',
           },
         }),
       });

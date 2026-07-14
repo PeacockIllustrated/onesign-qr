@@ -56,6 +56,17 @@ export const SLUG_CONFIG = {
 export const MODULE_SHAPES = ['square', 'rounded', 'dots', 'diamond'] as const;
 export const EYE_SHAPES = ['square', 'rounded', 'circle'] as const;
 
+// Outer frame treatments applied around the (always square, always intact)
+// scannable QR matrix:
+// - circle: a clean circular badge with an optional curved call-to-action
+// - radial: concentric two-tone dashed rings radiating around the code, an
+//   App Clip-inspired "signal" look. The rings are decorative — the square QR
+//   in the centre is what actually scans.
+export const FRAME_SHAPES = ['none', 'circle', 'radial'] as const;
+
+// Longest call-to-action label rendered along a circular frame.
+export const FRAME_LABEL_MAX_LENGTH = 40;
+
 // Error correction levels
 export const ERROR_CORRECTION_LEVELS = ['L', 'M', 'Q', 'H'] as const;
 
