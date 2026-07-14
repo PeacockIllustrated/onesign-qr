@@ -159,6 +159,49 @@ describe('createQRSchema', () => {
       expect(result.data.analytics_enabled).toBe(true);
     }
   });
+
+  it('accepts a circle frame with a call-to-action label', () => {
+    const result = createQRSchema.safeParse({
+      ...validInput,
+      style: { frame_shape: 'circle', frame_label: 'SCAN ME' },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a radial frame', () => {
+    const result = createQRSchema.safeParse({
+      ...validInput,
+      style: { frame_shape: 'radial' },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects an invalid frame_shape', () => {
+    const result = createQRSchema.safeParse({
+      ...validInput,
+      style: { frame_shape: 'hexagon' },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a frame_label longer than 40 characters', () => {
+    const result = createQRSchema.safeParse({
+      ...validInput,
+      style: { frame_shape: 'circle', frame_label: 'a'.repeat(41) },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('trims whitespace from frame_label', () => {
+    const result = createQRSchema.safeParse({
+      ...validInput,
+      style: { frame_shape: 'circle', frame_label: '  SCAN ME  ' },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.style?.frame_label).toBe('SCAN ME');
+    }
+  });
 });
 
 describe('updateStyleSchema', () => {
@@ -218,6 +261,29 @@ describe('updateStyleSchema', () => {
     const result = updateStyleSchema.safeParse({
       quiet_zone: 11,
     });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts a circle frame with a label', () => {
+    const result = updateStyleSchema.safeParse({
+      frame_shape: 'circle',
+      frame_label: 'SCAN ME',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a radial frame', () => {
+    const result = updateStyleSchema.safeParse({ frame_shape: 'radial' });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects an invalid frame_shape', () => {
+    const result = updateStyleSchema.safeParse({ frame_shape: 'oval' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a frame_label over 40 characters', () => {
+    const result = updateStyleSchema.safeParse({ frame_label: 'x'.repeat(41) });
     expect(result.success).toBe(false);
   });
 });

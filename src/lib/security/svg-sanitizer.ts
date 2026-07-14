@@ -11,7 +11,7 @@ export const SVG_PURIFY_CONFIG = {
   ADD_TAGS: [
     'svg', 'rect', 'circle', 'path', 'g', 'defs',
     'clipPath', 'use', 'image', 'polygon', 'polyline',
-    'line', 'ellipse',
+    'line', 'ellipse', 'text', 'textPath', 'tspan',
   ],
   ADD_ATTR: [
     'viewBox', 'fill', 'stroke', 'stroke-width', 'd',
@@ -20,6 +20,10 @@ export const SVG_PURIFY_CONFIG = {
     'clip-path', 'href', 'preserveAspectRatio', 'points',
     'x1', 'y1', 'x2', 'y2', 'opacity', 'fill-opacity',
     'stroke-opacity', 'stroke-linecap', 'stroke-linejoin',
+    // Curved call-to-action label on circular frames
+    'id', 'startOffset', 'font-family', 'font-size',
+    'font-weight', 'letter-spacing', 'text-anchor',
+    'dominant-baseline',
   ],
   FORBID_TAGS: [
     'script', 'style', 'foreignObject', 'iframe',

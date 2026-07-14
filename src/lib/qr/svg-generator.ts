@@ -5,7 +5,8 @@
 
 import QRCode from 'qrcode';
 import { getModulePath, getFinderPatternPaths, isFinderPattern, isFinderSeparator } from './shapes';
-import type { ModuleShape, EyeShape } from './shapes';
+import type { ModuleShape, EyeShape, FrameShape } from './shapes';
+import { buildCircleFrame, buildRadialFrame } from './frames';
 import type { ErrorCorrectionLevel, LogoMode } from '@/types/qr';
 
 export interface StyledSVGOptions {
@@ -19,6 +20,10 @@ export interface StyledSVGOptions {
   logoMode?: LogoMode;
   logoDataUrl?: string;
   logoSizeRatio?: number;
+  /** Outer frame treatment. 'circle' wraps the matrix in a circular badge. */
+  frameShape?: FrameShape;
+  /** Optional call-to-action curved along the circular frame, e.g. "SCAN ME". */
+  frameLabel?: string;
 }
 
 /**
@@ -60,6 +65,8 @@ export async function generateStyledSVG(
     logoMode = 'none',
     logoDataUrl,
     logoSizeRatio = 0.2,
+    frameShape = 'none',
+    frameLabel,
   } = options;
 
   // Generate QR matrix
@@ -145,17 +152,64 @@ export async function generateStyledSVG(
   <image x="${logoOffset}" y="${logoOffset}" width="${logoPixelSize}" height="${logoPixelSize}" href="${logoDataUrl}" preserveAspectRatio="xMidYMid meet" />`;
   }
 
-  // Build final SVG
+  // The intact QR content (finder patterns, data modules, logo). Shared by both
+  // the plain square output and the circular badge — the matrix is identical in
+  // either case, which is what keeps the framed variant scannable.
+  const qrFragment = `${finderPatterns.join('\n  ')}
+  <path d="${modulePaths.join(' ')}" fill="${foregroundColor}"/>${logoElement}`;
+
+  // Circular frame: centre the intact square matrix inside a circular badge.
+  if (frameShape === 'circle') {
+    const frame = buildCircleFrame({
+      qrFragment,
+      qrCanvasSize: svgSize,
+      moduleSize,
+      ringColor: foregroundColor,
+      backgroundColor,
+      labelColor: backgroundColor,
+      label: frameLabel,
+    });
+
+    const viewBox = `0 0 ${frame.size} ${frame.size}`;
+    const widthHeight = size ? `width="${size}" height="${size}"` : '';
+
+    // geometricPrecision keeps the ring and curved label smooth; the axis-aligned
+    // data modules stay sharp at the export resolutions we use.
+    return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${viewBox}" ${widthHeight} shape-rendering="geometricPrecision">
+  ${frame.content}
+</svg>`;
+  }
+
+  // Radial frame: an App Clip-inspired ring of concentric dashes around the
+  // intact matrix. Seeded from `data` so each code's rings are unique + stable.
+  if (frameShape === 'radial') {
+    const frame = buildRadialFrame({
+      qrFragment,
+      qrCanvasSize: svgSize,
+      moduleSize,
+      ringColor: foregroundColor,
+      backgroundColor,
+      labelColor: foregroundColor,
+      label: frameLabel,
+      seed: data,
+    });
+
+    const viewBox = `0 0 ${frame.size} ${frame.size}`;
+    const widthHeight = size ? `width="${size}" height="${size}"` : '';
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${viewBox}" ${widthHeight} shape-rendering="geometricPrecision">
+  ${frame.content}
+</svg>`;
+  }
+
+  // Plain square QR.
   const viewBox = `0 0 ${svgSize} ${svgSize}`;
   const widthHeight = size ? `width="${size}" height="${size}"` : '';
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${viewBox}" ${widthHeight} shape-rendering="crispEdges">
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${viewBox}" ${widthHeight} shape-rendering="crispEdges">
   <rect width="100%" height="100%" fill="${backgroundColor}"/>
-  ${finderPatterns.join('\n  ')}
-  <path d="${modulePaths.join(' ')}" fill="${foregroundColor}"/>${logoElement}
+  ${qrFragment}
 </svg>`;
-
-  return svg;
 }
 
 /**

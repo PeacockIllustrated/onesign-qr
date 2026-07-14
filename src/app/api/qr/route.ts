@@ -134,6 +134,8 @@ export async function POST(request: NextRequest) {
       if (style.quiet_zone !== undefined) styleUpdate.quiet_zone = style.quiet_zone;
       if (style.module_shape) styleUpdate.module_shape = style.module_shape;
       if (style.eye_shape) styleUpdate.eye_shape = style.eye_shape;
+      if (style.frame_shape) styleUpdate.frame_shape = style.frame_shape;
+      if (style.frame_label !== undefined) styleUpdate.frame_label = style.frame_label || null;
 
       if (Object.keys(styleUpdate).length > 0) {
         await supabase

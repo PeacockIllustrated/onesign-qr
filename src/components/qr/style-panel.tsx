@@ -3,9 +3,9 @@
 import { useRef } from 'react';
 import { Upload, X, ImageIcon } from 'lucide-react';
 import { Label, Select, Input, Button } from '@/components/ui';
-import { MODULE_SHAPES, EYE_SHAPES, QR_DEFAULTS } from '@/lib/constants';
+import { MODULE_SHAPES, EYE_SHAPES, FRAME_LABEL_MAX_LENGTH, QR_DEFAULTS } from '@/lib/constants';
 import type { QRStyleConfig, ErrorCorrectionLevel, LogoMode } from '@/types/qr';
-import type { ModuleShape, EyeShape } from '@/lib/qr/shapes';
+import type { ModuleShape, EyeShape, FrameShape } from '@/lib/qr/shapes';
 
 interface StylePanelProps {
   style: QRStyleConfig;
@@ -141,6 +141,44 @@ export function StylePanel({ style, onChange }: StylePanelProps) {
             ))}
           </Select>
         </div>
+      </div>
+
+      {/* Frame */}
+      <div className="space-y-3">
+        <div className="space-y-2">
+          <Label htmlFor="frame-shape">frame</Label>
+          <Select
+            id="frame-shape"
+            value={style.frameShape}
+            onChange={(e) => updateStyle({ frameShape: e.target.value as FrameShape })}
+          >
+            <option value="none">none (square)</option>
+            <option value="circle">circle</option>
+            <option value="radial">radial (signal)</option>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {style.frameShape === 'radial'
+              ? 'Concentric dashed rings radiate around the code for an App Clip-style look. The rings are decorative — the square code in the centre is what scans.'
+              : 'A frame keeps the square code fully scannable and wraps it in branded styling — ideal for stickers, bottle caps, and round labels.'}
+          </p>
+        </div>
+
+        {style.frameShape !== 'none' && (
+          <div className="space-y-2">
+            <Label htmlFor="frame-label">call to action (optional)</Label>
+            <Input
+              id="frame-label"
+              value={style.frameLabel ?? ''}
+              onChange={(e) => updateStyle({ frameLabel: e.target.value })}
+              placeholder="SCAN ME"
+              maxLength={FRAME_LABEL_MAX_LENGTH}
+            />
+            <p className="text-xs text-muted-foreground">
+              Curved along the bottom of the frame. Keep it short, e.g. “SCAN ME” or
+              “VISIT OUR SITE”.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Error Correction */}

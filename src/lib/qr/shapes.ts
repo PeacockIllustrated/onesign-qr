@@ -6,6 +6,17 @@ export type ModuleShape = 'square' | 'rounded' | 'dots' | 'diamond';
 export type EyeShape = 'square' | 'rounded' | 'circle';
 
 /**
+ * Outer frame treatment applied around the (always square) QR matrix.
+ * - none: standard square QR, no frame
+ * - circle: the intact square matrix is centred inside a circular badge,
+ *   with an optional call-to-action label curved along the bottom arc
+ * - radial: concentric two-tone dashed rings radiate around the intact matrix
+ *   (an App Clip-inspired "signal" look). The rings are purely decorative; the
+ *   square QR in the centre is what scans.
+ */
+export type FrameShape = 'none' | 'circle' | 'radial';
+
+/**
  * Generate SVG path for a module (data dot)
  */
 export function getModulePath(

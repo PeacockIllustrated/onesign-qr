@@ -2,7 +2,7 @@
  * QR code related type definitions
  */
 
-import type { ModuleShape, EyeShape } from '@/lib/qr/shapes';
+import type { ModuleShape, EyeShape, FrameShape } from '@/lib/qr/shapes';
 
 // Error correction levels
 export type ErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
@@ -49,6 +49,8 @@ export interface QRStyleConfig {
   quietZone: number;
   moduleShape: ModuleShape;
   eyeShape: EyeShape;
+  frameShape: FrameShape; // Outer frame treatment ('none' | 'circle')
+  frameLabel?: string; // Curved call-to-action shown on the circular frame
   logoMode: LogoMode;
   logoDataUrl?: string; // Base64 data URL for uploaded logo
   logoSizeRatio: number; // Size of logo/placeholder relative to QR (0.15 - 0.30)
@@ -85,6 +87,8 @@ export interface QRStyle {
   quiet_zone: number;
   module_shape: ModuleShape;
   eye_shape: EyeShape;
+  frame_shape: FrameShape;
+  frame_label: string | null;
   logo_storage_path: string | null;
   logo_size_ratio: number;
   created_at: string;
@@ -177,6 +181,8 @@ export interface UpdateStyleRequest {
   quiet_zone?: number;
   module_shape?: ModuleShape;
   eye_shape?: EyeShape;
+  frame_shape?: FrameShape;
+  frame_label?: string | null;
   logo_size_ratio?: number;
 }
 
