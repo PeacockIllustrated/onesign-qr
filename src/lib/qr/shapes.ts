@@ -41,73 +41,71 @@ export function getModulePath(
 }
 
 /**
- * Generate SVG paths for finder pattern (eye)
+ * Rectangle subpath, optionally with rounded corners
+ */
+function rectSubpath(x: number, y: number, size: number, r = 0): string {
+  if (r <= 0) return `M${x},${y}h${size}v${size}h-${size}Z`;
+  const s = size - 2 * r;
+  return `M${x + r},${y}h${s}a${r},${r} 0 0 1 ${r},${r}v${s}a${r},${r} 0 0 1 -${r},${r}h-${s}a${r},${r} 0 0 1 -${r},-${r}v-${s}a${r},${r} 0 0 1 ${r},-${r}Z`;
+}
+
+/**
+ * Circle subpath
+ */
+function circleSubpath(cx: number, cy: number, r: number): string {
+  return `M${cx - r},${cy}a${r},${r} 0 1,0 ${r * 2},0a${r},${r} 0 1,0 -${r * 2},0Z`;
+}
+
+/**
+ * Generate SVG for a finder pattern (eye)
  * The finder pattern consists of:
  * - Outer ring (7x7)
- * - Inner ring (5x5, white/background)
+ * - Gap (5x5, cut out)
  * - Center dot (3x3)
+ *
+ * Emitted as a single compound path (evenodd) so the ring is a real hole
+ * rather than a background-coloured shape stacked on top.
  */
 export function getFinderPatternPaths(
   shape: EyeShape,
   x: number,
   y: number,
   moduleSize: number,
-  foregroundColor: string,
-  backgroundColor: string
+  foregroundColor: string
 ): string[] {
-  const paths: string[] = [];
+  const outer = moduleSize * 7;
+  const inner = moduleSize * 5;
+  const center = moduleSize * 3;
+  let d: string;
 
   switch (shape) {
-    case 'square': {
-      // Outer ring (7 modules)
-      const outer = moduleSize * 7;
-      paths.push(`<rect x="${x}" y="${y}" width="${outer}" height="${outer}" fill="${foregroundColor}"/>`);
-
-      // Inner ring (5 modules, offset by 1)
-      const innerOffset = moduleSize;
-      const inner = moduleSize * 5;
-      paths.push(`<rect x="${x + innerOffset}" y="${y + innerOffset}" width="${inner}" height="${inner}" fill="${backgroundColor}"/>`);
-
-      // Center dot (3 modules, offset by 2)
-      const centerOffset = moduleSize * 2;
-      const center = moduleSize * 3;
-      paths.push(`<rect x="${x + centerOffset}" y="${y + centerOffset}" width="${center}" height="${center}" fill="${foregroundColor}"/>`);
+    case 'rounded':
+      d =
+        rectSubpath(x, y, outer, moduleSize * 1.5) +
+        rectSubpath(x + moduleSize, y + moduleSize, inner, moduleSize) +
+        rectSubpath(x + moduleSize * 2, y + moduleSize * 2, center, moduleSize * 0.5);
       break;
-    }
-
-    case 'rounded': {
-      const outer = moduleSize * 7;
-      const outerR = moduleSize * 1.5;
-      paths.push(`<rect x="${x}" y="${y}" width="${outer}" height="${outer}" rx="${outerR}" fill="${foregroundColor}"/>`);
-
-      const innerOffset = moduleSize;
-      const inner = moduleSize * 5;
-      const innerR = moduleSize;
-      paths.push(`<rect x="${x + innerOffset}" y="${y + innerOffset}" width="${inner}" height="${inner}" rx="${innerR}" fill="${backgroundColor}"/>`);
-
-      const centerOffset = moduleSize * 2;
-      const center = moduleSize * 3;
-      const centerR = moduleSize * 0.5;
-      paths.push(`<rect x="${x + centerOffset}" y="${y + centerOffset}" width="${center}" height="${center}" rx="${centerR}" fill="${foregroundColor}"/>`);
-      break;
-    }
 
     case 'circle': {
-      const outerR = moduleSize * 3.5;
-      const cx = x + outerR;
-      const cy = y + outerR;
-      paths.push(`<circle cx="${cx}" cy="${cy}" r="${outerR}" fill="${foregroundColor}"/>`);
-
-      const innerR = moduleSize * 2.5;
-      paths.push(`<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="${backgroundColor}"/>`);
-
-      const centerR = moduleSize * 1.5;
-      paths.push(`<circle cx="${cx}" cy="${cy}" r="${centerR}" fill="${foregroundColor}"/>`);
+      const cx = x + moduleSize * 3.5;
+      const cy = y + moduleSize * 3.5;
+      d =
+        circleSubpath(cx, cy, moduleSize * 3.5) +
+        circleSubpath(cx, cy, moduleSize * 2.5) +
+        circleSubpath(cx, cy, moduleSize * 1.5);
       break;
     }
+
+    case 'square':
+    default:
+      d =
+        rectSubpath(x, y, outer) +
+        rectSubpath(x + moduleSize, y + moduleSize, inner) +
+        rectSubpath(x + moduleSize * 2, y + moduleSize * 2, center);
+      break;
   }
 
-  return paths;
+  return [`<path fill="${foregroundColor}" fill-rule="evenodd" d="${d}"/>`];
 }
 
 /**

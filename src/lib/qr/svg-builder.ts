@@ -4,6 +4,7 @@
 
 import type { QRMatrix, QRStyleConfig } from '@/types/qr';
 import { getModulePath, getFinderPatternPaths, isFinderPattern, isFinderSeparator } from './shapes';
+import { traceMergedModulePath } from './merge-paths';
 
 export interface SVGOptions {
   size?: number;
@@ -27,27 +28,26 @@ export function buildStyledSVG(
 
   const viewBoxSize = moduleCount + (quietZone * 2);
 
-  // Collect paths for data modules
-  const modulePaths: string[] = [];
+  const isDataModule = (row: number, col: number): boolean =>
+    !isFinderPattern(row, col, moduleCount) &&
+    !isFinderSeparator(row, col, moduleCount) &&
+    Boolean(matrix.modules.get(row, col));
 
-  // Process each module
-  for (let row = 0; row < moduleCount; row++) {
-    for (let col = 0; col < moduleCount; col++) {
-      // Skip finder patterns - we'll draw them separately
-      if (isFinderPattern(row, col, moduleCount)) continue;
-
-      // Skip finder separators
-      if (isFinderSeparator(row, col, moduleCount)) continue;
-
-      // Check if module is set
-      const isSet = matrix.modules.get(row, col);
-      if (!isSet) continue;
-
-      const x = quietZone + col * moduleSize;
-      const y = quietZone + row * moduleSize;
-
-      modulePaths.push(getModulePath(style.moduleShape, x, y, moduleSize));
+  let modulePathData: string;
+  if (style.moduleShape === 'square') {
+    // Merge touching squares into single outlines
+    modulePathData = traceMergedModulePath(moduleCount, isDataModule, quietZone, quietZone, moduleSize);
+  } else {
+    const modulePaths: string[] = [];
+    for (let row = 0; row < moduleCount; row++) {
+      for (let col = 0; col < moduleCount; col++) {
+        if (!isDataModule(row, col)) continue;
+        const x = quietZone + col * moduleSize;
+        const y = quietZone + row * moduleSize;
+        modulePaths.push(getModulePath(style.moduleShape, x, y, moduleSize));
+      }
     }
+    modulePathData = modulePaths.join('');
   }
 
   // Build finder patterns
@@ -60,8 +60,7 @@ export function buildStyledSVG(
       quietZone,
       quietZone,
       moduleSize,
-      style.foregroundColor,
-      style.backgroundColor
+      style.foregroundColor
     )
   );
 
@@ -72,8 +71,7 @@ export function buildStyledSVG(
       quietZone + (moduleCount - 7) * moduleSize,
       quietZone,
       moduleSize,
-      style.foregroundColor,
-      style.backgroundColor
+      style.foregroundColor
     )
   );
 
@@ -84,8 +82,7 @@ export function buildStyledSVG(
       quietZone,
       quietZone + (moduleCount - 7) * moduleSize,
       moduleSize,
-      style.foregroundColor,
-      style.backgroundColor
+      style.foregroundColor
     )
   );
 
@@ -126,7 +123,7 @@ export function buildStyledSVG(
   shape-rendering="crispEdges"
 >
   <rect width="100%" height="100%" fill="${style.backgroundColor}"/>
-  <path fill="${style.foregroundColor}" d="${modulePaths.join('')}"/>
+  <path fill="${style.foregroundColor}" d="${modulePathData}"/>
   ${finderPatterns.join('\n  ')}
   ${logoElement}
 </svg>`;
@@ -148,20 +145,14 @@ export function buildSimpleSVG(
 
   const viewBoxSize = moduleCount + (quietZone * 2);
 
-  // Collect all module positions
-  const rects: string[] = [];
-
-  for (let row = 0; row < moduleCount; row++) {
-    for (let col = 0; col < moduleCount; col++) {
-      const isSet = matrix.modules.get(row, col);
-      if (!isSet) continue;
-
-      const x = quietZone + col * moduleSize;
-      const y = quietZone + row * moduleSize;
-
-      rects.push(`<rect x="${x}" y="${y}" width="${moduleSize}" height="${moduleSize}"/>`);
-    }
-  }
+  // Merge all dark modules into single outlines
+  const pathData = traceMergedModulePath(
+    moduleCount,
+    (row, col) => Boolean(matrix.modules.get(row, col)),
+    quietZone,
+    quietZone,
+    moduleSize
+  );
 
   const xmlDecl = includeXmlDeclaration ? '<?xml version="1.0" encoding="UTF-8"?>\n' : '';
 
@@ -171,8 +162,6 @@ export function buildSimpleSVG(
   shape-rendering="crispEdges"
 >
   <rect width="100%" height="100%" fill="${style.backgroundColor}"/>
-  <g fill="${style.foregroundColor}">
-    ${rects.join('\n    ')}
-  </g>
+  <path fill="${style.foregroundColor}" d="${pathData}"/>
 </svg>`;
 }
