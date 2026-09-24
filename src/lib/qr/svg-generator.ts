@@ -6,6 +6,7 @@
 import QRCode from 'qrcode';
 import { getModulePath, getFinderPatternPaths, isFinderPattern, isFinderSeparator } from './shapes';
 import type { ModuleShape, EyeShape } from './shapes';
+import { traceMergedModulePath } from './merge-paths';
 import type { ErrorCorrectionLevel, LogoMode } from '@/types/qr';
 
 export interface StyledSVGOptions {
@@ -78,26 +79,29 @@ export async function generateStyledSVG(
   const logoPixelSize = matrixSize * moduleSize * logoSizeRatio;
   const logoOffset = (svgSize - logoPixelSize) / 2;
 
-  // Build SVG paths
-  const modulePaths: string[] = [];
+  // Data modules (skip finder patterns, separators and logo area)
+  const isDataModule = (row: number, col: number): boolean =>
+    !isFinderPattern(row, col, matrixSize) &&
+    !isFinderSeparator(row, col, matrixSize) &&
+    !(hasLogo && isInLogoArea(row, col, matrixSize, logoSizeRatio + 0.05)) &&
+    Boolean(modules.get(row, col));
 
-  // Generate data modules (skip finder patterns and logo area)
-  for (let row = 0; row < matrixSize; row++) {
-    for (let col = 0; col < matrixSize; col++) {
-      // Skip finder patterns - we'll draw them separately with eye shape
-      if (isFinderPattern(row, col, matrixSize)) continue;
-      // Skip finder separators
-      if (isFinderSeparator(row, col, matrixSize)) continue;
-      // Skip logo area if logo is enabled
-      if (hasLogo && isInLogoArea(row, col, matrixSize, logoSizeRatio + 0.05)) continue;
-
-      // Only draw dark modules
-      if (modules.get(row, col)) {
+  let modulePathData: string;
+  if (moduleShape === 'square') {
+    // Merge touching squares into single outlines so the export needs no
+    // manual Pathfinder/unite step in Illustrator
+    modulePathData = traceMergedModulePath(matrixSize, isDataModule, margin, margin, moduleSize);
+  } else {
+    const modulePaths: string[] = [];
+    for (let row = 0; row < matrixSize; row++) {
+      for (let col = 0; col < matrixSize; col++) {
+        if (!isDataModule(row, col)) continue;
         const x = margin + col * moduleSize;
         const y = margin + row * moduleSize;
         modulePaths.push(getModulePath(moduleShape, x, y, moduleSize));
       }
     }
+    modulePathData = modulePaths.join(' ');
   }
 
   // Generate finder patterns (eyes)
@@ -105,7 +109,7 @@ export async function generateStyledSVG(
 
   // Top-left eye
   finderPatterns.push(
-    ...getFinderPatternPaths(eyeShape, margin, margin, moduleSize, foregroundColor, backgroundColor)
+    ...getFinderPatternPaths(eyeShape, margin, margin, moduleSize, foregroundColor)
   );
 
   // Top-right eye
@@ -115,8 +119,7 @@ export async function generateStyledSVG(
       margin + (matrixSize - 7) * moduleSize,
       margin,
       moduleSize,
-      foregroundColor,
-      backgroundColor
+      foregroundColor
     )
   );
 
@@ -127,8 +130,7 @@ export async function generateStyledSVG(
       margin,
       margin + (matrixSize - 7) * moduleSize,
       moduleSize,
-      foregroundColor,
-      backgroundColor
+      foregroundColor
     )
   );
 
@@ -152,7 +154,7 @@ export async function generateStyledSVG(
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${viewBox}" ${widthHeight} shape-rendering="crispEdges">
   <rect width="100%" height="100%" fill="${backgroundColor}"/>
   ${finderPatterns.join('\n  ')}
-  <path d="${modulePaths.join(' ')}" fill="${foregroundColor}"/>${logoElement}
+  <path d="${modulePathData}" fill="${foregroundColor}"/>${logoElement}
 </svg>`;
 
   return svg;
