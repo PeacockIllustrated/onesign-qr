@@ -31,6 +31,10 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/wtr/:file*.vcf',
+        headers: [{ key: 'Content-Type', value: 'text/vcard; charset=utf-8' }],
+      },
+      {
         source: '/:path*',
         headers: [
           {
