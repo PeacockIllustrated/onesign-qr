@@ -9,6 +9,9 @@ import { isValidUUID } from '@/validations/qr';
 import { BIO_DEFAULTS, BIO_THEMES, BIO_BUTTON_STYLES, SOCIAL_PLATFORMS } from '@/lib/constants';
 import type { ApiKeyContext } from '@/lib/api-keys';
 import type { QrRow } from './render';
+import { uiToolMeta } from './ui';
+import { resolveFullThemeConfig } from '@/lib/bio/theme-definitions';
+import type { BioLinkTheme } from '@/types/bio';
 
 /**
  * Link page (bio page) tools for the Lynx MCP server.
@@ -83,6 +86,12 @@ interface PageRow {
   analytics_enabled: boolean;
   qr_code_id: string | null;
   total_views?: number | null;
+  button_style?: string | null;
+  custom_bg_color?: string | null;
+  custom_text_color?: string | null;
+  custom_accent_color?: string | null;
+  card_layout?: string | null;
+  subtitle?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -105,7 +114,8 @@ function errorResult(message: string): CallToolResult {
   return { isError: true, content: [{ type: 'text', text: message }] };
 }
 
-function textResult(body: Record<string, unknown>): CallToolResult {
+function textResult(input: Record<string, unknown>): CallToolResult {
+  const body = input.link_page && !input.view ? { view: 'link_page', ...input } : input;
   return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }], structuredContent: body };
 }
 
@@ -189,7 +199,7 @@ export function registerLinkPageTools(
     if (!isValidUUID(id)) return null;
     const { data } = await db()
       .from('bio_link_pages')
-      .select('id, title, slug, bio, theme, is_active, analytics_enabled, qr_code_id, total_views, created_at, updated_at')
+      .select('id, title, slug, bio, theme, button_style, custom_bg_color, custom_text_color, custom_accent_color, card_layout, subtitle, is_active, analytics_enabled, qr_code_id, total_views, created_at, updated_at')
       .eq('id', id)
       .eq('owner_id', ctx.userId)
       .eq('org_id', ctx.orgId)
@@ -217,6 +227,36 @@ export function registerLinkPageTools(
     return ((data ?? []) as Array<{ id: string }>)[0]?.id ?? null;
   }
 
+  /** Resolved colours (theme + overrides), the same way the public page renders them. */
+  function designOf(page: PageRow) {
+    let colors: Record<string, string | undefined> = {};
+    let background: string | undefined;
+    let radius: string | undefined;
+    try {
+      const t = resolveFullThemeConfig(page.theme as BioLinkTheme, {
+        custom_bg_color: page.custom_bg_color ?? null,
+        custom_text_color: page.custom_text_color ?? null,
+        custom_accent_color: page.custom_accent_color ?? null,
+      } as Parameters<typeof resolveFullThemeConfig>[1]);
+      colors = t.colors as unknown as Record<string, string>;
+      background = t.background?.css;
+      radius = t.buttonStyle?.borderRadius;
+    } catch {
+      // Unknown theme: fall back to plain colours.
+    }
+    return {
+      theme: page.theme,
+      button_style: page.button_style ?? 'filled',
+      background: background ?? colors.bg ?? '#FFFFFF',
+      text: colors.text ?? '#1A1A1A',
+      text_secondary: colors.textSecondary ?? '#6B7280',
+      button_bg: colors.buttonBg ?? '#1A1A1A',
+      button_text: colors.buttonText ?? '#FFFFFF',
+      accent: colors.accent ?? '#1A1A1A',
+      button_radius: radius ?? '12px',
+    };
+  }
+
   function pageSummary(page: PageRow, blocks: BlockRow[]) {
     const links = blocks
       .filter((b) => b.block_type === 'link')
@@ -237,6 +277,8 @@ export function registerLinkPageTools(
       other_blocks: blocks.filter((b) => b.block_type !== 'link' && b.block_type !== 'social_icons').length,
       qr_code_id: page.qr_code_id,
       total_views: page.total_views ?? 0,
+      subtitle: page.subtitle ?? null,
+      design: designOf(page),
     };
   }
 
@@ -249,7 +291,7 @@ export function registerLinkPageTools(
     const created = await helpers.createQr({ name: `QR for ${page.title}`, destination_url: pageUrl(page.slug) });
     if ('error' in created) return textResult({ ...extra, qr_note: `Page saved, but the QR code failed: ${created.error}` });
     await db().from('bio_link_pages').update({ qr_code_id: created.qr.id }).eq('id', page.id);
-    return helpers.withPreview(created.qr, extra);
+    return helpers.withPreview(created.qr, { view: 'link_page', ...extra });
   }
 
   // ── create_link_page ──────────────────────────────────────────────────
@@ -270,6 +312,7 @@ export function registerLinkPageTools(
         analytics_enabled: z.boolean().optional().describe('Track page views and clicks. Default true.'),
         ...pageDesignShape,
       },
+      _meta: uiToolMeta,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
     async (args) => {
@@ -418,6 +461,7 @@ export function registerLinkPageTools(
       title: 'Get link page',
       description: 'Fetch one link page with its links (and their ids, for removing) and social icons.',
       inputSchema: { id: z.string().describe('Link page id (UUID).') },
+      _meta: uiToolMeta,
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async ({ id }) => {
@@ -448,6 +492,7 @@ export function registerLinkPageTools(
         create_qr: z.boolean().optional().describe('Create a managed QR code pointing at the page (if it has none).'),
         ...pageDesignShape,
       },
+      _meta: uiToolMeta,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
     async (args) => {

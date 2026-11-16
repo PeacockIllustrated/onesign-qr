@@ -18,12 +18,17 @@ import type { ApiKeyContext } from '@/lib/api-keys';
 import { renderPng, encodedContent, styleOf, type QrRow } from './render';
 import { createDownloadToken, DOWNLOAD_TTL_SECONDS } from './download-token';
 import { registerLinkPageTools } from './link-page-tools';
+import { registerLynxUi, uiToolMeta } from './ui';
 
 const MAX_SLUG_RETRIES = 3;
 const PREVIEW_SIZE = 512;
 const PDF_PRESETS = ['sticker-50mm', 'sticker-75mm', 'sticker-100mm', 'a4'] as const;
 
 const SERVER_INSTRUCTIONS = `Lynx is OneSign & Digital's QR code and link page platform. Use these tools whenever the user asks to make, find, change or export a QR code, or to make a link page / bio page / link-in-bio / digital business card.
+
+The hub:
+- When the user asks what Lynx can do here, wants an overview of their codes and pages, or is just starting, show lynx_hub. Its buttons put a request in the chat as the user; treat it as theirs.
+- QR code and link page results render as interactive cards (preview, style controls, downloads, publish), so keep your own reply short and don't repeat what the card shows.
 
 Link pages:
 - create_link_page builds a hosted page at /p/slug with a profile header, social icons and a list of link buttons. Pass create_qr: true when the user wants a QR code for it (e.g. for a sign, table talker or business card).
@@ -149,6 +154,7 @@ export function createLynxMcpServer(ctx: ApiKeyContext, meta: McpRequestMeta = {
   ): Promise<CallToolResult> {
     const png = await renderPng(qr, previewSize);
     const body = {
+      view: 'qr',
       ...extra,
       qr_code: summary(qr),
       downloads: downloadLinks(qr, linkOpts),
@@ -249,6 +255,7 @@ export function createLynxMcpServer(ctx: ApiKeyContext, meta: McpRequestMeta = {
         analytics_enabled: z.boolean().optional().describe('Track scans (managed only). Default true.'),
         ...styleShape,
       },
+      _meta: uiToolMeta,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
     async (args) => {
@@ -260,6 +267,83 @@ export function createLynxMcpServer(ctx: ApiKeyContext, meta: McpRequestMeta = {
       return withPreview(created.qr, { created: true });
     }
   );
+
+  // ── lynx_hub ──────────────────────────────────────────────────────────
+  server.registerTool(
+    'lynx_hub',
+    {
+      title: 'Lynx hub',
+      description:
+        'Show the Lynx hub: an overview card of the user\'s QR codes (top and recent, with scans) and link pages, ' +
+        'with quick actions. Use it when the user wants an overview, asks what Lynx can do here, or is just starting.',
+      inputSchema: {},
+      _meta: uiToolMeta,
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async () => {
+      const limit = checkApiLimit(ctx.userId);
+      if (!limit.success) return errorResult('Rate limit reached. Try again in a minute.');
+
+      const admin = db();
+      const [codesRes, pagesRes] = await Promise.all([
+        admin
+          .from('qr_codes')
+          .select('id, name, mode, slug, destination_url, is_active, total_scans, last_scanned_at, created_at')
+          .eq('owner_id', ctx.userId)
+          .eq('org_id', ctx.orgId)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(500),
+        admin
+          .from('bio_link_pages')
+          .select('id, title, slug, is_active, total_views, created_at')
+          .eq('owner_id', ctx.userId)
+          .eq('org_id', ctx.orgId)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false }),
+      ]);
+      if (codesRes.error || pagesRes.error) return errorResult('Failed to load the Lynx hub.');
+
+      const codes = (codesRes.data ?? []) as QrRow[];
+      const brief = (qr: QrRow) => ({
+        id: qr.id,
+        name: qr.name,
+        mode: qr.mode,
+        short_link: qr.mode === 'managed' && qr.slug ? `${appUrl()}/r/${qr.slug}` : null,
+        destination_url: qr.destination_url,
+        is_active: qr.is_active,
+        total_scans: qr.total_scans ?? 0,
+        last_scanned_at: qr.last_scanned_at ?? null,
+      });
+      const pages = ((pagesRes.data ?? []) as Array<{ id: string; title: string; slug: string; is_active: boolean; total_views: number | null }>)
+        .sort((a, b) => Number(b.is_active) - Number(a.is_active))
+        .map((p) => ({
+          id: p.id,
+          title: p.title,
+          status: p.is_active ? 'live' : 'draft',
+          page_url: `${appUrl()}/p/${p.slug}`,
+          total_views: p.total_views ?? 0,
+        }));
+
+      const body = {
+        view: 'hub',
+        totals: {
+          qr_codes: codes.length,
+          active_qr_codes: codes.filter((c) => c.is_active).length,
+          total_scans: codes.reduce((n, c) => n + (c.total_scans ?? 0), 0),
+          link_pages: pages.length,
+          live_link_pages: pages.filter((p) => p.status === 'live').length,
+        },
+        top_qr_codes: [...codes].sort((a, b) => (b.total_scans ?? 0) - (a.total_scans ?? 0)).slice(0, 5).map(brief),
+        recent_qr_codes: codes.slice(0, 5).map(brief),
+        link_pages: pages,
+        dashboard_url: `${appUrl()}/app`,
+      };
+      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }], structuredContent: body };
+    }
+  );
+
+  registerLynxUi(server);
 
   registerLinkPageTools(server, ctx, meta, {
     createQr,
@@ -336,6 +420,7 @@ export function createLynxMcpServer(ctx: ApiKeyContext, meta: McpRequestMeta = {
       title: 'Get QR code',
       description: 'Fetch one QR code by id, with a preview image and fresh download links.',
       inputSchema: { id: z.string().describe('QR code id (UUID) from create_qr_code or list_qr_codes.') },
+      _meta: uiToolMeta,
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async ({ id }) => {
@@ -363,6 +448,7 @@ export function createLynxMcpServer(ctx: ApiKeyContext, meta: McpRequestMeta = {
         analytics_enabled: z.boolean().optional(),
         ...styleShape,
       },
+      _meta: uiToolMeta,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async (args) => {
@@ -444,6 +530,7 @@ export function createLynxMcpServer(ctx: ApiKeyContext, meta: McpRequestMeta = {
         png_size: z.number().int().min(64).max(4096).optional().describe('PNG width/height in px. Default 1024.'),
         pdf_preset: z.enum(PDF_PRESETS).optional().describe('PDF page preset. Default sticker-75mm.'),
       },
+      _meta: uiToolMeta,
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async (args) => {

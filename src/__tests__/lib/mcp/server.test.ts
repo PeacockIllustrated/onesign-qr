@@ -50,7 +50,7 @@ describe('Lynx MCP server', () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       'create_link_page', 'create_qr_code', 'export_qr_code', 'get_link_page', 'get_qr_analytics', 'get_qr_code',
-      'list_link_pages', 'list_qr_codes', 'update_link_page', 'update_qr_code',
+      'list_link_pages', 'list_qr_codes', 'lynx_hub', 'update_link_page', 'update_qr_code',
     ]);
   });
 
@@ -77,6 +77,14 @@ describe('Lynx MCP server', () => {
 
     const token = body.downloads.svg.split('/api/mcp/download/')[1];
     expect(verifyDownloadToken(token)).toMatchObject({ qrId: row.id, userId: 'user-1', orgId: 'org-1', format: 'svg' });
+  });
+
+  it('encodes the same link as the dashboard, without a double slash', async () => {
+    process.env.NEXT_PUBLIC_APP_URL = 'https://lynx.test/';
+    process.env.QR_REDIRECT_BASE_URL = 'https://other.test/';
+    const client = await connect();
+    const res: any = await client.callTool({ name: 'create_qr_code', arguments: { name: 'A', destination_url: 'https://a.com' } });
+    expect(json(res).qr_code.encodes).toBe('https://lynx.test/r/abc12345');
   });
 
   it('rejects unsafe destinations', async () => {
