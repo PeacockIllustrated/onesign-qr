@@ -22,6 +22,11 @@ const nextConfig = {
     },
   },
 
+  // Static client link pages in public/ (e.g. /wtr -> public/wtr/index.html)
+  async rewrites() {
+    return [{ source: '/wtr', destination: '/wtr/index.html' }];
+  },
+
   // Headers for security
   async headers() {
     return [
