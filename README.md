@@ -13,7 +13,7 @@ Brand accent: `#58a386` (Tailwind: `lynx-500`).
 - **Shopfront**: Branded NFC cards, review boards, table talkers, A-frames (fulfilled by OneSign & Digital)
 - **Privacy-First Analytics**: Scans and clicks tracked without storing personal data
 - **Super-Admin Dashboard**: Platform-wide visibility for OneSign staff, fully audited
-- **Claude connector (MCP)**: Ask Claude to make, edit and export QR codes straight into Lynx — see [docs/claude-connector.md](docs/claude-connector.md)
+- **Claude connector (MCP)**: Ask Claude to make QR codes and link pages straight into Lynx — see [docs/claude-connector.md](docs/claude-connector.md)
 
 ## Stack
 

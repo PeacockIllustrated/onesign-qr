@@ -21,8 +21,8 @@ export class FakeDb {
 
 class Query {
   private filters: Array<(r: Row) => boolean> = [];
-  private op: 'select' | 'insert' | 'update' = 'select';
-  private payload: Row | null = null;
+  private op: 'select' | 'insert' | 'update' | 'delete' = 'select';
+  private payload: Row | Row[] | null = null;
   private wantCount = false;
   private rangeFrom = 0;
   private rangeTo = Infinity;
@@ -35,7 +35,8 @@ class Query {
     if (opts?.count) this.wantCount = true;
     return this;
   }
-  insert(row: Row) { this.op = 'insert'; this.payload = row; return this; }
+  insert(row: Row | Row[]) { this.op = 'insert'; this.payload = row; return this; }
+  delete() { this.op = 'delete'; return this; }
   update(row: Row) { this.op = 'update'; this.payload = row; return this; }
   eq(col: string, v: unknown) { this.filters.push((r) => r[col] === v); return this; }
   is(col: string, v: unknown) { this.filters.push((r) => (r[col] ?? null) === v); return this; }
@@ -59,18 +60,28 @@ class Query {
   private run(): { data: any; error: any; count?: number } {
     const rows = this.db.tables[this.table];
     if (this.op === 'insert') {
-      const row: Row = { id: crypto.randomUUID(), created_at: new Date().toISOString(), deleted_at: null, total_scans: 0, is_active: true, ...this.payload };
-      if (this.table === 'qr_codes' && row.slug && rows.some((r) => r.slug === row.slug)) {
-        return { data: null, error: { code: '23505', message: 'duplicate' } };
+      const inputs = Array.isArray(this.payload) ? this.payload : [this.payload!];
+      const out: Row[] = [];
+      for (const input of inputs) {
+        const row: Row = { id: crypto.randomUUID(), created_at: new Date().toISOString(), deleted_at: null, total_scans: 0, is_active: true, ...input };
+        if ((this.table === 'qr_codes' || this.table === 'bio_link_pages') && row.slug && rows.some((r) => r.slug === row.slug)) {
+          return { data: null, error: { code: '23505', message: 'duplicate' } };
+        }
+        rows.push(row);
+        if (this.table === 'qr_codes') {
+          (this.db.tables.qr_styles ??= []).push({
+            qr_id: row.id, foreground_color: '#000000', background_color: '#FFFFFF',
+            error_correction: 'M', quiet_zone: 4, module_shape: 'square', eye_shape: 'square',
+          });
+        }
+        out.push(this.withJoins(row));
       }
-      rows.push(row);
-      if (this.table === 'qr_codes') {
-        (this.db.tables.qr_styles ??= []).push({
-          qr_id: row.id, foreground_color: '#000000', background_color: '#FFFFFF',
-          error_correction: 'M', quiet_zone: 4, module_shape: 'square', eye_shape: 'square',
-        });
-      }
-      return { data: [this.withJoins(row)], error: null };
+      return { data: out, error: null };
+    }
+    if (this.op === 'delete') {
+      const keep = rows.filter((r) => !this.filters.every((f) => f(r)));
+      this.db.tables[this.table] = keep;
+      return { data: null, error: null };
     }
     const matched = rows.filter((r) => this.filters.every((f) => f(r)));
     if (this.op === 'update') {

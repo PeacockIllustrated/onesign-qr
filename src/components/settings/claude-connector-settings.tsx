@@ -91,8 +91,8 @@ export function ClaudeConnectorSettings({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Claude connector</h1>
         <p className="text-sm text-zinc-400 mt-1">
-          Let Claude create, edit and export QR codes in your Lynx account. Ask things like
-          &ldquo;make a QR code for our menu&rdquo; and it appears here, fully managed.
+          Let Claude create, edit and export QR codes and link pages in your Lynx account. Ask things like
+          &ldquo;make a QR code for our menu&rdquo; or &ldquo;build a link page for the café with our socials&rdquo; and it appears here, fully managed.
         </p>
       </div>
 

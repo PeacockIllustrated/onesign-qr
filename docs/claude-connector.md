@@ -1,6 +1,6 @@
 # Claude connector (MCP)
 
-Lynx exposes a remote [MCP](https://modelcontextprotocol.io) server so Claude can create and manage QR codes directly in a user's Lynx account. Ask Claude "make a QR code for our menu" and the code is created in Lynx as a managed code, with a preview in the chat and PNG / SVG / PDF download links.
+Lynx exposes a remote [MCP](https://modelcontextprotocol.io) server so Claude can create and manage QR codes and link pages directly in a user's Lynx account. Ask Claude "make a QR code for our menu" and the code is created in Lynx as a managed code, with a preview in the chat and PNG / SVG / PDF download links.
 
 ## Setup (per user)
 
@@ -23,8 +23,14 @@ Lynx exposes a remote [MCP](https://modelcontextprotocol.io) server so Claude ca
 | `update_qr_code` | Rename, change destination (no reprint for managed codes), pause/resume, toggle analytics, restyle. |
 | `export_qr_code` | Download links at a chosen PNG size and PDF preset (50/75/100 mm sticker, A4). |
 | `get_qr_analytics` | Scan totals and by-day / country / device breakdown. |
+| `create_link_page` | Create a link page (`/p/<slug>`): title, intro, theme, colours, contact details, social icons and link buttons. `create_qr: true` also makes a managed QR code for it. |
+| `list_link_pages` | List the user's link pages (live first). |
+| `get_link_page` | One page with its links (ids) and socials. |
+| `update_link_page` | Edit details/design, add or remove links, replace socials, publish/unpublish, add a QR code. |
 
-Deleting codes and NFC/Pro carrier options are deliberately not exposed; they stay in the dashboard.
+Link pages follow the dashboard's rules: max 5 pages per user, one live page at a time. A new page goes live only if the user has no live page; otherwise it is a draft. `publish: true` makes it live and turns the previous live page into a draft. Pages are built with the grid block layout (social icons row, then one full-width link button per row), so they stay fully editable in the dashboard editor.
+
+Deleting codes or pages and NFC/Pro carrier options are deliberately not exposed; they stay in the dashboard.
 
 ## How it works
 

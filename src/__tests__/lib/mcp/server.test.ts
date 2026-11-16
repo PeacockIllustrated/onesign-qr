@@ -49,7 +49,8 @@ describe('Lynx MCP server', () => {
     const client = await connect();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
-      'create_qr_code', 'export_qr_code', 'get_qr_analytics', 'get_qr_code', 'list_qr_codes', 'update_qr_code',
+      'create_link_page', 'create_qr_code', 'export_qr_code', 'get_link_page', 'get_qr_analytics', 'get_qr_code',
+      'list_link_pages', 'list_qr_codes', 'update_link_page', 'update_qr_code',
     ]);
   });
 

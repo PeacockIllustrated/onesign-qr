@@ -17,12 +17,20 @@ import {
 import type { ApiKeyContext } from '@/lib/api-keys';
 import { renderPng, encodedContent, styleOf, type QrRow } from './render';
 import { createDownloadToken, DOWNLOAD_TTL_SECONDS } from './download-token';
+import { registerLinkPageTools } from './link-page-tools';
 
 const MAX_SLUG_RETRIES = 3;
 const PREVIEW_SIZE = 512;
 const PDF_PRESETS = ['sticker-50mm', 'sticker-75mm', 'sticker-100mm', 'a4'] as const;
 
-const SERVER_INSTRUCTIONS = `Lynx is OneSign & Digital's QR code platform. Use these tools whenever the user asks to make, find, change or export a QR code.
+const SERVER_INSTRUCTIONS = `Lynx is OneSign & Digital's QR code and link page platform. Use these tools whenever the user asks to make, find, change or export a QR code, or to make a link page / bio page / link-in-bio / digital business card.
+
+Link pages:
+- create_link_page builds a hosted page at /p/slug with a profile header, social icons and a list of link buttons. Pass create_qr: true when the user wants a QR code for it (e.g. for a sign, table talker or business card).
+- Each user has one live (published) page at a time. A new page goes live only if they have no live page; otherwise it is saved as a draft. Tell the user which, and ask before using publish: true on an update, because that takes their current live page offline.
+- Don't invent links, phone numbers or emails: only use what the user gave you.
+
+QR codes:
 
 - Prefer mode "managed" (the default): the code points at a short Lynx link (/r/slug), so the destination can be changed later without reprinting, and scans are counted. Use "direct" only when the user explicitly wants the URL baked into the code (no tracking, cannot be changed).
 - Give every code a short, human name the user will recognise in their dashboard (e.g. "Café menu - table talker").
@@ -155,6 +163,74 @@ export function createLynxMcpServer(ctx: ApiKeyContext, meta: McpRequestMeta = {
     };
   }
 
+  /** Insert a QR code (+ style) for the key's user/org. Shared with link pages. */
+  async function createQr(
+    args: { name: string; destination_url: string; mode?: 'managed' | 'direct'; slug?: string; analytics_enabled?: boolean } & StyleInput
+  ): Promise<{ qr: QrRow } | { error: string }> {
+    const mode = args.mode ?? 'managed';
+    const urlCheck = await validateUrlStrict(args.destination_url);
+    if (!urlCheck.isValid) return { error: `Destination URL rejected: ${urlCheck.error}` };
+
+    const admin = db();
+    let slug = mode === 'managed' ? args.slug : undefined;
+    let createdId: string | null = null;
+
+    for (let attempt = 0; attempt < MAX_SLUG_RETRIES; attempt++) {
+      if (mode === 'managed' && !slug) {
+        const { data, error } = await admin.rpc('generate_qr_unique_slug');
+        if (error || !data) return { error: 'Could not generate a short link. Please try again.' };
+        slug = data as string;
+      }
+
+      const { data, error } = await admin
+        .from('qr_codes')
+        .insert({
+          owner_id: ctx.userId,
+          org_id: ctx.orgId,
+          name: args.name.trim(),
+          mode,
+          slug: mode === 'managed' ? slug : null,
+          carrier: 'qr',
+          destination_url: urlCheck.normalizedUrl,
+          analytics_enabled: mode === 'managed' ? (args.analytics_enabled ?? true) : false,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        if (error.code === '23505' && mode === 'managed') {
+          if (args.slug) return { error: `The short link "${args.slug}" is already taken. Pick another slug or leave it out.` };
+          slug = undefined;
+          continue;
+        }
+        console.error('[mcp] QR insert failed:', error.message);
+        return { error: 'Failed to create the QR code.' };
+      }
+      createdId = data.id as string;
+      break;
+    }
+
+    if (!createdId) return { error: 'Failed to create the QR code after several attempts.' };
+
+    const styleUpdate = pickStyle(args);
+    if (Object.keys(styleUpdate).length > 0) {
+      await admin.from('qr_styles').update(styleUpdate).eq('qr_id', createdId);
+    }
+
+    void writeAuditLog({
+      qrId: createdId,
+      actorId: ctx.userId,
+      action: 'created',
+      newValue: { name: args.name, mode, destination_url: urlCheck.normalizedUrl, slug, via: 'mcp' },
+      ipAddress: meta.ipAddress ?? null,
+      userAgent: meta.userAgent ?? null,
+    });
+
+    const qr = await loadQr(createdId);
+    if (!qr) return { error: 'QR code was created but could not be loaded.' };
+    return { qr };
+  }
+
   // ── create_qr_code ────────────────────────────────────────────────────
   server.registerTool(
     'create_qr_code',
@@ -179,70 +255,17 @@ export function createLynxMcpServer(ctx: ApiKeyContext, meta: McpRequestMeta = {
       const limit = checkQrCreateLimit(ctx.userId);
       if (!limit.success) return errorResult('Rate limit reached: too many QR codes created in the last minute. Try again shortly.');
 
-      const mode = args.mode ?? 'managed';
-      const urlCheck = await validateUrlStrict(args.destination_url);
-      if (!urlCheck.isValid) return errorResult(`Destination URL rejected: ${urlCheck.error}`);
-
-      const admin = db();
-      let slug = mode === 'managed' ? args.slug : undefined;
-      let createdId: string | null = null;
-
-      for (let attempt = 0; attempt < MAX_SLUG_RETRIES; attempt++) {
-        if (mode === 'managed' && !slug) {
-          const { data, error } = await admin.rpc('generate_qr_unique_slug');
-          if (error || !data) return errorResult('Could not generate a short link. Please try again.');
-          slug = data as string;
-        }
-
-        const { data, error } = await admin
-          .from('qr_codes')
-          .insert({
-            owner_id: ctx.userId,
-            org_id: ctx.orgId,
-            name: args.name.trim(),
-            mode,
-            slug: mode === 'managed' ? slug : null,
-            carrier: 'qr',
-            destination_url: urlCheck.normalizedUrl,
-            analytics_enabled: mode === 'managed' ? (args.analytics_enabled ?? true) : false,
-          })
-          .select('id')
-          .single();
-
-        if (error) {
-          if (error.code === '23505' && mode === 'managed') {
-            if (args.slug) return errorResult(`The short link "${args.slug}" is already taken. Pick another slug or leave it out.`);
-            slug = undefined;
-            continue;
-          }
-          console.error('[mcp] create_qr_code insert failed:', error.message);
-          return errorResult('Failed to create the QR code.');
-        }
-        createdId = data.id as string;
-        break;
-      }
-
-      if (!createdId) return errorResult('Failed to create the QR code after several attempts.');
-
-      const styleUpdate = pickStyle(args);
-      if (Object.keys(styleUpdate).length > 0) {
-        await admin.from('qr_styles').update(styleUpdate).eq('qr_id', createdId);
-      }
-
-      void writeAuditLog({
-        qrId: createdId,
-        actorId: ctx.userId,
-        action: 'created',
-        newValue: { name: args.name, mode, destination_url: urlCheck.normalizedUrl, slug, via: 'mcp' },
-        ipAddress: meta.ipAddress ?? null,
-        userAgent: meta.userAgent ?? null,
-      });
-
-      const qr = await loadQr(createdId);
-      if (!qr) return errorResult('QR code was created but could not be loaded.');
-      return withPreview(qr, { created: true });
+      const created = await createQr(args);
+      if ('error' in created) return errorResult(created.error);
+      return withPreview(created.qr, { created: true });
     }
   );
+
+  registerLinkPageTools(server, ctx, meta, {
+    createQr,
+    withPreview,
+    summarizeQr: summary,
+  });
 
   // ── list_qr_codes ─────────────────────────────────────────────────────
   server.registerTool(
