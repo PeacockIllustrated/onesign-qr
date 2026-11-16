@@ -132,7 +132,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .item .s{grid-column:1;font-family:var(--mono);font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .v{grid-row:1 / span 2;grid-column:2;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
 .item .v small{display:block;font-weight:500;color:var(--faint);font-size:11px}
-.bar{height:3px;border-radius:2px;background:var(--surface-2);margin-top:4px;width:72px;margin-left:auto}
+.bar{display:block;height:3px;border-radius:2px;background:var(--surface-2);margin-top:4px;width:72px;margin-left:auto}
 .bar i{display:block;height:100%;border-radius:2px;background:var(--accent)}
 .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;background:var(--surface-2);color:var(--muted)}
 .pill.live{background:var(--accent-wash);color:var(--accent-strong)}
