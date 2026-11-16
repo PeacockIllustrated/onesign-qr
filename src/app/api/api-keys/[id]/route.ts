@@ -1,0 +1,32 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { isValidUUID } from '@/validations/qr';
+
+/**
+ * DELETE /api/api-keys/[id] — revoke a key. Claude stops working with it
+ * immediately.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  if (!isValidUUID(id)) return NextResponse.json({ error: 'Invalid key ID' }, { status: 400 });
+
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data, error } = await supabase
+    .from('api_keys')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .is('revoked_at', null)
+    .select('id')
+    .maybeSingle();
+
+  if (error) return NextResponse.json({ error: 'Failed to revoke key' }, { status: 500 });
+  if (!data) return NextResponse.json({ error: 'Key not found' }, { status: 404 });
+  return new NextResponse(null, { status: 204 });
+}

@@ -35,6 +35,9 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/api/') &&
     !pathname.startsWith('/api/health') &&
+    // MCP is called server-to-server by Claude with a bearer API key, not a
+    // browser cookie, so origin-based CSRF checks don't apply.
+    !pathname.startsWith('/api/mcp') &&
     ['POST', 'PATCH', 'PUT', 'DELETE'].includes(request.method)
   ) {
     const origin = request.headers.get('origin');
