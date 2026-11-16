@@ -1,5 +1,4 @@
 import { generateStyledSVG } from '@/lib/qr/svg-generator';
-import { getQRContent } from '@/lib/qr/generator';
 import { svgToPng } from '@/lib/qr/exporters/png';
 import { createPresetPdf } from '@/lib/qr/exporters/pdf';
 import type { ErrorCorrectionLevel } from '@/types/qr';
@@ -44,9 +43,18 @@ export function styleOf(qr: QrRow): StyleRow {
   return { ...DEFAULT_STYLE, ...(s ?? {}) };
 }
 
-/** What the printed code actually encodes. */
+/**
+ * What the printed code actually encodes. Must match the dashboard exactly
+ * (src/app/app/qr/[id]/page.tsx builds `${NEXT_PUBLIC_APP_URL}/r/${slug}`),
+ * so files from Claude are identical to ones exported from the dashboard.
+ * A trailing slash on the base URL is stripped to avoid `//r/slug`.
+ */
 export function encodedContent(qr: QrRow): string {
-  return getQRContent(qr.mode, qr.destination_url, qr.slug ?? undefined);
+  if (qr.mode === 'managed' && qr.slug) {
+    const base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '');
+    return `${base}/r/${qr.slug}`;
+  }
+  return qr.destination_url;
 }
 
 export async function renderSvg(qr: QrRow): Promise<string> {

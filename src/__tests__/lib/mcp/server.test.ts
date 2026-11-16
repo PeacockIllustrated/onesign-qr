@@ -79,6 +79,14 @@ describe('Lynx MCP server', () => {
     expect(verifyDownloadToken(token)).toMatchObject({ qrId: row.id, userId: 'user-1', orgId: 'org-1', format: 'svg' });
   });
 
+  it('encodes the same link as the dashboard, without a double slash', async () => {
+    process.env.NEXT_PUBLIC_APP_URL = 'https://lynx.test/';
+    process.env.QR_REDIRECT_BASE_URL = 'https://other.test/';
+    const client = await connect();
+    const res: any = await client.callTool({ name: 'create_qr_code', arguments: { name: 'A', destination_url: 'https://a.com' } });
+    expect(json(res).qr_code.encodes).toBe('https://lynx.test/r/abc12345');
+  });
+
   it('rejects unsafe destinations', async () => {
     const client = await connect();
     const result: any = await client.callTool({
