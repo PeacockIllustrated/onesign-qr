@@ -31,6 +31,15 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Brand fonts are loaded cross-origin by the Claude connector card
+        // (src/lib/mcp/ui.ts), which renders in a sandboxed iframe.
+        source: '/fonts/:file*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
+        ],
+      },
+      {
         source: '/wtr/:file*.vcf',
         headers: [{ key: 'Content-Type', value: 'text/vcard; charset=utf-8' }],
       },
